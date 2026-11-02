@@ -1,9 +1,25 @@
 import Schema from '@deepseek-ai/schemastery';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
+import { spawn } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { emptySnapshot, mergeSnapshots, normalizeExport } from '../src/snapshot.mjs';
 
-const run = promisify(execFile);
+function runEngine(bin, args, options) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(bin, args, { ...options, stdio: ['ignore', 'pipe', 'pipe'] });
+    let out = '';
+    let err = '';
+    child.stdout.on('data', (chunk) => {
+      out += chunk;
+    });
+    child.stderr.on('data', (chunk) => {
+      err += chunk;
+    });
+    child.on('error', reject);
+    child.on('close', (code) => resolve({ code, stdout: out, stderr: err }));
+  });
+}
 
 export const name = 'cauldron-workbench';
 export const inject = ['connection'];
@@ -32,11 +48,15 @@ export function apply(ctx, config) {
     const engineBin = config.engineBin?.trim() || process.execPath;
     const entries = [];
     for (const file of products) {
-      const { stdout } = await run(engineBin, [config.engineScript, 'export', '--product', file, '--json'], {
+      const result = await runEngine(engineBin, [config.engineScript, 'export', '--product', file, '--json'], {
         cwd: process.cwd(),
-        maxBuffer: 32 * 1024 * 1024,
         env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
       });
+      const stdout = typeof result?.stdout === 'string' ? result.stdout : '';
+      if (result?.code !== 0 || stdout.trim() === '') {
+        const detail = (result?.stderr || '').trim().slice(0, 400) || `退出码 ${result?.code}，stdout ${stdout.length} 字节`;
+        throw new Error(`引擎没有输出 JSON（${detail}）`);
+      }
       entries.push(normalizeExport(JSON.parse(stdout), { file }));
     }
     return mergeSnapshots(entries);
@@ -52,6 +72,25 @@ export function apply(ctx, config) {
     } catch (error) {
       return emptySnapshot(`快照生成失败：${error instanceof Error ? error.message : String(error)}`);
     }
+  }
+
+  try {
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    const fedDir = path.join(here, '..', 'web', 'fed');
+    ctx.connection.fetch.register({
+      path: `${API}/fed/agent-display`,
+      methods: ['GET'],
+      requestBody: 'buffered',
+      async fetch() {
+        const html = readFileSync(path.join(fedDir, 'agent-display.html'), 'utf8');
+        return new Response(html, {
+          status: 200,
+          headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' },
+        });
+      },
+    });
+  } catch (error) {
+    console.warn('[cauldron-workbench] 看板静态路由注册失败:', error);
   }
 
   try {
