@@ -1,6 +1,6 @@
 import Schema from '@deepseek-ai/schemastery';
 import { spawn } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { emptySnapshot, mergeSnapshots, normalizeExport } from '../src/snapshot.mjs';
@@ -77,33 +77,54 @@ export function apply(ctx, config) {
   try {
     const here = path.dirname(fileURLToPath(import.meta.url));
     const fedDir = path.join(here, '..', 'web', 'fed');
-    const neuralHtml = path.join(here, '..', 'web-neural', 'dist', 'index.html');
-    ctx.connection.fetch.register({
-      path: `${API}/fed/neural`,
-      methods: ['GET'],
-      requestBody: 'buffered',
-      async fetch() {
-        const html = readFileSync(neuralHtml, 'utf8');
-        return new Response(html, {
-          status: 200,
-          headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' },
+    const neuralDir = path.join(here, '..', 'web-neural', 'dist');
+    const MIME = {
+      '.html': 'text/html; charset=utf-8',
+      '.js': 'text/javascript; charset=utf-8',
+      '.mjs': 'text/javascript; charset=utf-8',
+      '.css': 'text/css; charset=utf-8',
+      '.json': 'application/json; charset=utf-8',
+      '.svg': 'image/svg+xml',
+      '.png': 'image/png',
+      '.woff2': 'font/woff2',
+    };
+    const serve = (filePath) => async () => {
+      const body = readFileSync(filePath);
+      const ext = path.extname(filePath).toLowerCase();
+      return new Response(body, {
+        status: 200,
+        headers: { 'content-type': MIME[ext] ?? 'application/octet-stream', 'cache-control': 'no-store' },
+      });
+    };
+    const walk = (dir, prefix) => {
+      const out = [];
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
+        if (entry.isDirectory()) out.push(...walk(full, rel));
+        else out.push({ rel, full });
+      }
+      return out;
+    };
+    const registerStatic = (routePath, filePath) => {
+      try {
+        ctx.connection.fetch.register({
+          path: routePath,
+          methods: ['GET'],
+          requestBody: 'buffered',
+          async fetch() {
+            return serve(filePath)();
+          },
         });
-      },
-    });
-    ctx.connection.fetch.register({
-      path: `${API}/fed/agent-display`,
-      methods: ['GET'],
-      requestBody: 'buffered',
-      async fetch() {
-        const html = readFileSync(path.join(fedDir, 'agent-display.html'), 'utf8');
-        return new Response(html, {
-          status: 200,
-          headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' },
-        });
-      },
-    });
+      } catch (error) {
+        console.warn('[cauldron-workbench] 静态路由注册失败:', routePath, error?.message ?? error);
+      }
+    };
+    registerStatic(`${API}/fed/neural`, path.join(neuralDir, 'index.html'));
+    for (const file of walk(neuralDir, '')) registerStatic(`${API}/fed/neural/${file.rel}`, file.full);
+    registerStatic(`${API}/fed/agent-display`, path.join(fedDir, 'agent-display.html'));
   } catch (error) {
-    console.warn('[cauldron-workbench] 看板静态路由注册失败:', error);
+    console.warn('[cauldron-workbench] 看板静态资源准备失败:', error);
   }
 
   try {
