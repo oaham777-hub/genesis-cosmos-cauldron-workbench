@@ -1,7 +1,7 @@
 import Schema from '@deepseek-ai/schemastery';
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:http';
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { emptySnapshot, mergeSnapshots, normalizeExport } from '../src/snapshot.mjs';
@@ -82,7 +82,7 @@ export function apply(ctx, config) {
     const here = path.dirname(fileURLToPath(import.meta.url));
     const fedDir = path.join(here, '..', 'web', 'fed');
     const distCandidate = path.join(here, '..', 'web-neural', 'dist-actual');
-    const neuralDir = fs.existsSync(distCandidate) ? distCandidate : path.join(here, '..', 'web-neural', 'dist');
+    const neuralDir = existsSync(distCandidate) ? distCandidate : path.join(here, '..', 'web-neural', 'dist');
     const MIME = {
       '.html': 'text/html; charset=utf-8',
       '.js': 'text/javascript; charset=utf-8',
