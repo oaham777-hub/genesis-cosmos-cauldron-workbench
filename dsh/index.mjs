@@ -1,5 +1,4 @@
 import Schema from '@deepseek-ai/schemastery';
-import { readFile } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { emptySnapshot, mergeSnapshots, normalizeExport } from '../src/snapshot.mjs';
@@ -8,6 +7,7 @@ const run = promisify(execFile);
 
 export const name = 'cauldron-workbench';
 export const inject = ['connection'];
+
 export const Config = Schema.object({
   engineBin: Schema.string()
     .default('')
@@ -54,15 +54,19 @@ export function apply(ctx, config) {
     }
   }
 
-  ctx.connection.fetch.register({
-    path: `${API}/snapshot`,
-    methods: ['GET'],
-    requestBody: 'buffered',
-    async fetch() {
-      const value = await snapshot();
-      return Response.json(value, { status: 200, headers: { 'cache-control': 'no-store' } });
-    },
-  });
+  try {
+    ctx.connection.fetch.register({
+      path: `${API}/snapshot`,
+      methods: ['GET'],
+      requestBody: 'buffered',
+      async fetch() {
+        const value = await snapshot();
+        return Response.json(value, { status: 200, headers: { 'cache-control': 'no-store' } });
+      },
+    });
+  } catch (error) {
+    console.warn('[cauldron-workbench] 路由注册失败（面板仍可打开，仅无法拉快照）:', error);
+  }
 
   return {
     snapshot,
