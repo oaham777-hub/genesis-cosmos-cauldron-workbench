@@ -49,8 +49,8 @@ function boot() {
 
   const host = el('div');
   host.id = 'cw-overlay';
-  host.style.cssText = 'position:absolute;left:0;top:0;width:0;height:0;pointer-events:none;z-index:5';
-  parent.appendChild(host);
+  host.style.cssText = 'position:absolute;left:50%;top:50%;width:0;height:0;pointer-events:none;z-index:5';
+  core.appendChild(host);
 
   const rotator = el('div', 'cw-rotator');
   rotator.style.cssText = 'position:absolute;left:0;top:0;width:0;height:0;animation:cwRotate 13s ease-in-out infinite';
@@ -142,17 +142,17 @@ function boot() {
 
   const apply = () => {
     if (!host.isConnected) {
-      if (parent.contains(core)) parent.appendChild(host);
+      if (core.isConnected) core.appendChild(host);
       else return;
     }
-    if (!core.isConnected) return;
     const w = core.offsetWidth || 460;
     const h = core.offsetHeight || 460;
-    host.style.left = `${core.offsetLeft + w / 2}px`;
-    host.style.top = `${core.offsetTop + h / 2}px`;
-    // 藏掉原生星核视觉（保留尺寸供定位）
-    if (core.style.opacity !== '0') core.style.opacity = '0';
-    if (core.style.visibility !== 'hidden') core.style.visibility = 'hidden';
+    // 只藏星核自己的发光图层，保留核心盒子与父级布局
+    for (const sel of ['.cs-halo', '.cs-flare', '.cs-v41', '.cs-dust', '.cs-corona', '.cs-nucleus', '.cs-rays']) {
+      for (const layer of core.querySelectorAll(sel)) {
+        if (layer.style.display !== 'none') layer.style.display = 'none';
+      }
+    }
 
     const bodyW = Math.round(w * 0.66);
     const bodyH = Math.round(bodyW * 0.70);
