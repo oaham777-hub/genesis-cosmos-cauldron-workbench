@@ -1,0 +1,279 @@
+:root {
+  --bg: #14110e;
+  --surface: #1d1914;
+  --surface-2: #26201a;
+  --line: #3a3128;
+  --text: #e8dcc8;
+  --text-dim: #8b8578;
+  --accent: #c8352b;
+  --gold: #d4a24c;
+  --jade: #4e7a66;
+  --bronze: #5e6b55;
+  --danger: #a8443c;
+  --radius: 2px;
+  --font-title: "Source Han Serif SC", "Noto Serif SC", "Songti SC", "SimSun", serif;
+  --font-body: "Source Han Sans SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  --font-num: ui-monospace, "Cascadia Mono", "Consolas", monospace;
+}
+
+[data-theme="rice-paper"] {
+  --bg: #f4eee1;
+  --surface: #fbf7ec;
+  --surface-2: #efe6d2;
+  --line: #d8cbb2;
+  --text: #2b2318;
+  --text-dim: #7a6a52;
+  --accent: #a62b22;
+  --gold: #b07a2a;
+  --jade: #3f6b58;
+  --bronze: #6b6350;
+  --danger: #8e2f27;
+  --radius: 4px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+body {
+  background-image:
+    radial-gradient(circle at 18% 0%, color-mix(in srgb, var(--gold) 9%, transparent), transparent 46%),
+    repeating-linear-gradient(90deg, transparent 0 23px, color-mix(in srgb, var(--line) 55%, transparent) 23px 24px);
+  background-attachment: fixed;
+}
+
+.shell {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 28px 24px 48px;
+}
+
+/* 双耳：左品牌，右状态 */
+.ears {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 0 12px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+}
+
+.brand h1 {
+  margin: 0;
+  font-family: var(--font-title);
+  font-weight: 600;
+  font-size: 26px;
+  letter-spacing: 0.18em;
+}
+
+.brand .seal {
+  display: inline-block;
+  padding: 2px 8px;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-size: 12px;
+  letter-spacing: 0.3em;
+}
+
+.status {
+  display: flex;
+  gap: 22px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.status b {
+  color: var(--text);
+  font-family: var(--font-num);
+  font-weight: 600;
+}
+
+/* 三足：三栏 */
+.tripod {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr 1fr;
+  gap: 1px;
+  margin-top: 22px;
+  background: var(--line);
+  border: 1px solid var(--line);
+}
+
+.leg {
+  background: var(--surface);
+  padding: 20px;
+  min-height: 420px;
+}
+
+.leg-title {
+  margin: 0 0 14px;
+  font-family: var(--font-title);
+  font-size: 15px;
+  letter-spacing: 0.28em;
+  color: var(--gold);
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.leg-title small {
+  font-family: var(--font-num);
+  letter-spacing: 0;
+  color: var(--text-dim);
+}
+
+/* 卡片 */
+.card {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  opacity: 0.5;
+}
+
+.card h3 {
+  margin: 0 0 4px;
+  font-family: var(--font-title);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.mono {
+  font-family: var(--font-num);
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.kv {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 14px;
+  font-size: 13px;
+}
+
+.kv dt { color: var(--text-dim); }
+.kv dd { margin: 0; font-family: var(--font-num); }
+
+/* 炉火：运行态呼吸光 */
+.ember {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-dim);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  padding: 8px 14px;
+  border-radius: 999px;
+}
+
+.ember i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 60%, transparent);
+  animation: breathe 2.4s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent); }
+  50% { box-shadow: 0 0 18px 6px color-mix(in srgb, var(--accent) 28%, transparent); }
+}
+
+/* 技能条 */
+.skill {
+  display: grid;
+  grid-template-columns: 96px 1fr 72px;
+  gap: 10px;
+  align-items: center;
+  font-size: 12px;
+  padding: 4px 0;
+}
+
+.skill .name {
+  font-family: var(--font-num);
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bar {
+  height: 4px;
+  background: var(--line);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.bar i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--bronze), var(--gold));
+}
+
+.skill .size {
+  text-align: right;
+  font-family: var(--font-num);
+  color: var(--text-dim);
+}
+
+/* 空态 */
+.empty {
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  padding: 28px 18px;
+  text-align: center;
+  color: var(--text-dim);
+  background:
+    repeating-linear-gradient(45deg, transparent 0 10px, color-mix(in srgb, var(--line) 40%, transparent) 10px 11px);
+}
+
+.theme-toggle {
+  background: transparent;
+  color: var(--text-dim);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 4px 10px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.theme-toggle:hover { color: var(--gold); border-color: var(--gold); }
+
+@media (max-width: 900px) {
+  .tripod { grid-template-columns: 1fr; }
+  .leg { min-height: auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ember i { animation: none; }
+}
