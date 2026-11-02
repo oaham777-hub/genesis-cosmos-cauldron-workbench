@@ -25,9 +25,17 @@ function normalizeProduct(product, file) {
         bytes: bytesOf(skill),
       }))
       .sort((left, right) => String(left.id).localeCompare(String(right.id))),
+    mounts: (Array.isArray(product?.mounts) ? product.mounts : []).map((mount) => ({
+      id: mount?.id ?? 'unknown',
+      layer: mount?.layer ?? null,
+      kind: mount?.kind ?? null,
+      source: mount?.source ?? null,
+      rules: Number.isFinite(mount?.rules) ? mount.rules : 0,
+    })),
     totals: {
       skills: skills.length,
       bytes: skills.reduce((sum, skill) => sum + bytesOf(skill), 0),
+      mounts: Array.isArray(product?.mounts) ? product.mounts.length : 0,
     },
   };
 }

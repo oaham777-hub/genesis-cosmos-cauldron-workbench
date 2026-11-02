@@ -41,11 +41,11 @@ const FOLDERS = [
 
 // 首页围绕光球的五个模块；角度与图谱布局的目录锚点一致，背景网络会朝各自模块蔓延。
 export const MODULES = [
-  {id: 'works', title: '作品库', en: 'Works', kind: 'post', folder: 'f:works', angle: 180, icon: 'works', page: 'library'},
-  {id: 'concepts', title: '概念网络', en: 'Concepts', kind: 'concept', angle: -90, icon: 'concept'},
-  {id: 'methods', title: '方法库', en: 'Methods', kind: 'note', folder: 'f:methods', angle: 0, icon: 'methods'},
-  {id: 'ideas', title: '选题池', en: 'Ideas', kind: 'idea', folder: 'f:ideas', angle: 35, icon: 'idea', page: 'ideas'},
-  {id: 'drafts', title: '创作台', en: 'Drafts', kind: 'draft', folder: 'f:drafts', angle: 145, icon: 'draft', page: 'drafts'}
+  {id: 'works', title: '造化鼎', en: 'Zaohuading', kind: 'post', folder: 'f:works', angle: 180, icon: 'works', page: 'library'},
+  {id: 'concepts', title: '乾坤鼎', en: 'Qiankunding', kind: 'concept', angle: -90, icon: 'concept'},
+  {id: 'methods', title: '组合', en: 'Compose', kind: 'note', folder: 'f:methods', angle: 0, icon: 'methods'},
+  {id: 'ideas', title: '交付', en: 'Delivery', kind: 'idea', folder: 'f:ideas', angle: 35, icon: 'idea', page: 'ideas'},
+  {id: 'drafts', title: '知识', en: 'Knowledge', kind: 'draft', folder: 'f:drafts', angle: 145, icon: 'draft', page: 'drafts'}
 ];
 export const moduleOf = node => MODULES.find(m => m.kind === node?.kind) || null;
 

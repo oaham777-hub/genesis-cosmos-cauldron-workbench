@@ -402,7 +402,7 @@ function Scene({graph, items, more, onModule, onItem, live, sel}) {
           <span className="jl-count"><b>{sum.count}</b></span>
           <span className="jl-const"><b>{zh}</b><em>{en.toUpperCase()}</em></span>
           <span className="jl-name">{m.title}<em>{m.en}</em></span>
-          <span className="jl-sky">{art.n.stars} 主星 · {art.n.edges} 连线</span>
+          <span className="jl-sky">{m.id === 'concepts' ? '9 层 · 44 挂载' : m.id === 'works' ? '引擎能力' : `${art.n.stars} 主星 · ${art.n.edges} 连线`}</span>
           <span className="jl-sub">{sum.sub[0]} {sum.sub[1]} <em>{sum.sub[2]}</em></span>
         </button>
       </React.Fragment>;
