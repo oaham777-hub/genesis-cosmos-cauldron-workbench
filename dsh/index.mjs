@@ -191,7 +191,8 @@ export function apply(ctx, config) {
       requestBody: 'buffered',
       async fetch() {
         const value = await snapshot();
-        return Response.json(value, { status: 200, headers: { 'cache-control': 'no-store' } });
+        await Promise.race([neuralReady, new Promise((resolve) => setTimeout(resolve, 1500))]);
+        return Response.json({ ...value, neural_url: neuralUrl || '' }, { status: 200, headers: { 'cache-control': 'no-store' } });
       },
     });
   } catch (error) {
