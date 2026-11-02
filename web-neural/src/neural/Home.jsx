@@ -24,14 +24,16 @@ export function moduleItems(graph, modId) {
 
 function moduleSummary(graph, m) {
   const items = moduleItems(graph, m.id);
+  // 造化乾坤鼎：两个产品簇显示引擎/产品数字，其余三簇文字层改为占位
   const sub = {
-    works: () => [fmt(items.reduce((s, n) => s + n.post.views, 0)), '观看', 'views'],
-    concepts: () => [fmt(items.reduce((s, n) => s + n.in, 0)), '提及', 'mentions'],
-    methods: () => [graph.links.filter(l => l.kind === 'wiki').length, '双链', 'wikilinks'],
-    ideas: () => [items.filter(n => n.idea.status !== '已转草稿').length, '待写', 'to write'],
-    drafts: () => [fmt(items.reduce((s, n) => s + (n.body || '').length, 0)), '字', 'chars']
+    works: () => [16, '个命令', 'commands'],
+    concepts: () => [9, '层', 'layers'],
+    methods: () => ['—', '占位', 'placeholder'],
+    ideas: () => ['—', '占位', 'placeholder'],
+    drafts: () => ['—', '占位', 'placeholder'],
   }[m.id]();
-  return {count: items.length, sub};
+  const real = {works: 16, concepts: 9}[m.id];
+  return {count: real ?? items.length, sub};
 }
 
 function itemMeta(n) {

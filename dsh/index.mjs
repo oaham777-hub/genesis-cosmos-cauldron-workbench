@@ -124,6 +124,18 @@ export function apply(ctx, config) {
       try {
         const clean = decodeURIComponent((req.url || '/').split('?')[0]);
         const rel = clean === '/' ? 'index.html' : clean.replace(/^\/+/, '');
+        if (rel === 'snapshot.json') {
+          snapshot()
+            .then((value) => {
+              res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
+              res.end(Buffer.from(JSON.stringify(value), 'utf8'));
+            })
+            .catch((error) => {
+              res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
+              res.end(Buffer.from(JSON.stringify({ error: error?.message ?? String(error) }), 'utf8'));
+            });
+          return;
+        }
         const file = path.join(dir, rel);
         if (!file.startsWith(dir)) {
           res.writeHead(403).end('forbidden');

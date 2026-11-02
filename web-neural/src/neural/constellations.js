@@ -14,7 +14,7 @@ import {rng, hex2rgb} from './Cosmos';
 
 export const SPECS = {
   methods: {
-    zh: '天蝎座', en: 'Scorpius', nodes: 82,
+    zh: '组合', en: 'Compose', nodes: 82,
     stars: [
       {ra: 239.7130, dec: -26.1141, mag: 2.89, n: 'π Fang'},
       {ra: 240.0834, dec: -22.6217, mag: 2.29, n: 'δ Dschubba'},
@@ -34,7 +34,7 @@ export const SPECS = {
     edges: [[0, 1], [1, 2], [1, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 8], [8, 9], [9, 10], [10, 11], [11, 12], [12, 13]]
   },
   concepts: {
-    zh: '双鱼座', en: 'Pisces', nodes: 40,
+    zh: '乾坤鼎', en: 'Qiankunding', nodes: 40,
     stars: [
       {ra: 18.4373, dec: 24.5837, mag: 4.67, n: 'φ'},
       {ra: 17.9152, dec: 30.0896, mag: 4.51, n: 'τ'},
@@ -62,7 +62,7 @@ export const SPECS = {
     edges: [[0, 1], [1, 2], [0, 2], [0, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 8], [8, 9], [9, 10], [10, 11], [11, 12], [12, 13], [13, 14], [14, 15], [15, 16], [16, 17], [17, 18], [18, 19], [19, 20], [14, 20], [17, 21]]
   },
   works: {
-    zh: '处女座', en: 'Virgo', nodes: 29,
+    zh: '造化鼎', en: 'Zaohuading', nodes: 29,
     stars: [
       {ra: 176.4648, dec: 6.5294, mag: 4.04, n: 'ν'},
       {ra: 177.6738, dec: 1.7647, mag: 3.59, n: 'β Zavijava'},
@@ -81,7 +81,7 @@ export const SPECS = {
     edges: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [8, 9], [3, 9], [4, 10], [10, 11], [11, 12]]
   },
   ideas: {
-    zh: '射手座', en: 'Sagittarius', nodes: 15,
+    zh: '交付', en: 'Delivery', nodes: 15,
     stars: [
       {ra: 274.4068, dec: -36.7617, mag: 3.10, n: 'η Hamalwarid'},
       {ra: 276.0430, dec: -34.3846, mag: 1.79, n: 'ε Kaus Australis'},
@@ -112,7 +112,7 @@ export const SPECS = {
     edges: [[0, 1], [1, 2], [2, 3], [3, 4], [5, 6], [6, 7], [7, 8], [3, 8], [9, 10], [10, 11], [11, 12], [12, 13], [13, 14], [14, 15], [8, 15], [2, 8], [2, 16], [1, 16], [1, 7], [7, 17], [15, 17], [15, 18], [18, 19], [19, 20], [20, 21], [21, 22], [18, 23], [23, 24], [15, 24]]
   },
   drafts: {
-    zh: '水瓶座', en: 'Aquarius', nodes: 4,
+    zh: '知识', en: 'Knowledge', nodes: 4,
     stars: [
       {ra: 311.9190, dec: -9.4958, mag: 3.78, n: 'ε Albali'},
       {ra: 313.1635, dec: -8.9833, mag: 4.73, n: 'μ Albulan'},
