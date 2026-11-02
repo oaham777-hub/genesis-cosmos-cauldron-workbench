@@ -42,6 +42,9 @@ const API = '/api/cauldron-workbench';
 
 export function apply(ctx, config) {
   let cache = { at: 0, value: null };
+  let neuralUrl = '';
+  let neuralReady = Promise.resolve();
+  let neuralServer = null;
 
   async function buildSnapshot() {
     const products = Array.isArray(config.products) ? config.products.filter(Boolean) : [];
@@ -107,9 +110,7 @@ export function apply(ctx, config) {
       }
       return out;
     };
-    let neuralUrl = '';
-  let neuralReady = Promise.resolve();
-  const startNeuralServer = (dir) => {
+    const startNeuralServer = (dir) => {
     const MIME2 = {
       '.html': 'text/html; charset=utf-8',
       '.js': 'text/javascript; charset=utf-8',
@@ -146,7 +147,6 @@ export function apply(ctx, config) {
     });
     return server;
   };
-  let neuralServer = null;
   const registerStatic = (routePath, filePath) => {
       try {
         ctx.connection.fetch.register({
