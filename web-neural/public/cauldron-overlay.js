@@ -60,7 +60,7 @@ function boot() {
   host.appendChild(rotator);
 
   const body = el('img');
-  body.src = './ding-body.png';
+  body.src = './ding-ink.png';
   body.alt = '造化乾坤鼎';
   body.style.cssText = 'position:absolute;left:0;top:0;transform:translate(-50%,-50%);pointer-events:none;mix-blend-mode:screen;filter:drop-shadow(0 0 24px rgba(255,190,90,.28))';
   rotator.appendChild(body);
@@ -79,6 +79,14 @@ function boot() {
   mistB.style.animation = 'cwDriftB 34s linear infinite';
   mistB.style.opacity = '.11';
   host.appendChild(mistB);
+
+  const mistC = el('img');
+  mistC.src = './ding-mist.png';
+  mistC.alt = '';
+  mistC.className = 'cw-mist';
+  mistC.style.animation = 'cwDriftA 30s linear infinite';
+  mistC.style.opacity = '.15';
+  host.appendChild(mistC);
 
   const smoke = el('div', 'cw-smoke');
   smoke.style.cssText = 'position:absolute;left:0;pointer-events:none;mix-blend-mode:screen;overflow:hidden';
@@ -173,19 +181,21 @@ function boot() {
     }
 
     const bodyW = Math.round(w * 0.66);
-    const bodyH = Math.round(bodyW * 0.70);
+    const bodyH = Math.round(bodyW * 1.0);
     body.style.width = `${bodyW}px`;
     const smokeW = Math.round(w * 0.42);
     smoke.style.width = `${smokeW}px`;
-    smoke.style.height = `${bodyH * 0.95}px`;
-    smoke.style.bottom = `${Math.round(bodyH * 0.20)}px`;
-    const mistW = Math.round(bodyW * 1.5);
-    for (const node of [mistA, mistB]) {
-      node.style.width = `${mistW}px`;
-      node.style.top = `${Math.round(-bodyH * 0.62)}px`;
-    }
-    title.style.top = `${Math.round(-bodyH * 0.8)}px`;
-    bar.style.top = `${Math.round(bodyH * 0.52)}px`;
+    smoke.style.height = `${bodyH * 0.62}px`;
+    smoke.style.bottom = `${Math.round(bodyH * 0.10)}px`;
+    const mistW = Math.round(bodyW * 1.55);
+    mistA.style.width = `${mistW}px`;
+    mistA.style.top = `${Math.round(-bodyH * 0.42)}px`;
+    mistB.style.width = `${Math.round(bodyW * 1.25)}px`;
+    mistB.style.top = `${Math.round(bodyH * 0.02)}px`;
+    mistC.style.width = `${Math.round(bodyW * 1.15)}px`;
+    mistC.style.top = `${Math.round(bodyH * 0.28)}px`;
+    title.style.top = `${Math.round(-bodyH * 0.62)}px`;
+    bar.style.top = `${Math.round(bodyH * 0.6)}px`;
 
     const radius = w * 0.86;
     const half = Math.ceil(radius) + 120;
