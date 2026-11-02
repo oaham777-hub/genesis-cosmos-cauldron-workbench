@@ -1,6 +1,5 @@
-// 造化乾坤鼎：星图看板叠加层 v0.10.0
-// 不再做屏幕坐标测量——直接把叠加层挂进星核的父容器，用 offsetLeft/offsetTop 定位，
-// 天然随星图一起平移/滚动，不会再出现错位。
+// 造化乾坤鼎：星图看板叠加层 v0.11.2
+// 动效全部由 requestAnimationFrame 驱动（不依赖 CSS 动画，不受 reduced-motion 影响）。
 const LAYERS = [
   ['00-router', '总控'],
   ['01-story', '故事'],
@@ -13,9 +12,7 @@ const LAYERS = [
   ['09-support', '支撑'],
 ];
 
-const REDUCED = (() => {
-  try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; }
-})();
+const SVG_NS = 'http://www.w3.org/2000/svg';
 
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -24,29 +21,18 @@ function el(tag, className, text) {
   return node;
 }
 
-const SVG_NS = 'http://www.w3.org/2000/svg';
-
 function boot() {
   if (document.getElementById('cw-overlay')) return;
   const core = document.querySelector('.core-star');
   if (!core || !core.parentElement) { setTimeout(boot, 300); return; }
-  const parent = core.parentElement;
 
   const style = document.createElement('style');
   style.textContent = `
-    @keyframes cwRotate { 0%,100% { transform: translate(-50%,-50%) rotate(-.8deg); } 50% { transform: translate(-50%,-50%) rotate(.8deg); } }
-    @keyframes cwPuff { 0%   { opacity:.34; transform: translate(-50%, 8%) scale(.92); }
-                        55%  { opacity:.26; }
-                        100% { opacity:0;   transform: translate(-50%, -46%) scale(1.14); } }
-    #cw-overlay .cw-puff { position:absolute; left:50%; bottom:0; width:78%; height:180%; transform:translate(-50%,6%); background-repeat:no-repeat; background-position:50% 100%; background-size:100% auto; animation:cwPuff 7.5s linear infinite; }
-    #cw-overlay .cw-puff:nth-child(2) { animation-duration:10s; animation-delay:-2.6s; opacity:.5; filter:blur(.6px); }
-    #cw-overlay .cw-puff:nth-child(3) { animation-duration:12.5s; animation-delay:-5.2s; opacity:.36; filter:blur(1.4px); }
-    #cw-overlay .cw-smoke { -webkit-mask-image: linear-gradient(to top, transparent 0%, rgba(0,0,0,.2) 8%, rgba(0,0,0,.75) 28%, #000 62%);
-                            mask-image: linear-gradient(to top, transparent 0%, rgba(0,0,0,.2) 8%, rgba(0,0,0,.75) 28%, #000 62%); }
-    @keyframes cwDriftA { from { transform: translate(-50%,-50%) rotate(0deg); } to { transform: translate(-50%,-50%) rotate(360deg); } }
-    @keyframes cwDriftB { from { transform: translate(-50%,-50%) rotate(0deg) scale(1.06); } to { transform: translate(-50%,-50%) rotate(-360deg) scale(1.06); } }
-    #cw-overlay .cw-mist { position:absolute; left:0; top:0; pointer-events:none; mix-blend-mode:screen; opacity:.16; filter:blur(7px); }
-    @media (prefers-reduced-motion: reduce) { #cw-overlay .cw-rotator, #cw-overlay .cw-puff, #cw-overlay .cw-mist { animation: none; } }
+    #cw-overlay .cw-puff { position:absolute; left:50%; bottom:0; width:80%; height:185%; background-repeat:no-repeat; background-position:50% 100%; background-size:100% auto; will-change:transform,opacity; }
+    #cw-overlay .cw-smoke { -webkit-mask-image: linear-gradient(to top, transparent 0%, rgba(0,0,0,.2) 8%, rgba(0,0,0,.78) 28%, #000 62%);
+                            mask-image: linear-gradient(to top, transparent 0%, rgba(0,0,0,.2) 8%, rgba(0,0,0,.78) 28%, #000 62%); }
+    #cw-overlay .cw-mist { position:absolute; left:0; top:0; pointer-events:none; mix-blend-mode:screen; will-change:transform; }
+    #cw-overlay .cw-rotator { position:absolute; left:0; top:0; width:0; height:0; will-change:transform; }
   `;
   document.head.appendChild(style);
 
@@ -56,7 +42,6 @@ function boot() {
   core.appendChild(host);
 
   const rotator = el('div', 'cw-rotator');
-  rotator.style.cssText = 'position:absolute;left:0;top:0;width:0;height:0;animation:cwRotate 13s ease-in-out infinite';
   host.appendChild(rotator);
 
   const body = el('img');
@@ -65,35 +50,25 @@ function boot() {
   body.style.cssText = 'position:absolute;left:0;top:0;transform:translate(-50%,-50%);pointer-events:none;mix-blend-mode:screen;filter:drop-shadow(0 0 24px rgba(255,190,90,.28))';
   rotator.appendChild(body);
 
-  const mistA = el('img');
-  mistA.src = './ding-mist.png';
-  mistA.alt = '';
-  mistA.className = 'cw-mist';
-  mistA.style.animation = 'cwDriftA 26s linear infinite';
-  host.appendChild(mistA);
-
-  const mistB = el('img');
-  mistB.src = './ding-mist.png';
-  mistB.alt = '';
-  mistB.className = 'cw-mist';
-  mistB.style.animation = 'cwDriftB 34s linear infinite';
-  mistB.style.opacity = '.11';
-  host.appendChild(mistB);
-
-  const mistC = el('img');
-  mistC.src = './ding-mist.png';
-  mistC.alt = '';
-  mistC.className = 'cw-mist';
-  mistC.style.animation = 'cwDriftA 30s linear infinite';
-  mistC.style.opacity = '.15';
-  host.appendChild(mistC);
+  const mist = [];
+  for (let i = 0; i < 3; i += 1) {
+    const node = el('img', 'cw-mist');
+    node.src = './ding-mist.png';
+    node.alt = '';
+    node.style.opacity = ['.16', '.11', '.15'][i];
+    node.style.filter = 'blur(7px)';
+    host.appendChild(node);
+    mist.push(node);
+  }
 
   const smoke = el('div', 'cw-smoke');
   smoke.style.cssText = 'position:absolute;left:0;pointer-events:none;mix-blend-mode:screen;overflow:hidden';
+  const puffs = [];
   for (let i = 0; i < 3; i += 1) {
     const puff = el('div', 'cw-puff');
     puff.style.backgroundImage = 'url(./ding-plume.png)';
     smoke.appendChild(puff);
+    puffs.push(puff);
   }
   host.appendChild(smoke);
 
@@ -133,15 +108,14 @@ function boot() {
 
   const svg = document.createElementNS(SVG_NS, 'svg');
   svg.style.cssText = 'position:absolute;left:0;top:0;overflow:visible;pointer-events:none';
-  const lines = [];
-  for (const [id] of LAYERS) {
+  const lines = LAYERS.map(() => {
     const line = document.createElementNS(SVG_NS, 'line');
     line.setAttribute('stroke', 'rgba(255,214,150,.34)');
     line.setAttribute('stroke-width', '0.9');
     line.setAttribute('stroke-dasharray', '3 7');
     svg.appendChild(line);
-    lines.push(line);
-  }
+    return line;
+  });
   host.appendChild(svg);
 
   const nodes = [];
@@ -166,39 +140,33 @@ function boot() {
     nodes.push({ id, el: nodeEl, dot });
   }
 
+  const geom = { bodyW: 0, bodyH: 0, radius: 0 };
+
   const apply = () => {
     if (!host.isConnected) {
       if (core.isConnected) core.appendChild(host);
       else return;
     }
-    const w = core.offsetWidth || 460;
-    const h = core.offsetHeight || 460;
-    // 只藏星核自己的亮核与米粒画布，保留外围光晕/日冕/光针
     for (const sel of ['.cs-v41', '.cs-nucleus']) {
       for (const layer of core.querySelectorAll(sel)) {
         if (layer.style.display !== 'none') layer.style.display = 'none';
       }
     }
+    const w = core.offsetWidth || 460;
+    geom.bodyW = Math.round(w * 0.66);
+    geom.bodyH = geom.bodyW;
+    geom.radius = w * 0.86;
+    body.style.width = `${geom.bodyW}px`;
+    smoke.style.width = `${Math.round(w * 0.42)}px`;
+    smoke.style.height = `${Math.round(geom.bodyH * 0.62)}px`;
+    smoke.style.bottom = `${Math.round(geom.bodyH * 0.12)}px`;
+    mist[0].style.width = `${Math.round(geom.bodyW * 1.55)}px`;
+    mist[1].style.width = `${Math.round(geom.bodyW * 1.25)}px`;
+    mist[2].style.width = `${Math.round(geom.bodyW * 1.15)}px`;
+    title.style.top = `${Math.round(-geom.bodyH * 0.62)}px`;
+    bar.style.top = `${Math.round(geom.bodyH * 0.6)}px`;
 
-    const bodyW = Math.round(w * 0.66);
-    const bodyH = Math.round(bodyW * 1.0);
-    body.style.width = `${bodyW}px`;
-    const smokeW = Math.round(w * 0.42);
-    smoke.style.width = `${smokeW}px`;
-    smoke.style.height = `${bodyH * 0.62}px`;
-    smoke.style.bottom = `${Math.round(bodyH * 0.10)}px`;
-    const mistW = Math.round(bodyW * 1.55);
-    mistA.style.width = `${mistW}px`;
-    mistA.style.top = `${Math.round(-bodyH * 0.42)}px`;
-    mistB.style.width = `${Math.round(bodyW * 1.25)}px`;
-    mistB.style.top = `${Math.round(bodyH * 0.02)}px`;
-    mistC.style.width = `${Math.round(bodyW * 1.15)}px`;
-    mistC.style.top = `${Math.round(bodyH * 0.28)}px`;
-    title.style.top = `${Math.round(-bodyH * 0.62)}px`;
-    bar.style.top = `${Math.round(bodyH * 0.6)}px`;
-
-    const radius = w * 0.86;
-    const half = Math.ceil(radius) + 120;
+    const half = Math.ceil(geom.radius) + 120;
     svg.setAttribute('width', String(half * 2));
     svg.setAttribute('height', String(half * 2));
     svg.setAttribute('viewBox', `${-half} ${-half} ${half * 2} ${half * 2}`);
@@ -206,16 +174,15 @@ function boot() {
     svg.style.top = `${-half}px`;
     nodes.forEach((node, index) => {
       const angle = -Math.PI / 2 + (index / nodes.length) * Math.PI * 2;
-      const nx = Math.cos(angle) * radius;
-      const ny = Math.sin(angle) * radius * 0.9;
-      node.el.style.transform = `translate(${Math.round(nx)}px, ${Math.round(ny)}px) translate(-50%, -50%)`;
+      const nx = Math.round(Math.cos(angle) * geom.radius);
+      const ny = Math.round(Math.sin(angle) * geom.radius * 0.9);
+      node.el.style.transform = `translate(${nx}px, ${ny}px) translate(-50%, -50%)`;
       lines[index].setAttribute('x1', '0');
       lines[index].setAttribute('y1', '0');
-      lines[index].setAttribute('x2', String(Math.round(nx)));
-      lines[index].setAttribute('y2', String(Math.round(ny)));
+      lines[index].setAttribute('x2', String(nx));
+      lines[index].setAttribute('y2', String(ny));
     });
 
-    // 三簇占位卡藏掉
     for (const name of ['组合', '知识', '交付']) {
       for (const node of document.querySelectorAll(`[aria-label^="${name}"]`)) {
         if (node.dataset.cwHidden !== '1') { node.dataset.cwHidden = '1'; node.style.display = 'none'; }
@@ -224,7 +191,33 @@ function boot() {
   };
 
   apply();
-  const timer = setInterval(apply, 400);
+
+  const t0 = performance.now();
+  const animate = () => {
+    const t = (performance.now() - t0) / 1000;
+    // 鼎身：像星点一样微微沉浮 + 微旋转
+    const bob = Math.sin(t * 0.7) * 5;
+    const rot = Math.sin(t * 0.42) * 0.9;
+    rotator.style.transform = `translate3d(0, ${bob.toFixed(2)}px, 0) rotate(${rot.toFixed(3)}deg)`;
+    // 口沿烟柱：每层独立周期，匀速上浮并淡出
+    puffs.forEach((puff, index) => {
+      const dur = 6.5 + index * 2.2;
+      const phase = ((t + index * 2.1) % dur) / dur;
+      puff.style.opacity = String(Math.max(0, 0.36 * (1 - phase)));
+      puff.style.transform = `translate(-50%, ${(6 - phase * 52).toFixed(2)}%) scale(${(0.9 + phase * 0.24).toFixed(3)})`;
+    });
+    // 绕鼎雾带：两顺一逆，缓慢旋转（鼎身上/中/下各一圈）
+    const drift = [13, -9, 7];
+    const cy = [(-geom.bodyH * 0.42), (geom.bodyH * 0.02), (geom.bodyH * 0.28)];
+    mist.forEach((node, index) => {
+      const deg = (t * drift[index]) % 360;
+      node.style.transform = `translate(0px, ${cy[index]}px) translate(-50%,-50%) rotate(${deg.toFixed(1)}deg)`;
+    });
+    requestAnimationFrame(animate);
+  };
+  requestAnimationFrame(animate);
+
+  const timer = setInterval(apply, 600);
   setTimeout(() => clearInterval(timer), 180000);
 
   fetch('./snapshot.json', { cache: 'no-store' })
