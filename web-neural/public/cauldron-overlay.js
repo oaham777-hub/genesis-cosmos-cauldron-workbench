@@ -1,4 +1,4 @@
-// 造化乾坤鼎：星图看板叠加层 v0.12.0
+// 造化乾坤鼎：星图看板叠加层 v0.12.1
 // 新版水墨鼎（白底已键出透明）缩小放进中间圆球；烟雾改用独立素材图，循环上飘。
 const LAYERS = [
   ['00-router', '总控'],
@@ -43,7 +43,7 @@ function boot() {
   host.appendChild(rotator);
 
   const body = el('img');
-  body.src = './ding-v2-keyed.png';
+  body.src = './ding-v3.png';
   body.alt = '造化乾坤鼎';
   body.style.cssText = 'position:absolute;left:0;top:0;transform:translate(-50%,-50%);pointer-events:none;filter:drop-shadow(0 0 18px rgba(255,180,80,.35))';
   rotator.appendChild(body);
@@ -52,12 +52,22 @@ function boot() {
   const smokes = [];
   for (let i = 0; i < 3; i += 1) {
     const node = el('img', 'cw-smoke');
-    node.src = './smoke-v2-keyed.png';
+    node.src = './smoke-v3.png';
     node.alt = '';
     smokeWrap.appendChild(node);
     smokes.push(node);
   }
   host.appendChild(smokeWrap);
+
+  const rings = [];
+  for (let i = 0; i < 2; i += 1) {
+    const node = el('img');
+    node.src = './smoke-v3.png';
+    node.alt = '';
+    node.style.cssText = 'position:absolute;left:0;top:0;pointer-events:none;filter:blur(6px);opacity:' + (i === 0 ? '.22' : '.15');
+    host.appendChild(node);
+    rings.push(node);
+  }
 
   const title = el('div', 'cw-title', '造化乾坤鼎');
   title.style.cssText = 'position:absolute;left:0;transform:translateX(-50%);color:#f2e2b8;font-size:13px;letter-spacing:.4em;text-indent:.4em;text-shadow:0 0 22px rgba(255,205,120,.42),0 2px 10px rgba(0,0,0,.7);white-space:nowrap;pointer-events:none';
@@ -143,6 +153,8 @@ function boot() {
     smokeWrap.style.top = `${Math.round(-geom.bodyH * 0.95)}px`;
     smokeWrap.style.transform = 'translateX(-50%)';
     smokes.forEach((node) => { node.style.height = `${Math.round(geom.bodyH * 1.15)}px`; });
+    rings[0].style.width = `${Math.round(geom.bodyW * 1.5)}px`;
+    rings[1].style.width = `${Math.round(geom.bodyW * 1.15)}px`;
     title.style.top = `${Math.round(geom.bodyH * 0.42)}px`;
     bar.style.top = `${Math.round(geom.bodyH * 0.68)}px`;
     const half = Math.ceil(geom.radius) + 120;
@@ -180,6 +192,13 @@ function boot() {
         const phase = ((t / dur) + index / 3) % 1;
         node.style.opacity = String(Math.max(0, 0.75 * (1 - phase)));
         node.style.transform = `translate(-50%, ${(28 - phase * 78).toFixed(1)}%) scale(${(0.82 + phase * 0.3).toFixed(3)})`;
+      });
+      rings.forEach((node, index) => {
+        const speed = [10, -7][index];
+        const angle = (t * speed + index * 140) * (Math.PI / 180);
+        const rx = geom.bodyW * [0.62, 0.45][index];
+        const ry = geom.bodyH * [0.1, 0.06][index];
+        node.style.transform = `translate(${(Math.cos(angle) * rx).toFixed(1)}px, ${(Math.sin(angle) * ry + geom.bodyH * 0.02).toFixed(1)}px) translate(-50%,-50%) rotate(${(angle * 180 / Math.PI * 0.4).toFixed(1)}deg)`;
       });
       if (errorText && title.textContent !== errorText) title.textContent = errorText;
     } catch (error) {

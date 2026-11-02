@@ -1,0 +1,31 @@
+﻿vite v7.3.7 building client environment for production...
+transforming...
+✓ 39 modules transformed.
+node : ✗ Build failed in 514ms
+所在位置 行:1 字符: 159
++ ... 作台\web-neural'; node node_modules/vite/bin/vite.js build 2>&1 | Out-F ...
++                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (✗ Build failed in 514ms:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+error during build:
+[vite:prepare-out-dir] EPERM, Permission denied: \\?\D:\Ôì»¯Ç¬À¤¶¦-¹¤×÷Ì¨\web-neural\dist\ding-v2.png 
+'\\?\D:\�컯Ǭ����-����̨\web-neural\dist\ding-v2.png'
+    at Object.rmSync (node:fs:1222:18)
+    at emptyDir (file:///D:/%E9%80%A0%E5%8C%96%E4%B9%BE%E5%9D%A4%E9%BC%8E-%E5%B7%A5%E4%BD%9C%E5%8F%B0/web-neural/node_m
+odules/.pnpm/vite@7.3.7/node_modules/vite/dist/node/chunks/config.js:2167:11)
+    at prepareOutDir (file:///D:/%E9%80%A0%E5%8C%96%E4%B9%BE%E5%9D%A4%E9%BC%8E-%E5%B7%A5%E4%BD%9C%E5%8F%B0/web-neural/n
+ode_modules/.pnpm/vite@7.3.7/node_modules/vite/dist/node/chunks/config.js:33576:55)
+    at Object.handler (file:///D:/%E9%80%A0%E5%8C%96%E4%B9%BE%E5%9D%A4%E9%BC%8E-%E5%B7%A5%E4%BD%9C%E5%8F%B0/web-neural/
+node_modules/.pnpm/vite@7.3.7/node_modules/vite/dist/node/chunks/config.js:33566:6)
+    at Object.handler (file:///D:/%E9%80%A0%E5%8C%96%E4%B9%BE%E5%9D%A4%E9%BC%8E-%E5%B7%A5%E4%BD%9C%E5%8F%B0/web-neural/
+node_modules/.pnpm/vite@7.3.7/node_modules/vite/dist/node/chunks/config.js:33994:13)
+    at file:///D:/%E9%80%A0%E5%8C%96%E4%B9%BE%E5%9D%A4%E9%BC%8E-%E5%B7%A5%E4%BD%9C%E5%8F%B0/web-neural/node_modules/.pn
+pm/rollup@4.67.4/node_modules/rollup/dist/es/shared/node-entry.js:24026:40
+    at async Promise.all (index 0)
+    at async PluginDriver.hookParallel (file:///D:/%E9%80%A0%E5%8C%96%E4%B9%BE%E5%9D%A4%E9%BC%8E-%E5%B7%A5%E4%BD%9C%E5%
+8F%B0/web-neural/node_modules/.pnpm/rollup@4.67.4/node_modules/rollup/dist/es/shared/node-entry.js:23936:9)
+    at async Bundle.generate (file:///D:/%E9%80%A0%E5%8C%96%E4%B9%BE%E5%9D%A4%E9%BC%8E-%E5%B7%A5%E4%BD%9C%E5%8F%B0/web-
+neural/node_modules/.pnpm/rollup@4.67.4/node_modules/rollup/dist/es/shared/node-entry.js:22047:13)
+    at async file:///D:/%E9%80%A0%E5%8C%96%E4%B9%BE%E5%9D%A4%E9%BC%8E-%E5%B7%A5%E4%BD%9C%E5%8F%B0/web-neural/node_modul
+es/.pnpm/rollup@4.67.4/node_modules/rollup/dist/es/shared/node-entry.js:25012:27

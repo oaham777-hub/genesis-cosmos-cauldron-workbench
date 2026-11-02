@@ -81,7 +81,8 @@ export function apply(ctx, config) {
   try {
     const here = path.dirname(fileURLToPath(import.meta.url));
     const fedDir = path.join(here, '..', 'web', 'fed');
-    const neuralDir = path.join(here, '..', 'web-neural', 'dist');
+    const distCandidate = path.join(here, '..', 'web-neural', 'dist-actual');
+    const neuralDir = fs.existsSync(distCandidate) ? distCandidate : path.join(here, '..', 'web-neural', 'dist');
     const MIME = {
       '.html': 'text/html; charset=utf-8',
       '.js': 'text/javascript; charset=utf-8',
