@@ -76,6 +76,23 @@ async function boot() {
   } catch (error) {
     hud.textContent = `快照不可用：${error?.message ?? error}`;
   }
+
+  // 三个占位簇：保留星空造型，但灰化、降透明，明确“暂未启用”
+  const dimPlaceholders = () => {
+    let hit = 0;
+    for (const name of ['组合', '知识', '交付']) {
+      for (const node of document.querySelectorAll(`[aria-label^="${name}"]`)) {
+        if (node.dataset.cwDim === '1') { hit += 1; continue; }
+        node.dataset.cwDim = '1';
+        node.style.filter = 'grayscale(1) brightness(.5)';
+        node.style.opacity = '.34';
+        hit += 1;
+      }
+    }
+    return hit;
+  };
+  const timer = setInterval(() => { if (dimPlaceholders() >= 3) clearInterval(timer); }, 700);
+  setTimeout(() => clearInterval(timer), 12000);
 }
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
