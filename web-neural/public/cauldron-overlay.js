@@ -38,12 +38,15 @@ function boot() {
     @keyframes cwPuff { 0%   { opacity:.34; transform: translate(-50%, 8%) scale(.92); }
                         55%  { opacity:.26; }
                         100% { opacity:0;   transform: translate(-50%, -46%) scale(1.14); } }
-    #cw-overlay .cw-puff { position:absolute; left:50%; bottom:0; width:100%; height:200%; transform:translate(-50%,8%); background-repeat:no-repeat; background-position:50% 100%; background-size:100% auto; animation:cwPuff 7.5s linear infinite; }
+    #cw-overlay .cw-puff { position:absolute; left:50%; bottom:0; width:78%; height:180%; transform:translate(-50%,6%); background-repeat:no-repeat; background-position:50% 100%; background-size:100% auto; animation:cwPuff 7.5s linear infinite; }
     #cw-overlay .cw-puff:nth-child(2) { animation-duration:10s; animation-delay:-2.6s; opacity:.5; filter:blur(.6px); }
     #cw-overlay .cw-puff:nth-child(3) { animation-duration:12.5s; animation-delay:-5.2s; opacity:.36; filter:blur(1.4px); }
     #cw-overlay .cw-smoke { -webkit-mask-image: linear-gradient(to top, transparent 0%, rgba(0,0,0,.2) 8%, rgba(0,0,0,.75) 28%, #000 62%);
                             mask-image: linear-gradient(to top, transparent 0%, rgba(0,0,0,.2) 8%, rgba(0,0,0,.75) 28%, #000 62%); }
-    @media (prefers-reduced-motion: reduce) { #cw-overlay .cw-rotator, #cw-overlay .cw-puff { animation: none; } }
+    @keyframes cwDriftA { from { transform: translate(-50%,-50%) rotate(0deg); } to { transform: translate(-50%,-50%) rotate(360deg); } }
+    @keyframes cwDriftB { from { transform: translate(-50%,-50%) rotate(0deg) scale(1.06); } to { transform: translate(-50%,-50%) rotate(-360deg) scale(1.06); } }
+    #cw-overlay .cw-mist { position:absolute; left:0; top:0; pointer-events:none; mix-blend-mode:screen; opacity:.16; filter:blur(7px); }
+    @media (prefers-reduced-motion: reduce) { #cw-overlay .cw-rotator, #cw-overlay .cw-puff, #cw-overlay .cw-mist { animation: none; } }
   `;
   document.head.appendChild(style);
 
@@ -62,11 +65,26 @@ function boot() {
   body.style.cssText = 'position:absolute;left:0;top:0;transform:translate(-50%,-50%);pointer-events:none;mix-blend-mode:screen;filter:drop-shadow(0 0 24px rgba(255,190,90,.28))';
   rotator.appendChild(body);
 
+  const mistA = el('img');
+  mistA.src = './ding-mist.png';
+  mistA.alt = '';
+  mistA.className = 'cw-mist';
+  mistA.style.animation = 'cwDriftA 26s linear infinite';
+  host.appendChild(mistA);
+
+  const mistB = el('img');
+  mistB.src = './ding-mist.png';
+  mistB.alt = '';
+  mistB.className = 'cw-mist';
+  mistB.style.animation = 'cwDriftB 34s linear infinite';
+  mistB.style.opacity = '.11';
+  host.appendChild(mistB);
+
   const smoke = el('div', 'cw-smoke');
   smoke.style.cssText = 'position:absolute;left:0;pointer-events:none;mix-blend-mode:screen;overflow:hidden';
   for (let i = 0; i < 3; i += 1) {
     const puff = el('div', 'cw-puff');
-    puff.style.backgroundImage = 'url(./ding-smoke.png)';
+    puff.style.backgroundImage = 'url(./ding-plume.png)';
     smoke.appendChild(puff);
   }
   host.appendChild(smoke);
@@ -147,8 +165,8 @@ function boot() {
     }
     const w = core.offsetWidth || 460;
     const h = core.offsetHeight || 460;
-    // 只藏星核自己的发光图层，保留核心盒子与父级布局
-    for (const sel of ['.cs-halo', '.cs-flare', '.cs-v41', '.cs-dust', '.cs-corona', '.cs-nucleus', '.cs-rays']) {
+    // 只藏星核自己的亮核与米粒画布，保留外围光晕/日冕/光针
+    for (const sel of ['.cs-v41', '.cs-nucleus']) {
       for (const layer of core.querySelectorAll(sel)) {
         if (layer.style.display !== 'none') layer.style.display = 'none';
       }
@@ -157,10 +175,15 @@ function boot() {
     const bodyW = Math.round(w * 0.66);
     const bodyH = Math.round(bodyW * 0.70);
     body.style.width = `${bodyW}px`;
-    const smokeW = Math.round(w * 0.46);
+    const smokeW = Math.round(w * 0.42);
     smoke.style.width = `${smokeW}px`;
-    smoke.style.height = `${bodyH * 1.1}px`;
-    smoke.style.bottom = `${Math.round(bodyH * 0.14)}px`;
+    smoke.style.height = `${bodyH * 0.95}px`;
+    smoke.style.bottom = `${Math.round(bodyH * 0.20)}px`;
+    const mistW = Math.round(bodyW * 1.5);
+    for (const node of [mistA, mistB]) {
+      node.style.width = `${mistW}px`;
+      node.style.top = `${Math.round(-bodyH * 0.62)}px`;
+    }
     title.style.top = `${Math.round(-bodyH * 0.8)}px`;
     bar.style.top = `${Math.round(bodyH * 0.52)}px`;
 
