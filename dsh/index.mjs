@@ -81,10 +81,8 @@ export function apply(ctx, config) {
   try {
     const here = path.dirname(fileURLToPath(import.meta.url));
     const fedDir = path.join(here, '..', 'web', 'fed');
-    const webRoot = path.join(here, '..', 'web-neural');
-    let current = 'dist';
-    try { current = readFileSync(path.join(webRoot, 'dist-current.txt'), 'utf8').trim() || 'dist'; } catch { /* fallback */ }
-    const neuralDir = path.join(webRoot, existsSync(path.join(webRoot, current)) ? current : 'dist');
+    const distCandidate = path.join(here, '..', 'web-neural', 'dist-actual');
+    const neuralDir = existsSync(distCandidate) ? distCandidate : path.join(here, '..', 'web-neural', 'dist');
     const MIME = {
       '.html': 'text/html; charset=utf-8',
       '.js': 'text/javascript; charset=utf-8',
