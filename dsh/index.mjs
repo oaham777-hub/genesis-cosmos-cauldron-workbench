@@ -77,6 +77,19 @@ export function apply(ctx, config) {
   try {
     const here = path.dirname(fileURLToPath(import.meta.url));
     const fedDir = path.join(here, '..', 'web', 'fed');
+    const neuralHtml = path.join(here, '..', 'web-neural', 'dist', 'index.html');
+    ctx.connection.fetch.register({
+      path: `${API}/fed/neural`,
+      methods: ['GET'],
+      requestBody: 'buffered',
+      async fetch() {
+        const html = readFileSync(neuralHtml, 'utf8');
+        return new Response(html, {
+          status: 200,
+          headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' },
+        });
+      },
+    });
     ctx.connection.fetch.register({
       path: `${API}/fed/agent-display`,
       methods: ['GET'],
