@@ -1,4 +1,4 @@
-// 造化乾坤鼎：星图看板叠加层 v0.11.3
+// 造化乾坤鼎：星图看板叠加层 v0.11.4
 // 1) 挂到 document.body 用 fixed 定位，每帧跟随星核位置（不受 React 重渲染影响）。
 // 2) 动效全部在 requestAnimationFrame 里算；任何异常写到标题上，方便截图定位。
 // 3) 底部加一颗"心跳点"：它在闪 = JS 循环确实在跑。
@@ -47,7 +47,7 @@ function boot() {
   host.appendChild(rotator);
 
   const body = el('img');
-  body.src = './ding-ink.png';
+  body.src = './ding-clean.png';
   body.alt = '造化乾坤鼎';
   body.style.cssText = 'position:absolute;left:0;top:0;transform:translate(-50%,-50%);mix-blend-mode:screen;filter:drop-shadow(0 0 24px rgba(255,190,90,.28))';
   rotator.appendChild(body);
@@ -61,6 +61,17 @@ function boot() {
     node.style.filter = 'blur(7px)';
     host.appendChild(node);
     mist.push(node);
+  }
+
+  const wisps = [];
+  for (let i = 0; i < 2; i += 1) {
+    const node = el('img', 'cw-mist');
+    node.src = './ding-plume.png';
+    node.alt = '';
+    node.style.opacity = ['0.34', '0.25'][i];
+    node.style.filter = 'blur(3px)';
+    host.appendChild(node);
+    wisps.push(node);
   }
 
   const smoke = el('div', 'cw-smoke');
@@ -159,6 +170,8 @@ function boot() {
     mist[0].style.width = `${Math.round(geom.bodyW * 1.55)}px`;
     mist[1].style.width = `${Math.round(geom.bodyW * 1.25)}px`;
     mist[2].style.width = `${Math.round(geom.bodyW * 1.15)}px`;
+    wisps[0].style.width = `${Math.round(geom.bodyW * 0.95)}px`;
+    wisps[1].style.width = `${Math.round(geom.bodyW * 0.8)}px`;
     title.style.top = `${Math.round(-geom.bodyH * 0.62)}px`;
     bar.style.top = `${Math.round(geom.bodyH * 0.6)}px`;
     const half = Math.ceil(geom.radius) + 120;
@@ -202,6 +215,13 @@ function boot() {
       mist.forEach((node, index) => {
         const deg = (t * drift[index]) % 360;
         node.style.transform = `translate(0px, ${cy[index]}px) translate(-50%,-50%) rotate(${deg.toFixed(1)}deg)`;
+      });
+      wisps.forEach((node, index) => {
+        const speed = [11, -8][index];
+        const angle = (t * speed + index * 180) * (Math.PI / 180);
+        const rx = geom.bodyW * 0.55;
+        const ry = geom.bodyH * 0.16;
+        node.style.transform = `translate(${(Math.cos(angle) * rx).toFixed(1)}px, ${(Math.sin(angle) * ry + geom.bodyH * 0.05).toFixed(1)}px) translate(-50%,-50%) rotate(${(angle * 180 / Math.PI).toFixed(1)}deg)`;
       });
       if (errorText && title.textContent !== errorText) title.textContent = errorText;
     } catch (error) {
