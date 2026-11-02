@@ -1,13 +1,33 @@
 {
   "name": "cauldron-workbench",
   "version": "0.1.0",
-  "description": "造化乾坤鼎 DSH 原生工作台：结构化阅读生态，不替代对话。",
+  "description": "造化乾坤鼎 DSH 原生工作台：只读查看引擎 / 产品 / 组合的三级生态快照。",
   "type": "module",
-  "main": "./src/index.js",
+  "main": "./dsh/index.mjs",
   "exports": {
-    ".": "./src/index.js",
-    "./client": "./web/app.js",
-    "./package.json": "./package.json"
+    ".": "./dsh/index.mjs",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json",
+    "./cordis.patch.yml": "./cordis.patch.yml"
+  },
+  "files": [
+    "dsh",
+    "lib",
+    "src",
+    "web",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "scripts": {
+    "check": "node --check dsh/index.mjs && node --check lib/client.js && node --check src/snapshot.mjs && node --check server.mjs",
+    "test": "node --test test/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": ">=4.0.1 <5.0.0-0",
+    "@deepseek-ai/schemastery": ">=3.18.2 <4.0.0-0"
   },
   "dsh": {
     "bundle": {
@@ -16,23 +36,12 @@
     "client": {
       "platform": "web",
       "inject": [
-        "@deepseek-ai/dsh-client-locale",
-        "@deepseek-ai/dsh-client-ui-slots",
-        "@deepseek-ai/dsh-client-ui-sidebar-right"
+        "dsh-desktop-workbenches",
+        "@deepseek-ai/dsh-api-session-controller",
+        "@deepseek-ai/dsh-api-workspace-controller",
+        "@deepseek-ai/dsh-client-ui-workspace"
       ]
     }
-  },
-  "files": [
-    "src",
-    "web",
-    "cordis.patch.yml",
-    "README.md"
-  ],
-  "scripts": {
-    "check": "node --check web/app.js && node --check src/index.js"
-  },
-  "engines": {
-    "node": ">=20"
   },
   "license": "MIT"
 }

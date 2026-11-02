@@ -1,11 +1,13 @@
-# 造化乾坤鼎 · 工作台插件（cordis patch）
-
-# 宿主侧入口：只注册只读快照服务，不写任何文件。
+# 造化乾坤鼎 · 工作台（cordis patch）
+#
+# 宿主侧：dsh/index.mjs 注册只读路由 GET /api/cauldron-workbench/snapshot。
+# products 里填产品定义文件（绝对路径或相对工作区），例如 D:\乾坤鼎\qiankunding.product.json。
+# 当前留空：安装后在工作台设置里填一个产品路径即可显示真实快照。
 - insert:
     - id: cauldron-workbench
       name: cauldron-workbench
-
-# 客户端侧入口在 package.json 的 dsh.client 中声明：
-#   platform: web
-#   inject: locale / ui-slots / ui-sidebar-right
-# 客户端入口文件：web/app.js（当前为独立静态页；接入 DSH 时由宿主加载并挂到 sidebar-right 插槽）。
+      config:
+        engineBin: node
+        engineScript: core/bin/zhaohua.mjs
+        products: []
+        cacheMs: 5000
