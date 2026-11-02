@@ -29,7 +29,7 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 function boot() {
   if (document.getElementById('cw-overlay')) return;
   const core = document.querySelector('.core-star');
-  if (!core || !core.parentElement) return;
+  if (!core || !core.parentElement) { setTimeout(boot, 300); return; }
   const parent = core.parentElement;
 
   const style = document.createElement('style');
