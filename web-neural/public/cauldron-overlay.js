@@ -1,7 +1,5 @@
-// 造化乾坤鼎：星图看板叠加层 v0.11.4
-// 1) 挂到 document.body 用 fixed 定位，每帧跟随星核位置（不受 React 重渲染影响）。
-// 2) 动效全部在 requestAnimationFrame 里算；任何异常写到标题上，方便截图定位。
-// 3) 底部加一颗"心跳点"：它在闪 = JS 循环确实在跑。
+// 造化乾坤鼎：星图看板叠加层 v0.12.0
+// 新版水墨鼎（白底已键出透明）缩小放进中间圆球；烟雾改用独立素材图，循环上飘。
 const LAYERS = [
   ['00-router', '总控'],
   ['01-story', '故事'],
@@ -31,11 +29,9 @@ function boot() {
   const style = document.createElement('style');
   style.textContent = `
     #cw-host { position:fixed; left:0; top:0; width:0; height:0; pointer-events:none; z-index:60; }
-    #cw-host .cw-mist { position:absolute; left:0; top:0; pointer-events:none; mix-blend-mode:screen; will-change:transform; }
-    #cw-host .cw-puff { position:absolute; left:50%; bottom:0; width:80%; height:185%; background-repeat:no-repeat; background-position:50% 100%; background-size:100% auto; will-change:transform,opacity; }
-    #cw-host .cw-smoke { -webkit-mask-image: linear-gradient(to top, transparent 0%, rgba(0,0,0,.2) 8%, rgba(0,0,0,.78) 28%, #000 62%);
-                          mask-image: linear-gradient(to top, transparent 0%, rgba(0,0,0,.2) 8%, rgba(0,0,0,.78) 28%, #000 62%); }
     #cw-host .cw-rotator { position:absolute; left:0; top:0; width:0; height:0; will-change:transform; }
+    #cw-host .cw-smoke-wrap { position:absolute; left:0; overflow:hidden; pointer-events:none; }
+    #cw-host .cw-smoke { position:absolute; left:50%; bottom:0; width:100%; transform-origin:50% 100%; will-change:transform,opacity; }
   `;
   document.head.appendChild(style);
 
@@ -47,43 +43,21 @@ function boot() {
   host.appendChild(rotator);
 
   const body = el('img');
-  body.src = './ding-clean.png';
+  body.src = './ding-v2-keyed.png';
   body.alt = '造化乾坤鼎';
-  body.style.cssText = 'position:absolute;left:0;top:0;transform:translate(-50%,-50%);mix-blend-mode:screen;filter:drop-shadow(0 0 24px rgba(255,190,90,.28))';
+  body.style.cssText = 'position:absolute;left:0;top:0;transform:translate(-50%,-50%);pointer-events:none;filter:drop-shadow(0 0 18px rgba(255,180,80,.35))';
   rotator.appendChild(body);
 
-  const mist = [];
+  const smokeWrap = el('div', 'cw-smoke-wrap');
+  const smokes = [];
   for (let i = 0; i < 3; i += 1) {
-    const node = el('img', 'cw-mist');
-    node.src = './ding-mist.png';
+    const node = el('img', 'cw-smoke');
+    node.src = './smoke-v2-keyed.png';
     node.alt = '';
-    node.style.opacity = ['.16', '.11', '.15'][i];
-    node.style.filter = 'blur(7px)';
-    host.appendChild(node);
-    mist.push(node);
+    smokeWrap.appendChild(node);
+    smokes.push(node);
   }
-
-  const wisps = [];
-  for (let i = 0; i < 2; i += 1) {
-    const node = el('img', 'cw-mist');
-    node.src = './ding-plume.png';
-    node.alt = '';
-    node.style.opacity = ['0.34', '0.25'][i];
-    node.style.filter = 'blur(3px)';
-    host.appendChild(node);
-    wisps.push(node);
-  }
-
-  const smoke = el('div', 'cw-smoke');
-  smoke.style.cssText = 'position:absolute;left:0;mix-blend-mode:screen;overflow:hidden';
-  const puffs = [];
-  for (let i = 0; i < 3; i += 1) {
-    const puff = el('div', 'cw-puff');
-    puff.style.backgroundImage = 'url(./ding-plume.png)';
-    smoke.appendChild(puff);
-    puffs.push(puff);
-  }
-  host.appendChild(smoke);
+  host.appendChild(smokeWrap);
 
   const title = el('div', 'cw-title', '造化乾坤鼎');
   title.style.cssText = 'position:absolute;left:0;transform:translateX(-50%);color:#f2e2b8;font-size:13px;letter-spacing:.4em;text-indent:.4em;text-shadow:0 0 22px rgba(255,205,120,.42),0 2px 10px rgba(0,0,0,.7);white-space:nowrap;pointer-events:none';
@@ -142,7 +116,6 @@ function boot() {
     label.style.cssText = 'color:#e8d9b4;font-size:11px;letter-spacing:.14em;text-shadow:0 0 12px rgba(255,200,120,.35),0 1px 6px rgba(0,0,0,.8);opacity:.85';
     nodeEl.append(dot, label);
     nodeEl.title = `${zh} · ${id}`;
-    nodeEl.style.pointerEvents = 'auto';
     nodeEl.addEventListener('click', (event) => { event.preventDefault(); select.value = id; nodes.forEach((n) => { n.dot.style.background = '#ffe1a0'; }); dot.style.background = '#fff6dc'; });
     nodeEl.addEventListener('dblclick', (event) => { event.preventDefault(); select.value = id; fire(); });
     host.appendChild(nodeEl);
@@ -161,19 +134,17 @@ function boot() {
 
   const layout = (rect) => {
     const w = rect.width || 460;
-    geom = { w, bodyW: Math.round(w * 0.66), bodyH: Math.round(w * 0.66), radius: w * 0.86 };
+    // 鼎收进中间圆球：直径取星核宽度的 42%
+    geom = { w, bodyW: Math.round(w * 0.42), bodyH: Math.round(w * 0.42), radius: w * 0.86 };
     body.style.width = `${geom.bodyW}px`;
-    smoke.style.width = `${Math.round(w * 0.42)}px`;
-    smoke.style.height = `${Math.round(geom.bodyH * 0.62)}px`;
-    smoke.style.bottom = `${Math.round(-geom.bodyH * 0.62)}px`;
-    smoke.style.transform = 'translateX(-50%)';
-    mist[0].style.width = `${Math.round(geom.bodyW * 1.55)}px`;
-    mist[1].style.width = `${Math.round(geom.bodyW * 1.25)}px`;
-    mist[2].style.width = `${Math.round(geom.bodyW * 1.15)}px`;
-    wisps[0].style.width = `${Math.round(geom.bodyW * 0.95)}px`;
-    wisps[1].style.width = `${Math.round(geom.bodyW * 0.8)}px`;
-    title.style.top = `${Math.round(-geom.bodyH * 0.62)}px`;
-    bar.style.top = `${Math.round(geom.bodyH * 0.6)}px`;
+    const smokeW = Math.round(w * 0.17);
+    smokeWrap.style.width = `${smokeW}px`;
+    smokeWrap.style.height = `${Math.round(geom.bodyH * 1.15)}px`;
+    smokeWrap.style.top = `${Math.round(-geom.bodyH * 0.95)}px`;
+    smokeWrap.style.transform = 'translateX(-50%)';
+    smokes.forEach((node) => { node.style.height = `${Math.round(geom.bodyH * 1.15)}px`; });
+    title.style.top = `${Math.round(geom.bodyH * 0.42)}px`;
+    bar.style.top = `${Math.round(geom.bodyH * 0.68)}px`;
     const half = Math.ceil(geom.radius) + 120;
     svg.setAttribute('width', String(half * 2));
     svg.setAttribute('height', String(half * 2));
@@ -198,30 +169,17 @@ function boot() {
       const t = (performance.now() - t0) / 1000;
       const rect = measure();
       if (rect && Math.abs((rect.width || 0) - geom.w) > 1) layout(rect);
-      if (Math.abs(Math.abs(t % 2) - 1) > 0.94) beat.style.opacity = '.25'; else beat.style.opacity = '1';
-      beat.style.left = `${Math.round(geom.radius * 0.55)}px`;
-      beat.style.top = `${Math.round(geom.bodyH * 0.62)}px`;
-      const bob = Math.sin(t * 0.9) * 6;
-      const rot = Math.sin(t * 0.5) * 1.1;
+      beat.style.opacity = Math.abs(t % 1.2) < 0.3 ? '1' : '.2';
+      beat.style.left = `${Math.round(geom.radius * 0.5)}px`;
+      beat.style.top = `${Math.round(geom.bodyH * 0.7)}px`;
+      const bob = Math.sin(t * 0.9) * 4;
+      const rot = Math.sin(t * 0.5) * 0.9;
       rotator.style.transform = `translate3d(0, ${bob.toFixed(2)}px, 0) rotate(${rot.toFixed(3)}deg)`;
-      puffs.forEach((puff, index) => {
-        const dur = 5.5 + index * 1.8;
-        const phase = ((t * 1.35 + index * 1.9) % dur) / dur;
-        puff.style.opacity = String(Math.max(0, 0.4 * (1 - phase)));
-        puff.style.transform = `translate(-50%, ${(8 - phase * 55).toFixed(2)}%) scale(${(0.9 + phase * 0.26).toFixed(3)})`;
-      });
-      const drift = [16, -12, 9];
-      const cy = [-geom.bodyH * 0.42, geom.bodyH * 0.02, geom.bodyH * 0.3];
-      mist.forEach((node, index) => {
-        const deg = (t * drift[index]) % 360;
-        node.style.transform = `translate(0px, ${cy[index]}px) translate(-50%,-50%) rotate(${deg.toFixed(1)}deg)`;
-      });
-      wisps.forEach((node, index) => {
-        const speed = [11, -8][index];
-        const angle = (t * speed + index * 180) * (Math.PI / 180);
-        const rx = geom.bodyW * 0.55;
-        const ry = geom.bodyH * 0.16;
-        node.style.transform = `translate(${(Math.cos(angle) * rx).toFixed(1)}px, ${(Math.sin(angle) * ry + geom.bodyH * 0.05).toFixed(1)}px) translate(-50%,-50%) rotate(${(angle * 180 / Math.PI).toFixed(1)}deg)`;
+      smokes.forEach((node, index) => {
+        const dur = 4.6 + index * 1.5;
+        const phase = ((t / dur) + index / 3) % 1;
+        node.style.opacity = String(Math.max(0, 0.75 * (1 - phase)));
+        node.style.transform = `translate(-50%, ${(28 - phase * 78).toFixed(1)}%) scale(${(0.82 + phase * 0.3).toFixed(3)})`;
       });
       if (errorText && title.textContent !== errorText) title.textContent = errorText;
     } catch (error) {

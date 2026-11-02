@@ -1,6 +1,6 @@
 {
   "name": "cauldron-workbench",
-  "version": "0.11.4",
+  "version": "0.12.0",
   "description": "造化乾坤鼎 · DSH 原生工作台插件：只读查看引擎 / 产品 / 组合的三级生态快照。",
   "type": "module",
   "main": "./dsh/index.mjs",
