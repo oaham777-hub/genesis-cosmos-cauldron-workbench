@@ -1,7 +1,7 @@
 {
   "name": "cauldron-workbench",
-  "version": "0.7.0",
-  "description": "造化乾坤鼎 DSH 原生工作台：只读查看引擎 / 产品 / 组合的三级生态快照。",
+  "version": "0.9.0",
+  "description": "造化乾坤鼎 · DSH 原生工作台插件：只读查看引擎 / 产品 / 组合的三级生态快照。",
   "type": "module",
   "main": "./dsh/index.mjs",
   "exports": {
@@ -19,10 +19,6 @@
     "README.md",
     "web-neural/dist"
   ],
-  "scripts": {
-    "check": "node --check dsh/index.mjs && node --check lib/client.js && node --check src/snapshot.mjs && node --check server.mjs",
-    "test": "node --test test/*.test.mjs"
-  },
   "engines": {
     "node": ">=20"
   },
@@ -44,5 +40,9 @@
       ]
     }
   },
-  "license": "MIT"
+  "license": "MIT",
+  "scripts": {
+    "check": "node --check dsh/index.mjs && node --check lib/client.js && node --check src/snapshot.mjs && node --check server.mjs",
+    "test": "node --test test/*.test.mjs"
+  }
 }
