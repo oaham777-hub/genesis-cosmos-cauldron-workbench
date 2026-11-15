@@ -34,9 +34,22 @@ await new Promise((res, rej) => { ws.onopen = res; ws.onerror = rej; });
 
 let id = 0;
 const pending = new Map();
+const logs = [];
 ws.onmessage = (m) => {
   const d = JSON.parse(m.data);
-  if (d.id && pending.has(d.id)) { pending.get(d.id)(d); pending.delete(d.id); }
+  if (d.id && pending.has(d.id)) { pending.get(d.id)(d); pending.delete(d.id); return; }
+  if (d.method === 'Runtime.consoleAPICalled') {
+    const a = (d.params.args || []).map(x => x.value !== undefined ? String(x.value) : (x.description || x.type)).join(' ');
+    logs.push('[console.' + d.params.type + '] ' + a);
+  }
+  if (d.method === 'Runtime.exceptionThrown') {
+    const ex = d.params.exceptionDetails || {};
+    logs.push('[exception] ' + (ex.exception && (ex.exception.description || ex.exception.value) || ex.text) + ' @' + (ex.url || '') + ':' + (ex.lineNumber !== undefined ? ex.lineNumber + 1 : ''));
+  }
+  if (d.method === 'Log.entryAdded') {
+    const e = d.params.entry || {};
+    logs.push('[log.' + e.level + '] ' + e.text + (e.url ? ' @' + e.url : ''));
+  }
 };
 function send(method, params = {}) {
   const msgId = ++id;
@@ -48,9 +61,12 @@ function send(method, params = {}) {
 
 await send('Page.enable');
 await send('Runtime.enable');
+await send('Log.enable', {});
 await send('Emulation.setDeviceMetricsOverride', { width: W, height: H, deviceScaleFactor: 1, mobile: false });
 await send('Page.navigate', { url });
 await new Promise(r => setTimeout(r, waitMs));
+
+if (logs.length) console.error('--- 页面控制台 ---\n' + logs.slice(-25).join('\n'));
 
 const shot = await send('Page.captureScreenshot', { format: 'png' });
 if (!shot.result || !shot.result.data) {

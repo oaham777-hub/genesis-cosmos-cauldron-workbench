@@ -7,6 +7,7 @@
   const STATE_CN = { ok: '生效', orphan: '未引用', update: '可更新', branch: '已分叉', local: '本地已改' };
   const STATE_CLS = { ok: 'ok', orphan: 'mute', update: 'warn', branch: 'bad', local: 'warn' };
   let SRC_CACHE = [];
+  let curSel = null;
   const DRILL = 'D:\\造化乾坤鼎-工作台\\patch\\sources\\_sim';
   let drillOn = new URLSearchParams(location.search).get('drill') === '1';
   const qs = (extra) => (drillOn ? extra + '&srcRoot=' + encodeURIComponent(DRILL) : extra);
@@ -81,6 +82,7 @@
     }).join('');
     box.innerHTML = '<h3>' + r.skill + ' · 外来件明细</h3><div class="sub">每个文件头都有一条来源戳：戳在，就说明它从哪来、第几批进来的。可更新=拉新版；已分叉=先看差异，再决定保留本地还是强行覆盖</div>' +
       '<table><thead><tr><th>文件</th><th>层</th><th>来源</th><th>状态</th><th>当前 sha</th><th>处置</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+      '<div class="dz-diff" id="dz-diffbox"></div>' +
       '';
     curSel = r;
     const firstTrouble = r.entries.find(function (e) { return e.state === 'update' || e.state === 'branch'; });

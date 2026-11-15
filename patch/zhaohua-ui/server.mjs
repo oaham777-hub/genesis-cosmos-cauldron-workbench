@@ -269,7 +269,7 @@ const server = Bun.serve({
       if (url.pathname === '/history') {
         const since = Math.max(0, Number(url.searchParams.get('since') || 0));
         return new Response(JSON.stringify({ ok: true, seq: EV_SEQ, events: EVENTS.filter((e) => e.seq > since) }), {
-          headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' },
+          headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'Access-Control-Allow-Origin': '*' },
         });
       }
 
