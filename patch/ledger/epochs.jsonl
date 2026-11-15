@@ -5,3 +5,7 @@
 {"epoch":5,"ts":"2026-11-15T13:28:19.914Z","label":"补缺（文件）：film-cinedance/h3-six-block.md ← skills/06-prompt/references/h3-full-reference-six-block.md","files":1}
 {"epoch":6,"ts":"2026-11-15T13:28:36.601Z","label":"补缺（文件）：film-cinedance/h3-six-block.md ← skills/06-prompt/references/h3-full-reference-six-block.md","files":1}
 {"epoch":7,"ts":"2026-11-15T13:31:03.515Z","label":"补缺（文件）：film-shotlist/take-and-loop-design.md ← skills/04-shotlist/references/take-and-loop-design.md","files":1}
+{"epoch":8,"ts":"2026-11-15T13:34:50.872Z","label":"融合产物：fuse-probe ← film-synopsis,film-treatment","files":7,"kind":"fuse","sandbox":"fused/fuse-probe"}
+{"epoch":9,"ts":"2026-11-15T13:37:34.667Z","label":"收编：沙盒 probe-merge → 技能 probe-merge","files":13,"kind":"adopt"}
+{"epoch":10,"ts":"2026-11-15T13:38:12.066Z","label":"融合产物：probe-merge2 ← film-acting,film-shotlist","files":13,"kind":"create","sandbox":"fused/probe-merge2"}
+{"epoch":11,"ts":"2026-11-15T13:38:12.224Z","label":"收编：沙盒 probe-merge2 → 技能 probe-merge2","files":13,"kind":"adopt"}

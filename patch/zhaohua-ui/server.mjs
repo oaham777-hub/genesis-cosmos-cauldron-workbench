@@ -588,7 +588,9 @@ const server = Bun.serve({
         } catch {
           parsed = null;
         }
+        const rec = existsSync(out + '\\SKILL.md') ? await runDistill(['fuse-record', '--dir', out, '--name', name, '--kind', 'create', '--inputs', sources.join(',')]) : null;
         return reply({
+          recorded: rec,
           ok: r.exitCode === 0,
           exitCode: r.exitCode,
           durationMs: r.durationMs,
@@ -631,7 +633,10 @@ const server = Bun.serve({
         }
         mkdirSync(dirname(out), { recursive: true });
         const r = await runCli(['fuse-skill', baseDir, otherDir, '--out', out], 900000, { QKD_MODEL_API_KEY: key });
+        const rec = existsSync(out + '\\SKILL.md') ? await runDistill(['fuse-record', '--dir', out, '--name', base, '--kind', 'fuse', '--inputs', base + ',' + other]) : null;
         return reply({
+          recorded: rec,
+          adoptHint: existsSync(out + '\\SKILL.md') ? '产物还在沙盒：要进鼎点「收编进鼎」（带 confirm=yes 调 /adopt）' : null,
           ok: r.exitCode === 0,
           exitCode: r.exitCode,
           durationMs: r.durationMs,
@@ -640,6 +645,30 @@ const server = Bun.serve({
           other,
           text: (r.stdout + r.stderr).slice(-4000),
         });
+      }
+      if (url.pathname === '/adopt') {
+        // 收编：把沙盒融合产物搬进唯一真相 patch\skills\<skill>，逐文件打戳 + 记 epoch
+        const name = (url.searchParams.get('name') || '').trim();
+        const skill = (url.searchParams.get('skill') || name).trim();
+        const confirm = url.searchParams.get('confirm') === 'yes';
+        if (!/^[a-z0-9][a-z0-9._-]*$/i.test(name)) return reply({ error: '名字不合法' }, 400);
+        if (!/^[a-z0-9][a-z0-9._-]*$/i.test(skill)) return reply({ error: '技能名不合法' }, 400);
+        const dir = FUSED_DIR + '\\' + name;
+        if (!existsSync(dir + '\\SKILL.md')) return reply({ error: '沙盒里没有这个产物：' + dir }, 404);
+        const target = SKILLS_DIR + '\\' + skill;
+        if (!confirm) {
+          return reply({
+            needsConfirm: true,
+            would: { from: dir, to: target, note: existsSync(target) ? '目标技能已存在，将按文件覆盖（先备份）' : '将新建这个技能目录' },
+          });
+        }
+        if (existsSync(target)) {
+          const stampDir = DEPLOY_BACKUP + '\\' + stamp() + '\\' + skill;
+          mkdirSync(dirname(stampDir), { recursive: true });
+          cpSync(target, stampDir, { recursive: true });
+        }
+        const r = await runDistill(['adopt', '--dir', dir, '--skill', skill]);
+        return reply(r);
       }
       if (url.pathname === '/install') {
         const skill = url.searchParams.get('skill') || '';

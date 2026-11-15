@@ -1208,7 +1208,23 @@
         if (r.error) { fout.textContent = '出错：' + r.error; return; }
         fout.innerHTML = '<div class="sub">完成：<b>' + r.name + '</b> → ' + r.out
           + '<br>退出码 ' + r.exitCode + ' · 用时 ' + Math.round((r.durationMs || 0) / 1000) + 's</div>'
+          + (r.recorded && r.recorded.ok
+            ? '<div class="sub" style="color:#7fcf9f">已记进账本：epoch ' + r.recorded.epoch + ' · ' + r.recorded.files + ' 个文件 · ' + r.recorded.bytes + ' B（会出现在蒸馏地图的版本时间线里）</div>'
+              + '<div class="row" style="margin-top:8px"><button class="btn" id="adopt-btn">收编进鼎（写入 patch\\skills\\' + r.name + '）</button></div>'
+            : '')
           + (r.text ? '<pre style="white-space:pre-wrap;font-size:12px;color:#c8d2dc">' + r.text + '</pre>' : '');
+        var ab = document.getElementById('adopt-btn');
+        if (ab) ab.onclick = function () {
+          if (!confirm('确认把沙盒产物收编进 patch\\skills\\' + r.name + '？会先备份目标目录，再逐文件打来源戳并记账。')) return;
+          ab.disabled = true; ab.textContent = '收编中…';
+          api('/adopt?name=' + encodeURIComponent(r.name) + '&skill=' + encodeURIComponent(r.name) + '&confirm=yes')
+            .then(function (x) {
+              if (x.error) { ab.textContent = '收编失败：' + x.error; return; }
+              ab.textContent = '已收编 · epoch ' + (x.epoch || '?');
+              fout.insertAdjacentHTML('beforeend', '<div class="sub" style="color:#7fcf9f">收编完成：' + (x.files || 0) + ' 个文件 → ' + (x.targetDir || '') + ' · 自动接线 ' + (x.wired || 0) + ' 条</div>');
+            })
+            .catch(function (e) { ab.textContent = '收编失败：' + e.message; });
+        };
       }).catch(function (e) { fout.textContent = '请求失败：' + e.message; })
         .finally(function () { goBtn.disabled = false; });
     };

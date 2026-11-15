@@ -38,6 +38,7 @@ const STAMP_RE = /^<!--\s*src:\s*(qkd:[^\s|]+)\s*\|\s*epoch:\s*(\d+)\s*\|\s*sha:
 
 function readStamp(abs) {
   try {
+    if (process.env.DBG && !globalThis.__dbg) { globalThis.__dbg = 1; const h = readFileSync(abs,'utf8').split(/\r?\n/,1)[0]; console.error('DBG', JSON.stringify(abs.slice(-60)), JSON.stringify(h.slice(0,40)), STAMP_RE.test(h)); }
     const head = readFileSync(abs, 'utf8').split(/\r?\n/, 1)[0];
     const m = STAMP_RE.exec(head);
     return m ? { src: m[1], epoch: Number(m[2]), srcSha: m[3] } : null;
@@ -416,6 +417,81 @@ function nextEpoch() {
   const eps = readJsonl(EPOCHS);
   return (eps.reduce((m, e) => Math.max(m, e.epoch || 0), 0) || 0) + 1;
 }
+
+// ⑥ 融合产物记账：沙盒里的 create/fuse 产物，逐文件登记 + 记一个 epoch
+function walkFiles(dir, base = dir, out = []) {
+  for (const name of readdirSyncSafe(dir)) {
+    const abs = `${dir}\\${name}`;
+    let st = null;
+    try { st = statSync(abs); } catch { continue; }
+    if (st.isDirectory()) walkFiles(abs, base, out);
+    else out.push(abs.slice(base.length + 1).replace(/\\/g, '/'));
+  }
+  return out;
+}
+
+function cmdFuseRecord(dirArg, name, kind, inputs) {
+  if (!dirArg || !name) { console.error('用法: fuse-record --dir <产物目录> --name <名字> [--kind create|fuse] [--inputs a,b]'); process.exit(2); }
+  if (!existsSync(`${dirArg}\\SKILL.md`)) { console.error('产物目录里没有 SKILL.md：' + dirArg); process.exit(1); }
+  const epoch = nextEpoch();
+  const files = walkFiles(dirArg);
+  const rows = [];
+  for (const rel of files) {
+    const abs = `${dirArg}\\${rel}`;
+    const text = readFileSync(abs, 'utf8');
+    const sha = createHash('sha256').update(text).digest('hex');
+    const row = {
+      ts: new Date().toISOString(), epoch,
+      srcId: `fuse:${name}`, layer: layerOf(rel), to: `fused/${name}/${rel}`,
+      bytes: Buffer.byteLength(text), landedSha: sha, by: 'fuse', kind: kind || 'fuse',
+      inputs: inputs || '', skill: name,
+    };
+    rows.push(row);
+    appendJsonl(LEDGER, row);
+  }
+  appendJsonl(EPOCHS, {
+    epoch, ts: new Date().toISOString(),
+    label: `融合产物：${name} ← ${inputs || '(未记来料)'}`,
+    files: files.length, kind: kind || 'fuse', sandbox: `fused/${name}`,
+  });
+  console.log(JSON.stringify({ ok: true, epoch, name, kind: kind || 'fuse', files: files.length, bytes: rows.reduce((a, r) => a + r.bytes, 0), sandbox: `staging\\fused\\${name}` }, null, 2));
+}
+
+// ⑥ 收编：把沙盒产物搬进唯一真相 patch\skills\<skill>，逐文件打戳记账
+function cmdAdopt(dirArg, skill) {
+  if (!dirArg || !skill) { console.error('用法: adopt --dir <产物目录> --skill <技能名>'); process.exit(2); }
+  if (!existsSync(`${dirArg}\\SKILL.md`)) { console.error('产物目录里没有 SKILL.md：' + dirArg); process.exit(1); }
+  const epoch = nextEpoch();
+  const targetDir = `${SKILLS}\\${skill}`;
+  const files = walkFiles(dirArg);
+  let written = 0, bytes = 0;
+  for (const rel of files) {
+    const srcAbs = `${dirArg}\\${rel}`;
+    let text = readFileSync(srcAbs, 'utf8');
+    const sha = createHash('sha256').update(text).digest('hex');
+    if (/\.(md|txt)$/i.test(rel)) {
+      const stamp = `<!-- src: fuse:${skill} | epoch: ${epoch} | sha: ${sha} -->`;
+      text = STAMP_RE.test(text.split(/\r?\n/)[0] || '') ? text.replace(/^.*$/m, stamp) : stamp + '\n' + text;
+    }
+    const dstAbs = `${targetDir}\\${rel}`;
+    mkdirSync(dirname(dstAbs), { recursive: true });
+    writeFileSync(dstAbs, text, 'utf8');
+    written += 1;
+    bytes += Buffer.byteLength(text);
+    appendJsonl(LEDGER, {
+      ts: new Date().toISOString(), epoch, srcId: `fuse:${skill}`, layer: layerOf(rel),
+      to: `${skill}/${rel}`, bytes: Buffer.byteLength(text), landedSha: sha, by: 'fuse-adopt', kind: 'adopt',
+    });
+  }
+  appendJsonl(EPOCHS, {
+    epoch, ts: new Date().toISOString(),
+    label: `收编：沙盒 ${skill} → 技能 ${skill}`,
+    files: written, kind: 'adopt',
+  });
+  const wire = wireOne(skill);
+  console.log(JSON.stringify({ ok: true, epoch, skill, targetDir, files: written, bytes, wired: wire ? (wire.added || 0) : 0 }, null, 2));
+}
+
 const [cmd] = process.argv.slice(2);
 const argv = process.argv.slice(2);
 const flag = (n) => argv.includes(n);
@@ -433,7 +509,9 @@ else if (cmd === 'pull') cmdPull(val('--skill'), val('--to'), val('--src-root'),
 else if (cmd === 'keep') cmdKeep(val('--skill'), val('--to'));
 else if (cmd === 'wire') cmdWire(val('--skill'));
 else if (cmd === 'land') cmdLand(val('--src'), val('--skill'), val('--to'), val('--sections'), val('--epoch'), val('--label'));
+else if (cmd === 'fuse-record') cmdFuseRecord(val('--dir'), val('--name'), val('--kind'), val('--inputs'));
+else if (cmd === 'adopt') cmdAdopt(val('--dir'), val('--skill'));
 else {
-  console.error('用法: stamp|map|timeline|updates|sources|plan|land|wire|diff|pull|keep');
+  console.error('用法: stamp|map|timeline|updates|sources|plan|land|wire|diff|pull|keep|fuse-record|adopt');
   process.exit(2);
 }
