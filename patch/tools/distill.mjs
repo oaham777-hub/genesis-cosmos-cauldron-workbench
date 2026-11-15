@@ -68,8 +68,9 @@ function readdirSyncSafe(d) {
 }
 
 function srcPathOf(srcId) {
-  // qkd:skills/04-shotlist/SKILL.md → D:\乾坤鼎\乾坤鼎Agent\skills\04-shotlist\SKILL.md
-  return join(SRC_ROOT, srcId.replace(/^qkd:/, '').replace(/\//g, '\\'));
+  const root = process.env.QKD_SRC_ROOT || SRC_ROOT;
+  // qkd:skills/04-shotlist/SKILL.md -> <root>\skills\04-shotlist\SKILL.md
+  return join(root, srcId.replace(/^qkd:/, '').replace(/\\/g, '\\'));
 }
 
 function loadLedger() { return readJsonl(LEDGER); }
@@ -131,7 +132,7 @@ function cmdMap() {
       const srcAbs = srcPathOf(st.src);
       const srcExists = existsSync(srcAbs);
       const srcNow = srcExists ? sha(srcAbs) : null;
-      const rec0 = rows.find(r => r.skill === s && r.to === rp);
+      const rec0 = rows.filter(r => r.skill === s && r.to === rp).pop();
       const localChanged = rec0 && rec0.landedSha && rec0.landedSha !== cur;
       if (srcExists && srcNow !== st.srcSha) {
         state = localChanged ? 'branch' : 'update';
@@ -215,6 +216,94 @@ function cmdWire(skill) {
   const skills = skill ? [skill] : [...new Set(rows.map(r => r.skill))].sort();
   const out = skills.map(s => wireOne(s));
   console.log(JSON.stringify({ ok: true, result: out, totalAdded: out.reduce((a, b) => a + (b.added || 0), 0) }, null, 2));
+}
+
+// ---------- 处置：看差异 / 拉新版 / 保留本地 ----------
+function stripStamp(text) {
+  const i = text.indexOf('\n');
+  return STAMP_RE.test(text.split(/\r?\n/, 1)[0]) ? text.slice(i + 1) : text;
+}
+function lineDiff(a, b, maxLines) {
+  const A = a.split(/\r?\n/), B = b.split(/\r?\n/);
+  const n = A.length, m = B.length;
+  const dp = Array.from({ length: n + 1 }, () => new Int32Array(m + 1));
+  for (let i = n - 1; i >= 0; i--) {
+    for (let j = m - 1; j >= 0; j--) {
+      dp[i][j] = A[i] === B[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+    }
+  }
+  const out = [];
+  let i = 0, j = 0, add = 0, del = 0;
+  while (i < n && j < m) {
+    if (A[i] === B[j]) { i++; j++; continue; }
+    if (dp[i + 1][j] >= dp[i][j + 1]) { del++; out.push({ t: '-', s: A[i] }); i++; }
+    else { add++; out.push({ t: '+', s: B[j] }); j++; }
+  }
+  while (i < n) { del++; out.push({ t: '-', s: A[i++] }); }
+  while (j < m) { add++; out.push({ t: '+', s: B[j++] }); }
+  return { added: add, removed: del, lines: out.slice(0, maxLines || 60), truncated: out.length > (maxLines || 60) };
+}
+
+function entryOf(skill, to) {
+  const rows = loadLedger().filter(r => r.skill === skill && r.to === to);
+  return rows.length ? rows[rows.length - 1] : null;
+}
+
+function cmdDiff(skill, to, srcRootArg) {
+  const rec = entryOf(skill, to);
+  if (!rec) { console.log(JSON.stringify({ ok: false, error: '账本里没有这条' })); return; }
+  const srcAbs = srcRootArg ? join(srcRootArg, rec.srcId.replace(/^qkd:/, '').replace(/\//g, '\\')) : srcPathOf(rec.srcId);
+  const landedAbs = join(SKILLS, skill, to.replace(/\//g, '\\'));
+  if (!existsSync(srcAbs) || !existsSync(landedAbs)) { console.log(JSON.stringify({ ok: false, error: '文件不存在（源或落地）' })); return; }
+  const srcNow = readFileSync(srcAbs, 'utf8');
+  const landedNow = readFileSync(landedAbs, 'utf8');
+  const rec2 = sha(srcAbs);
+  const cur = sha(landedAbs);
+  const localChanged = rec.landedSha && rec.landedSha !== cur;
+  const d = lineDiff(stripStamp(landedNow), srcNow, 80);
+  console.log(JSON.stringify({
+    ok: true, skill, to, srcId: rec.srcId,
+    srcChanged: rec2 !== rec.srcSha, localChanged,
+    added: d.added, removed: d.removed, diff: d.lines, truncated: d.truncated,
+    srcBytes: statSync(srcAbs).size, landedBytes: statSync(landedAbs).size,
+  }, null, 2));
+}
+
+function cmdPull(skill, to, srcRootArg, force) {
+  const rec = entryOf(skill, to);
+  if (!rec) { console.log(JSON.stringify({ ok: false, error: '账本里没有这条' })); return; }
+  const srcAbs = srcRootArg ? join(srcRootArg, rec.srcId.replace(/^qkd:/, '').replace(/\//g, '\\')) : srcPathOf(rec.srcId);
+  const landedAbs = join(SKILLS, skill, to.replace(/\//g, '\\'));
+  if (!existsSync(srcAbs)) { console.log(JSON.stringify({ ok: false, error: '来源文件不存在' })); return; }
+  const cur = existsSync(landedAbs) ? sha(landedAbs) : null;
+  const localChanged = cur && rec.landedSha && rec.landedSha !== cur;
+  if (localChanged && !force) {
+    console.log(JSON.stringify({ ok: false, needsForce: true, localChanged: true, error: '本地改过，直接拉会覆盖你的改动。先看差异，或用 --force。' }));
+    return;
+  }
+  const body = readFileSync(srcAbs, 'utf8');
+  const epoch = nextEpoch();
+  const stamp = `<!-- src: ${rec.srcId} | epoch: ${epoch} | sha: ${sha(srcAbs)} -->`;
+  writeFileSync(landedAbs, stamp + '\r\n' + body, 'utf8');
+  const row = {
+    epoch, ts: new Date().toISOString(), srcId: rec.srcId, srcSha: sha(srcAbs),
+    skill, to, layer: layerOf(to), landedSha: sha(landedAbs), bytes: statSync(landedAbs).size,
+    by: force && localChanged ? 'ui-pull-force' : 'ui-pull',
+  };
+  appendJsonl(LEDGER, row);
+  const eps = readJsonl(EPOCHS);
+  if (!eps.some(e => e.epoch === epoch)) appendJsonl(EPOCHS, { epoch, ts: row.ts, label: '拉新版：' + skill + '/' + to, files: 1 });
+  console.log(JSON.stringify({ ok: true, epoch, bytes: row.bytes, landedSha: row.landedSha, overwroteLocal: !!localChanged }, null, 2));
+}
+
+function cmdKeep(skill, to) {
+  const rec = entryOf(skill, to);
+  if (!rec) { console.log(JSON.stringify({ ok: false, error: '账本里没有这条' })); return; }
+  const landedAbs = join(SKILLS, skill, to.replace(/\//g, '\\'));
+  if (!existsSync(landedAbs)) { console.log(JSON.stringify({ ok: false, error: '落地文件不存在' })); return; }
+  const row = { ...rec, ts: new Date().toISOString(), landedSha: sha(landedAbs), bytes: statSync(landedAbs).size, by: 'ui-keep' };
+  appendJsonl(LEDGER, row);
+  console.log(JSON.stringify({ ok: true, kept: true, landedSha: row.landedSha, note: '已把当前内容登记为“我们的版本”，来源再变会重新提示可更新。' }, null, 2));
 }
 // ---------- 来料清单 ----------
 function cmdSources() {
@@ -330,6 +419,7 @@ function nextEpoch() {
 const [cmd] = process.argv.slice(2);
 const argv = process.argv.slice(2);
 const flag = (n) => argv.includes(n);
+if (argv.includes('--src-root')) { const i = argv.indexOf('--src-root'); if (argv[i + 1]) process.env.QKD_SRC_ROOT = argv[i + 1]; }
 const val = (n) => { const i = argv.indexOf(n); return i >= 0 ? argv[i + 1] : null; };
 
 if (cmd === 'stamp') cmdStamp(flag('--dry'));
@@ -338,9 +428,12 @@ else if (cmd === 'timeline') cmdTimeline();
 else if (cmd === 'updates') cmdUpdates();
 else if (cmd === 'sources') cmdSources();
 else if (cmd === 'plan') cmdPlan(val('--src'), val('--skill'), val('--to'));
+else if (cmd === 'diff') cmdDiff(val('--skill'), val('--to'), val('--src-root'));
+else if (cmd === 'pull') cmdPull(val('--skill'), val('--to'), val('--src-root'), flag('--force'));
+else if (cmd === 'keep') cmdKeep(val('--skill'), val('--to'));
 else if (cmd === 'wire') cmdWire(val('--skill'));
 else if (cmd === 'land') cmdLand(val('--src'), val('--skill'), val('--to'), val('--sections'), val('--epoch'), val('--label'));
 else {
-  console.error('用法: stamp|map|timeline|updates|sources|plan|land|wire');
+  console.error('用法: stamp|map|timeline|updates|sources|plan|land|wire|diff|pull|keep');
   process.exit(2);
 }

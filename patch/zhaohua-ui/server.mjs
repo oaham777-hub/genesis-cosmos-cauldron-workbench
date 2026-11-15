@@ -313,7 +313,38 @@ const server = Bun.serve({
         return json({ ok: true, seq: ev.seq });
       }
 
-      if (url.pathname === '/distill-wire') {
+      if (url.pathname === '/distill-diff') {
+      const skill = url.searchParams.get('skill') || '';
+      const to = url.searchParams.get('to') || '';
+      if (!skill || !to) return json({ ok: false, error: '缺 skill 或 to' }, 400);
+      const args = ['diff', '--skill', skill, '--to', to];
+      const srcRoot = url.searchParams.get('srcRoot');
+      if (srcRoot) args.push('--src-root', srcRoot);
+      return json(await runDistill(args));
+    }
+    if (url.pathname === '/distill-pull') {
+      const skill = url.searchParams.get('skill') || '';
+      const to = url.searchParams.get('to') || '';
+      if (!skill || !to) return json({ ok: false, error: '缺 skill 或 to' }, 400);
+      if (url.searchParams.get('confirm') !== 'yes') {
+        return json({ ok: false, needsConfirm: true, message: '会用来源的当前内容覆盖这一个文件，并记一条新 epoch。确认后才写。' }, 428);
+      }
+      const args = ['pull', '--skill', skill, '--to', to];
+      const srcRoot = url.searchParams.get('srcRoot');
+      if (srcRoot) args.push('--src-root', srcRoot);
+      if (url.searchParams.get('force') === 'yes') args.push('--force');
+      return json(await runDistill(args));
+    }
+    if (url.pathname === '/distill-keep') {
+      const skill = url.searchParams.get('skill') || '';
+      const to = url.searchParams.get('to') || '';
+      if (!skill || !to) return json({ ok: false, error: '缺 skill 或 to' }, 400);
+      if (url.searchParams.get('confirm') !== 'yes') {
+        return json({ ok: false, needsConfirm: true, message: '把当前文件内容登记为“我们的版本”，之后来源再变会重新提示可更新。' }, 428);
+      }
+      return json(await runDistill(['keep', '--skill', skill, '--to', to]));
+    }
+    if (url.pathname === '/distill-wire') {
       const sk = url.searchParams.get('skill') || '';
       if (url.searchParams.get('confirm') !== 'yes') {
         return json({ ok: false, needsConfirm: true, hint: '会在 SKILL.md 末尾加一节「本层参考资料（投放接线）」，把没被正文引用的 references 列进去。' });
@@ -330,9 +361,9 @@ const server = Bun.serve({
         return json({ ok: false, needsConfirm: true, hint: '这会往 patch\\skills\\<技能>\\ 写一个文件并记一条账，确认后再点一次。' });
       }
       return json(await runDistill(['land', '--src', url.searchParams.get('src'), '--skill', url.searchParams.get('skill'), '--to', to, '--sections', url.searchParams.get('sections') || '', '--label', url.searchParams.get('label') || '']));
-    }    if (url.pathname === '/distill') return json(await runDistill(['map']));
+    }    if (url.pathname === '/distill') { const r = url.searchParams.get('srcRoot'); return json(await runDistill(['map'].concat(r ? ['--src-root', r] : []))); }
     if (url.pathname === '/distill-timeline') return json(await runDistill(['timeline']));
-    if (url.pathname === '/distill-updates') return json(await runDistill(['updates']));
+    if (url.pathname === '/distill-updates') { const r = url.searchParams.get('srcRoot'); return json(await runDistill(['updates'].concat(r ? ['--src-root', r] : []))); }
 
     if (url.pathname === '/health') {
         return reply({ ok: true, zhaohuaDir: ZHAOHUA_DIR, skillsDir: SKILLS_DIR, skillsExists: existsSync(SKILLS_DIR) });

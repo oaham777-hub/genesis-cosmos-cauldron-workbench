@@ -7,6 +7,9 @@
   const STATE_CN = { ok: '生效', orphan: '未引用', update: '可更新', branch: '已分叉', local: '本地已改' };
   const STATE_CLS = { ok: 'ok', orphan: 'mute', update: 'warn', branch: 'bad', local: 'warn' };
   let SRC_CACHE = [];
+  const DRILL = 'D:\\造化乾坤鼎-工作台\\patch\\sources\\_sim';
+  let drillOn = new URLSearchParams(location.search).get('drill') === '1';
+  const qs = (extra) => (drillOn ? extra + '&srcRoot=' + encodeURIComponent(DRILL) : extra);
 
   function heat(ratio) {
     const a = Math.min(0.92, 0.06 + ratio * 0.86);
@@ -67,11 +70,85 @@
     const box = $('dz-detail');
     if (!box) return;
     const rows = r.entries.map(function (e) {
+      const act = e.state === 'update'
+        ? '<button class="dz-mini" data-act="diff" data-path="' + e.path + '">看差异</button><button class="dz-mini dz-strong" data-act="pull" data-path="' + e.path + '">拉新版</button>'
+        : e.state === 'branch'
+          ? '<button class="dz-mini" data-act="diff" data-path="' + e.path + '">看差异</button><button class="dz-mini dz-warn" data-act="keep" data-path="' + e.path + '">保留本地</button><button class="dz-mini" data-act="pull" data-path="' + e.path + '">强行覆盖</button>'
+          : '<button class="dz-mini" data-act="diff" data-path="' + e.path + '">看差异</button>';
       return '<tr><td>' + e.path + '</td><td>' + (LAYER_CN[e.layer] || e.layer) + '</td><td class="mono">' + e.src.replace('qkd:', '') +
-        '</td><td><span class="badge ' + (STATE_CLS[e.state] || 'mute') + '">' + (STATE_CN[e.state] || e.state) + '</span></td><td class="mono">' + e.shaNow.slice(0, 10) + '</td></tr>';
+        '</td><td><span class="badge ' + (STATE_CLS[e.state] || 'mute') + '">' + (STATE_CN[e.state] || e.state) + '</span></td><td class="mono">' + e.shaNow.slice(0, 10) +
+        '</td><td class="dz-act">' + act + '</td></tr>';
     }).join('');
-    box.innerHTML = '<h3>' + r.skill + ' · 外来件明细</h3><div class="sub">每个文件头都有一条来源戳：戳在，就说明它从哪来、第几批进来的</div>' +
-      '<table><thead><tr><th>文件</th><th>层</th><th>来源</th><th>状态</th><th>当前 sha</th></tr></thead><tbody>' + rows + '</tbody></table>';
+    box.innerHTML = '<h3>' + r.skill + ' · 外来件明细</h3><div class="sub">每个文件头都有一条来源戳：戳在，就说明它从哪来、第几批进来的。可更新=拉新版；已分叉=先看差异，再决定保留本地还是强行覆盖</div>' +
+      '<table><thead><tr><th>文件</th><th>层</th><th>来源</th><th>状态</th><th>当前 sha</th><th>处置</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+      '<div id="dz-diff" class="dz-diff"></div>';
+    curSel = r;
+    box.querySelectorAll('button[data-act]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const act = btn.getAttribute('data-act');
+        const path = btn.getAttribute('data-path');
+        if (act === 'diff') doDiff(r.skill, path);
+        if (act === 'pull') doPull(r.skill, path, btn.textContent.indexOf('强行') >= 0);
+        if (act === 'keep') doKeep(r.skill, path);
+      });
+    });
+  }
+
+  function maybeOpen(data) {
+    const seg = (location.hash || '').split('&').find(function (x) { return x.indexOf('open=') === 0; });
+    if (!seg) return;
+    const name = seg.slice(5);
+    const r = (data.skills || []).find(function (x) { return x.skill === name; });
+    if (r) showDetail(r);
+    const dseg = (location.hash || '').split('&').find(function (x) { return x.indexOf('diff=') === 0; });
+    if (dseg) {
+      const p = decodeURIComponent(dseg.slice(5));
+      if (p) setTimeout(function () { doDiff(name, p); }, 120);
+    }
+  }
+
+  function renderDiff(d) {
+    const box = $('dz-diff');
+    if (!box) return;
+    const head = '来源' + (d.srcChanged ? '已变' : '未变') + ' · 本地' + (d.localChanged ? '已改' : '未改') + ' · +' + d.added + ' / -' + d.removed;
+    const lines = (d.diff || []).map(function (l) {
+      return '<div class="dz-dl ' + (l.t === '+' ? 'add' : 'del') + '">' + l.t + ' ' + String(l.s).replace(/</g, '&lt;') + '</div>';
+    }).join('');
+    box.innerHTML = '<div class="sub">' + head + '</div>' + (lines || '<div class="sub">两边内容一样（只有戳不同）</div>');
+  }
+
+  async function doDiff(skill, path) {
+    const box = $('dz-diff');
+    if (box) box.innerHTML = '<div class="sub">正在取差异…</div>';
+    try {
+      const r = await fetch(B + '/distill-diff?' + qs('skill=' + encodeURIComponent(skill) + '&to=' + encodeURIComponent(path)));
+      renderDiff(await r.json());
+    } catch (err) { if (box) box.innerHTML = '<div class="sub">取差异失败：' + err.message + '</div>'; }
+  }
+
+  async function doPull(skill, path, force) {
+    if (!confirm('拉新版会用来源的当前内容覆盖这一个文件，并记一条新 epoch。继续？')) return;
+    const box = $('dz-diff');
+    if (box) box.innerHTML = '<div class="sub">正在拉取…</div>';
+    try {
+      const u = B + '/distill-pull?' + qs('skill=' + encodeURIComponent(skill) + '&to=' + encodeURIComponent(path)) + '&confirm=yes' + (force ? '&force=yes' : '');
+      const res = await fetch(u);
+      const j = await res.json();
+      if (j.needsForce) { doDiff(skill, path); return; }
+      if (box) box.innerHTML = '<div class="sub">' + (j.ok ? '已拉新版：epoch ' + j.epoch + '，' + j.bytes + ' 字节' : '失败：' + (j.error || '')) + '</div>';
+      load();
+    } catch (err) { if (box) box.innerHTML = '<div class="sub">拉取失败：' + err.message + '</div>'; }
+  }
+
+  async function doKeep(skill, path) {
+    if (!confirm('把当前内容登记为“我们的版本”，之后来源再变会重新提示可更新。继续？')) return;
+    const box = $('dz-diff');
+    try {
+      const res = await fetch(B + '/distill-keep?' + qs('skill=' + encodeURIComponent(skill) + '&to=' + encodeURIComponent(path)) + '&confirm=yes');
+      const j = await res.json();
+      if (box) box.innerHTML = '<div class="sub">' + (j.ok ? '已登记为本地版本（sha ' + String(j.landedSha).slice(0, 10) + '）' : '失败：' + (j.error || '')) + '</div>';
+      load();
+    } catch (err) { if (box) box.innerHTML = '<div class="sub">登记失败：' + err.message + '</div>'; }
   }
 
   function renderSankey(data) {
@@ -119,17 +196,27 @@
   }
 
   async function load() {
+    let m = null, t = null;
     try {
-      const [m, t] = await Promise.all([
-        fetch(B + '/distill').then(r => r.json()),
+      const res = await Promise.all([
+        fetch(B + '/distill' + (drillOn ? '?srcRoot=' + encodeURIComponent(DRILL) : '')).then(r => r.json()),
         fetch(B + '/distill-timeline').then(r => r.json()).catch(() => ({ epochs: [] }))
       ]);
-      if (m && m.ok) { renderMap(m); renderSankey(m); }
-      renderTimeline(t);
+      m = res[0]; t = res[1];
     } catch (e) {
       const box = $('dz-rows');
-      if (box) box.innerHTML = '<tr><td colspan="5" class="sub">桥没连上，看不到真数据</td></tr>';
+      if (box) box.innerHTML = '<tr><td colspan="6" class="sub">桥没连上（' + (e && e.message ? e.message : '未知错误') + '）</td></tr>';
+      return;
     }
+    if (m && m.ok) {
+      try { renderMap(m); } catch (e) { console.error('renderMap', e); }
+      try { renderSankey(m); } catch (e) { console.error('renderSankey', e); }
+      try { maybeOpen(m); } catch (e) { console.error('maybeOpen', e); }
+    } else {
+      const box = $('dz-rows');
+      if (box) box.innerHTML = '<tr><td colspan="6" class="sub">桥返回不可用：' + JSON.stringify(m).slice(0, 200) + '</td></tr>';
+    }
+    try { renderTimeline(t); } catch (e) { console.error('renderTimeline', e); }
   }
 
   async function loadSources() {
@@ -224,7 +311,14 @@
   });
 
   window.ZH_DISTILL_RELOAD = load;
-  function boot() { load(); loadSources(); }
+  function boot() {
+    const cb = $('dz-drill');
+    if (cb) {
+      cb.checked = drillOn;
+      cb.addEventListener('change', function () { drillOn = cb.checked; load(); });
+    }
+    load(); loadSources();
+  }
   document.addEventListener('DOMContentLoaded', boot);
   if (document.readyState === 'complete' || document.readyState === 'interactive') setTimeout(boot, 60);
 })();

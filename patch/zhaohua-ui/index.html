@@ -169,7 +169,18 @@
     .dz-form{display:grid;grid-template-columns:1fr 1fr 1fr auto auto auto;gap:10px;align-items:end;margin-top:6px}
     .dz-form label{display:block;font-size:11px;color:#8d97a5;margin-bottom:4px}
     .dz-form select,.dz-form input{width:100%;background:#0f141a;border:1px solid #2a323d;color:#dfe6ef;border-radius:8px;padding:7px 9px;font-size:12px}
-  </style>
+    .dz-drillbar{margin:14px 0 10px;font-size:12px;color:#9aa3ad}
+    .dz-drillbar label{display:inline-flex;gap:8px;align-items:center;cursor:pointer}
+    .dz-drillbar input{accent-color:#d8b26a}
+    .dz-act{white-space:nowrap}
+    .dz-mini{margin:0 4px 0 0;padding:3px 9px;font-size:12px;border-radius:6px;border:1px solid #2b333d;background:#12171d;color:#c8d0d8;cursor:pointer}
+    .dz-mini:hover{border-color:#d8b26a;color:#f0d9a8}
+    .dz-mini.dz-strong{border-color:#3f5a42;color:#a9d6b3}
+    .dz-mini.dz-warn{border-color:#5a4230;color:#e0b28a}
+    .dz-diff{margin-top:12px;border-top:1px solid #1f262e;padding-top:10px;font-family:ui-monospace,Consolas,monospace;font-size:12px;max-height:260px;overflow:auto}
+    .dz-dl{white-space:pre-wrap;line-height:1.5}
+    .dz-dl.add{color:#8fd0a3}
+    .dz-dl.del{color:#d08f8f}  </style>
 </head>
 <body>
 <div class="app">
@@ -419,6 +430,9 @@
 
     <!-- 蒸馏地图 -->
     <section class="view" id="v-distill">
+      <div class="dz-drillbar">
+        <label><input type="checkbox" id="dz-drill"> 演练模式（把上游当成改过一版，用 patch\sources\_sim 模拟，不动乾坤鼎真文件）</label>
+      </div>
       <div class="dz-kpi" id="dz-kpi"></div>
 
       <h2 class="sec">蒸馏地图 · 技能 × 三层</h2>
