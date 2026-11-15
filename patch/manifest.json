@@ -1,0 +1,39 @@
+{
+  "_note": "补丁源清单。apply.ps1 读取本文件；baseline 用于校验目标版本是否与我们做补丁时一致。",
+  "baseline": {
+    "version": "0.1.42",
+    "commit": "36b36dc8ff1943f921a86a6d65b15a31cebffe6f",
+    "pristine": "D:\\洋子工作台\\_pristine\\stable-0.1.42",
+    "manifest": "D:\\洋子工作台\\_pristine\\manifest-baseline.jsonl",
+    "files": 12474,
+    "bytes": 2858931555
+  },
+  "targets": {
+    "work": "D:\\造化乾坤鼎-工作台\\_work\\stable",
+    "prod": "D:\\洋子工作台\\stable"
+  },
+  "plannedPatches": [
+    {
+      "id": "brand-strings",
+      "kind": "strings",
+      "state": "pending-name",
+      "desc": "views 内 19 个文件 + version.json 的『洋子』字样替换（需要新名字）",
+      "replayOnUpgrade": true
+    },
+    {
+      "id": "launcher-overlay",
+      "kind": "inject",
+      "state": "ready",
+      "desc": "向 views\\mainview\\index.html 注入启动覆盖层（两入口），带标记位可幂等",
+      "replayOnUpgrade": true
+    },
+    {
+      "id": "data-additions",
+      "kind": "data",
+      "state": "ready",
+      "desc": "把 patch\\data-additions 下的 skills/tools/providers/ext 同步进 data\\（升级不覆盖）",
+      "replayOnUpgrade": false
+    }
+  ],
+  "patches": []
+}

@@ -1,6 +1,13 @@
 .tmp/
 node_modules/
 
-
-Ͷι�ļ�/
+投喂文件/
 *.tgz
+
+# 开发副本与补丁运行产物（不入库）
+_work/
+_backup/
+patch/_backup/
+patch/_reports/
+patch/secrets/
+patch/staging/

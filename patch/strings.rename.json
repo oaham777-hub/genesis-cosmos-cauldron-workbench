@@ -1,0 +1,126 @@
+{
+    "_note":  "字符串补丁表。from 为原文，to 为空表示『未定名，跳过』。apply.ps1 按 from 长度降序替换，命中次数写入报告。文件名/路径不参与替换。",
+    "newName":  {
+                    "zh":  "造化乾坤鼎",
+                    "enUpper":  "QIAN KUN DING",
+                    "enLower":  "qiankunding",
+                    "entries":  [
+                                    "乾坤鼎",
+                                    "造化鼎"
+                                ]
+                },
+    "scan":  [
+                 "app\\Resources\\app\\views\\mainview\\assets\\*.js",
+                 "app\\Resources\\app\\views\\mainview\\index.html",
+                 "app\\Resources\\app\\views\\mainview\\yokoHandbook.html",
+                 "app\\Resources\\version.json",
+                 "app\\Resources\\app\\bun\\index.js"
+             ],
+    "entries":  [
+                    {
+                        "from":  "AI STUDIO 洋子工作台使用手册",
+                        "to":  "造化乾坤鼎使用手册",
+                        "kind":  "filename"
+                    },
+                    {
+                        "from":  "AI STUDIO 洋子 · 创作空间",
+                        "to":  "造化乾坤鼎 · 创作空间",
+                        "kind":  "title"
+                    },
+                    {
+                        "from":  "AI STUDIO 洋子 · 微信",
+                        "to":  "造化乾坤鼎 · 微信",
+                        "kind":  "title"
+                    },
+                    {
+                        "from":  "AI STUDIO 洋子 · 工作台设置",
+                        "to":  "造化乾坤鼎 · 设置",
+                        "kind":  "title"
+                    },
+                    {
+                        "from":  "AI STUDIO 洋子提供的微信二维码",
+                        "to":  "造化乾坤鼎提供的微信二维码",
+                        "kind":  "alt"
+                    },
+                    {
+                        "from":  "请通过 AI STUDIO 洋子 MCP 操作",
+                        "to":  "请通过造化乾坤鼎 MCP 操作",
+                        "kind":  "hint"
+                    },
+                    {
+                        "from":  "把地址发给同事。对方在洋子 APP 的「设备互联」",
+                        "to":  "把地址发给同事。对方在乾坤鼎 APP 的「设备互联」",
+                        "kind":  "hint"
+                    },
+                    {
+                        "from":  "AI STUDIO 洋子",
+                        "to":  "造化乾坤鼎",
+                        "kind":  "brand"
+                    },
+                    {
+                        "from":  "洋子工作台",
+                        "to":  "乾坤鼎",
+                        "kind":  "brand"
+                    },
+                    {
+                        "from":  "洋子影院欢迎页",
+                        "to":  "乾坤鼎欢迎页",
+                        "kind":  "title"
+                    },
+                    {
+                        "from":  "洋子V4测试须知.md",
+                        "to":  "乾坤鼎使用须知.md",
+                        "kind":  "filename"
+                    },
+                    {
+                        "from":  "联系洋子",
+                        "to":  "联系我们",
+                        "kind":  "label"
+                    },
+                    {
+                        "from":  "洋子",
+                        "to":  "乾坤鼎",
+                        "kind":  "brand"
+                    },
+                    {
+                        "from":  "YOKO · MOTION PICTURE",
+                        "to":  "QIAN KUN DING · MOTION PICTURE",
+                        "kind":  "brand-en"
+                    },
+                    {
+                        "from":  "全流程工作台",
+                        "to":  "全流程创作",
+                        "kind":  "descriptor"
+                    },
+                    {
+                        "from":  "本地进入工作台",
+                        "to":  "本地进入乾坤鼎",
+                        "kind":  "button"
+                    },
+                    {
+                        "from":  "无需注册工作台账号",
+                        "to":  "无需注册账号",
+                        "kind":  "hint"
+                    },
+                    {
+                        "from":  "在自己的工作台",
+                        "to":  "在自己的乾坤鼎",
+                        "kind":  "copy"
+                    },
+                    {
+                        "from":  "回到工作台完成登录",
+                        "to":  "回到乾坤鼎完成登录",
+                        "kind":  "copy"
+                    },
+                    {
+                        "from":  "AI STUDIO \\u6D0B\\u5B50 \\xB7 v",
+                        "to":  "\\u9020\\u5316\\u4E7E\\u5764\\u9F0E \\xB7 v",
+                        "kind":  "window-title"
+                    },
+                    {
+                        "from":  "\\u6D0B\\u5B50",
+                        "to":  "\\u4E7E\\u5764\\u9F0E",
+                        "kind":  "bundle-brand"
+                    }
+                ]
+}

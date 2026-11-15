@@ -1,0 +1,847 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>造化鼎 · 设计稿</title>
+<style>
+  :root{
+    --bg:#0b0d10; --panel:#13161b; --panel-2:#171b21; --line:#242a33;
+    --text:#e9ecf1; --muted:#8b93a1; --dim:#5d6572;
+    --gold:#d8b26a; --gold-dim:#8a7238;
+    --ok:#5fbf8a; --warn:#e0a84e; --bad:#e06a5f; --info:#6aa8d8;
+    --mono:"Cascadia Mono",Consolas,"JetBrains Mono",monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font:14px/1.6 "Microsoft YaHei UI","PingFang SC",system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .app{display:grid;grid-template-columns:210px 1fr;min-height:100vh}
+
+  /* 左栏 */
+  .rail{background:linear-gradient(180deg,#0e1115,#0b0d10);border-right:1px solid var(--line);
+    padding:22px 14px;display:flex;flex-direction:column;gap:22px}
+  .brand{display:flex;align-items:center;gap:10px;padding:0 6px}
+  .mark{width:30px;height:30px;border-radius:8px;border:1px solid var(--gold-dim);
+    display:grid;place-items:center;color:var(--gold);font-size:15px;font-weight:700;
+    background:radial-gradient(circle at 30% 20%,rgba(216,178,106,.18),transparent 70%)}
+  .brand b{font-size:15px;letter-spacing:.06em}
+  .brand small{display:block;color:var(--dim);font-size:11px;letter-spacing:.16em}
+  nav{display:flex;flex-direction:column;gap:2px}
+  nav a{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:8px;color:var(--muted);
+    text-decoration:none;font-size:13px;cursor:pointer}
+  nav a .dot{width:5px;height:5px;border-radius:50%;background:var(--dim)}
+  nav a:hover{background:#151a20;color:var(--text)}
+  nav a.on{background:#1a2029;color:var(--text)}
+  nav a.on .dot{background:var(--gold)}
+  .rail .foot{margin-top:auto;padding:0 8px;color:var(--dim);font-size:11px;line-height:1.8}
+  .rail .foot code{color:var(--gold-dim)}
+
+  /* 主区 */
+  main{padding:26px 34px 60px;max-width:1220px}
+  .head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;
+    border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:22px}
+  .head h1{margin:0;font-size:19px;font-weight:600;letter-spacing:.02em}
+  .head p{margin:4px 0 0;color:var(--muted);font-size:12px}
+  .sel{display:flex;gap:6px}
+  .sel button{background:#151a20;border:1px solid var(--line);color:var(--muted);font-size:12px;
+    padding:6px 11px;border-radius:7px;cursor:pointer}
+  .sel button.on{color:var(--text);border-color:var(--gold-dim);background:#1b2029}
+
+  .view{display:none}
+  .view.on{display:block}
+  h2.sec{font-size:13px;color:var(--muted);font-weight:600;letter-spacing:.1em;
+    text-transform:uppercase;margin:26px 0 12px}
+  h2.sec:first-child{margin-top:0}
+
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .kpi .n{font-size:26px;font-weight:600;letter-spacing:.02em}
+  .kpi .l{color:var(--muted);font-size:12px;margin-top:2px}
+  .kpi .h{font-size:11px;color:var(--dim);margin-top:8px;font-family:var(--mono)}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px}
+  .card + .card{margin-top:12px}
+  .card h3{margin:0 0 4px;font-size:14px;font-weight:600}
+  .card .sub{color:var(--muted);font-size:12px;margin-bottom:14px}
+
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;color:var(--dim);font-weight:500;font-size:11px;letter-spacing:.08em;
+    text-transform:uppercase;padding:0 8px 8px;border-bottom:1px solid var(--line)}
+  td{padding:9px 8px;border-bottom:1px solid #1a1f26;vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  tbody tr:hover{background:#171c23}
+  .nm{font-family:var(--mono);font-size:12.5px;color:#d7dde6}
+  .stage{display:inline-block;min-width:28px;text-align:center;font-family:var(--mono);font-size:11px;
+    color:var(--gold);border:1px solid var(--gold-dim);border-radius:5px;padding:1px 5px;margin-right:8px}
+
+  .tag{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:1px 6px;border-radius:5px;
+    border:1px solid;margin-right:4px}
+  .t-bad{color:var(--bad);border-color:#5a2b28;background:#2a1614}
+  .t-warn{color:var(--warn);border-color:#5a4520;background:#241d10}
+  .t-ok{color:var(--ok);border-color:#234a37;background:#122019}
+  .t-info{color:var(--info);border-color:#243c4f;background:#111a24}
+
+  .bar{height:4px;border-radius:3px;background:#1d232b;overflow:hidden;min-width:70px}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--gold-dim),var(--gold))}
+
+  .grid2{display:grid;grid-template-columns:1.15fr .85fr;gap:12px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+  .kv{display:grid;grid-template-columns:110px 1fr;gap:6px 12px;font-size:12.5px}
+  .kv dt{color:var(--dim)}
+  .kv dd{margin:0;font-family:var(--mono);font-size:12px;color:#ccd3dd;word-break:break-all}
+
+  .src{display:flex;flex-direction:column;gap:6px}
+  .src div{border:1px solid var(--line);background:var(--panel-2);border-radius:9px;
+    padding:8px 10px;font-size:12.5px;display:flex;justify-content:space-between;gap:8px}
+  .src div span{color:var(--dim);font-family:var(--mono);font-size:11px}
+  .src div.pick{border-color:var(--gold-dim);background:#1c1a13}
+
+  .btn{display:inline-block;border:1px solid var(--line);background:#161b22;color:var(--text);
+    border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer}
+  .btn.gold{border-color:var(--gold-dim);color:var(--gold);background:#1b1811}
+  .btn.ghost{background:transparent;color:var(--muted)}
+
+  .arms{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .arm{border:1px solid var(--line);border-radius:10px;padding:12px}
+  .arm.a{border-color:#2a3140}
+  .arm.b{border-color:var(--gold-dim)}
+  .arm .t{font-size:12px;color:var(--muted)}
+  .arm .v{font-size:24px;font-weight:600;margin:4px 0}
+  .arm .d{font-size:11.5px;color:var(--dim)}
+  .chart{display:flex;align-items:flex-end;gap:14px;height:120px;margin-top:14px}
+  .chart .col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:4px;align-items:center}
+  .chart .col b{font-family:var(--mono);font-size:11px;color:var(--muted)}
+  .chart .bar2{width:100%;display:flex;gap:3px;align-items:flex-end;height:80px}
+  .chart .bar2 i{flex:1;border-radius:3px 3px 0 0}
+
+  .tl{position:relative;padding-left:18px}
+  .tl:before{content:"";position:absolute;left:4px;top:6px;bottom:6px;width:1px;background:var(--line)}
+  .tl .ev{position:relative;padding:8px 0}
+  .tl .ev:before{content:"";position:absolute;left:-17px;top:14px;width:7px;height:7px;border-radius:50%;
+    background:var(--gold);box-shadow:0 0 0 3px #1a1a14}
+  .tl .ev .t{font-size:12.5px}
+  .tl .ev .m{font-size:11px;color:var(--dim);font-family:var(--mono)}
+
+  code.hash{font-family:var(--mono);font-size:11px;color:var(--muted)}
+  .note{border-left:2px solid var(--gold-dim);padding:8px 12px;color:var(--muted);
+    font-size:12px;background:#12141a;border-radius:0 8px 8px 0;margin-top:12px}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="rail">
+    <div class="brand">
+      <div class="mark">鼎</div>
+      <div><b>造化鼎</b><small>ZAOHUA CAULDRON</small></div>
+    </div>
+    <nav id="nav">
+      <a data-v="overview" class="on"><span class="dot"></span>概览</a>
+      <a data-v="health"><span class="dot"></span>技能体检</a>
+      <a data-v="fuse"><span class="dot"></span>融合台</a>
+      <a data-v="packs"><span class="dot"></span>包管理</a>
+      <a data-v="eval"><span class="dot"></span>评估对比</a>
+      <a data-v="evidence"><span class="dot"></span>证据链</a>
+    </nav>
+    <div class="foot">
+      CLI <code>0.7.48</code><br />
+      受管产品 3 个<br />
+      数据目录 <code>D:\造化鼎</code>
+    </div>
+  </aside>
+
+  <main>
+    <div class="head">
+      <div>
+        <h1 id="title">概览</h1>
+        <p id="desc">技能的质量与来料，一屏看完。</p>
+      </div>
+      <div class="sel">
+        <button type="button" data-go="/" title="回到乾坤鼎">乾坤鼎</button>
+        <button type="button" class="on" title="当前所在">造化鼎</button>
+        <button type="button" data-go="/" title="回到乾坤鼎">工作台</button>
+      </div>
+    </div>
+
+    <!-- 概览 -->
+    <section class="view on" id="v-overview">
+      <div class="kpis">
+        <div class="kpi"><div class="n">15</div><div class="l">受管技能</div><div class="h">film-* · 01–09 + 桥</div></div>
+        <div class="kpi"><div class="n" style="color:var(--bad)">0</div><div class="l">审计全通过</div><div class="h">R01–R10 全部有失败项</div></div>
+        <div class="kpi"><div class="n" style="color:var(--warn)">47</div><div class="l">待修条目</div><div class="h">其中 30 属约定冲突</div></div>
+        <div class="kpi"><div class="n">0</div><div class="l">已装技能包</div><div class="h">packs/registry.jsonl 空</div></div>
+      </div>
+
+      <h2 class="sec">下一步该做什么</h2>
+      <div class="grid3">
+        <div class="card">
+          <h3>先修约定，再修内容</h3>
+          <div class="sub">R06 / R10 是跨技能共享 references 造成的</div>
+          <div class="row"><span class="tag t-bad">R06 15/15</span><span class="tag t-bad">R10 12/15</span></div>
+          <div class="note">给审计加「多根引用解析」后，这 27 条会从失败降为提示，剩下的才是真缺陷。</div>
+        </div>
+        <div class="card">
+          <h3>九个 27 条真缺陷</h3>
+          <div class="sub">缺触发词、缺负边界、无决策树</div>
+          <div class="row"><span class="tag t-warn">R02 12</span><span class="tag t-warn">R03 15</span><span class="tag t-warn">R09 10</span></div>
+          <div class="note">这三类可机械修，但改的是别人写的技能——落 data\skills 不受升级影响。</div>
+        </div>
+        <div class="card">
+          <h3>再补内容缺口</h3>
+          <div class="sub">镜表 · 提示词十二维 · 情绪谱</div>
+          <div class="row"><span class="tag t-info">L4</span><span class="tag t-info">L6</span><span class="tag t-info">L5</span></div>
+          <div class="note">来料在乾坤鼎 rendered/skills，0.2 MB，融合后进 09 与 08。</div>
+        </div>
+      </div>
+
+      <h2 class="sec">流水线</h2>
+      <div class="card">
+        <table>
+          <thead><tr><th style="width:56px">步</th><th>动作</th><th>产物</th><th style="width:130px">状态</th></tr></thead>
+          <tbody>
+            <tr><td><span class="stage">01</span></td><td>inspect 体检</td><td>能力契约 / 评审就绪度</td><td><span class="tag t-ok">已完成</span></td></tr>
+            <tr><td><span class="stage">02</span></td><td>audit R01–R10</td><td>失败项清单 + 退出码</td><td><span class="tag t-ok">已完成</span></td></tr>
+            <tr><td><span class="stage">03</span></td><td>init 补 agent.json</td><td>能力声明骨架</td><td><span class="tag t-warn">待办</span></td></tr>
+            <tr><td><span class="stage">04</span></td><td>fuse / create 融合</td><td>合并后的 SKILL.md</td><td><span class="tag t-warn">需模型 key</span></td></tr>
+            <tr><td><span class="stage">05</span></td><td>pack 打包</td><td>EVIDENCE.md + 引用副本</td><td><span class="tag t-info">不调模型</span></td></tr>
+            <tr><td><span class="stage">06</span></td><td>pack-install 安装</td><td>packs/&lt;名&gt;/&lt;版本&gt;/</td><td><span class="tag t-info">未开始</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 技能体检 -->
+    <section class="view" id="v-health">
+      <div class="grid2">
+        <div class="card">
+          <h3>15 个技能的审计结果</h3>
+          <div class="sub">R01–R10 作者规则 · 全部技能均有失败项</div>
+          <table>
+            <thead><tr><th>技能</th><th>阶段</th><th>失败规则</th><th style="width:88px">通过率</th></tr></thead>
+            <tbody>
+              <tr><td class="nm">ai-film-router</td><td><span class="stage">00</span></td>
+                <td><span class="tag t-bad">R02</span><span class="tag t-bad">R03</span><span class="tag t-bad">R06</span><span class="tag t-bad">R08</span><span class="tag t-bad">R09</span></td>
+                <td><div class="bar"><i style="width:50%"></i></div></td></tr>
+              <tr><td class="nm">film-synopsis</td><td><span class="stage">01</span></td>
+                <td><span class="tag t-bad">R03</span><span class="tag t-bad">R06</span><span class="tag t-warn">R10</span></td>
+                <td><div class="bar"><i style="width:70%"></i></div></td></tr>
+              <tr><td class="nm">film-characters</td><td><span class="stage">02</span></td>
+                <td><span class="tag t-bad">R03</span><span class="tag t-bad">R06</span></td>
+                <td><div class="bar"><i style="width:80%"></i></div></td></tr>
+              <tr><td class="nm">film-worldbuilding</td><td><span class="stage">03</span></td>
+                <td><span class="tag t-bad">R02</span><span class="tag t-bad">R03</span><span class="tag t-bad">R06</span><span class="tag t-warn">R10</span></td>
+                <td><div class="bar"><i style="width:60%"></i></div></td></tr>
+              <tr><td class="nm">film-treatment</td><td><span class="stage">04</span></td>
+                <td><span class="tag t-bad">R03</span><span class="tag t-bad">R06</span><span class="tag t-warn">R09</span></td>
+                <td><div class="bar"><i style="width:70%"></i></div></td></tr>
+              <tr><td class="nm">film-screenplay</td><td><span class="stage">05</span></td>
+                <td><span class="tag t-bad">R02</span><span class="tag t-bad">R03</span><span class="tag t-bad">R06</span><span class="tag t-warn">R10</span></td>
+                <td><div class="bar"><i style="width:60%"></i></div></td></tr>
+              <tr><td class="nm">film-stress-test</td><td><span class="stage">06</span></td>
+                <td><span class="tag t-bad">R03</span><span class="tag t-bad">R06</span></td>
+                <td><div class="bar"><i style="width:80%"></i></div></td></tr>
+              <tr><td class="nm">film-lira-assets</td><td><span class="stage">07</span></td>
+                <td><span class="tag t-bad">R03</span><span class="tag t-bad">R06</span><span class="tag t-warn">R09</span><span class="tag t-warn">R10</span></td>
+                <td><div class="bar"><i style="width:60%"></i></div></td></tr>
+              <tr><td class="nm">film-acting</td><td><span class="stage">08</span></td>
+                <td><span class="tag t-bad">R02</span><span class="tag t-bad">R03</span><span class="tag t-bad">R06</span></td>
+                <td><div class="bar"><i style="width:70%"></i></div></td></tr>
+              <tr><td class="nm">film-cinedance</td><td><span class="stage">09</span></td>
+                <td><span class="tag t-bad">R02</span><span class="tag t-bad">R03</span><span class="tag t-bad">R06</span><span class="tag t-warn">R09</span><span class="tag t-warn">R10</span></td>
+                <td><div class="bar"><i style="width:50%"></i></div></td></tr>
+              <tr><td class="nm">film-expert-bridge</td><td><span class="stage">桥</span></td>
+                <td><span class="tag t-bad">R03</span><span class="tag t-bad">R06</span><span class="tag t-warn">R09</span></td>
+                <td><div class="bar"><i style="width:70%"></i></div></td></tr>
+              <tr><td class="nm">film-knowledge-bridge</td><td><span class="stage">桥</span></td>
+                <td><span class="tag t-bad">R02</span><span class="tag t-bad">R03</span><span class="tag t-warn">R06</span></td>
+                <td><div class="bar"><i style="width:70%"></i></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div>
+          <div class="card">
+            <h3>film-cinedance · inspect</h3>
+            <div class="sub">实跑输出（只读）</div>
+            <dl class="kv">
+              <dt>内容哈希</dt><dd>sha256:d7572ef9e277e032ce934f46be968eef98f73c485a462cf8b77474bb41c820c0</dd>
+              <dt>文件</dt><dd>12 个 / 143,161 B</dd>
+              <dt>Agent ID</dt><dd>skill.film-cinedance.d7572ef9e277e032</dd>
+              <dt>完整度</dt><dd>partial</dd>
+              <dt>可信状态</dt><dd>untrusted</dd>
+              <dt>评审就绪</dt><dd style="color:var(--bad)">✗ 未就绪</dd>
+            </dl>
+            <div class="note">缺少 agent.json 的能力契约：capabilities / tools / dependencies / evaluation 都未声明，所以只能被描述，不能参与重叠与互补判断。</div>
+          </div>
+          <div class="card">
+            <h3>R06 的真实成因</h3>
+            <div class="sub">不是缺文件，是跨技能共享</div>
+            <div class="src" style="margin-top:8px">
+              <div>references/cooperationModes.md<span>→ ai-film-router/</span></div>
+              <div>references/modules/shot_grammar.md<span>→ film-expert-bridge/</span></div>
+            </div>
+            <div class="note">审计要求每个技能自足，而它本来是跨技能共享 references 的设计。加一层多根解析，27 条误报就消失了。</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 融合台 -->
+    <section class="view" id="v-fuse">
+      <div class="grid3">
+        <div class="card">
+          <h3>来料</h3>
+          <div class="sub">乾坤鼎 rendered/skills · 9 层 · 0.2 MB</div>
+          <div class="src">
+            <div>04-shotlist<span>L4 镜表</span></div>
+            <div>06-prompt<span>L6 十二维</span></div>
+            <div>05-acting<span>L5 情绪谱</span></div>
+            <div>03-assets<span>L3 一致性锁</span></div>
+            <div>02-script<span>L2 台词机检</span></div>
+            <div>08-knowledge<span>L8 检索</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>宿主</h3>
+          <div class="sub">Toonflow 09 CINEDANCE</div>
+          <div class="src">
+            <div class="pick">film-cinedance<span>09 提示词</span></div>
+            <div>film-acting<span>08 表演</span></div>
+            <div>film-lira-assets<span>07 资产</span></div>
+            <div>film-expert-bridge<span>工艺分支</span></div>
+          </div>
+          <div class="note">产物落 data\skills\film-cinedance，升级不丢。</div>
+        </div>
+        <div class="card">
+          <h3>配方</h3>
+          <div class="sub">create --mode merge</div>
+          <dl class="kv" style="margin-top:6px">
+            <dt>基准</dt><dd>film-cinedance@0.1.42</dd>
+            <dt>追加</dt><dd>06-prompt（十二维）</dd>
+            <dt>追加</dt><dd>04-shotlist（镜表）</dd>
+            <dt>守卫</dt><dd>禁令继承 P01</dd>
+            <dt>禁词表</dt><dd>seedance-only.txt</dd>
+            <dt>字节预算</dt><dd>6,000 / 20 条</dd>
+          </dl>
+          <div class="row" style="margin-top:12px">
+            <button class="btn gold">开始融合</button>
+            <button class="btn ghost">只看差异</button>
+          </div>
+        </div>
+      </div>
+
+      <h2 class="sec">融合预览</h2>
+      <div class="grid2">
+        <div class="card">
+          <h3>新增章节：提示词编译十二维</h3>
+          <div class="sub">来自 06-prompt · 132 行 → 压缩到 4,100 字节</div>
+          <div class="src">
+            <div>① 景别与焦段<span>+ dir</span></div>
+            <div>② 机位与高度<span>+ dir</span></div>
+            <div>③ 构图动机<span>+ dir</span></div>
+            <div>④ 主体动作<span>保留原文</span></div>
+            <div>⑤ 运镜方式<span>保留原文</span></div>
+            <div>⑥–⑫ 光影 / 色彩 / 质感 / 节奏 …<span>7 条</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>守卫检查</h3>
+          <div class="sub">融合前必须全绿</div>
+          <table>
+            <tbody>
+              <tr><td>禁令继承（来料「禁止/不得」）</td><td style="text-align:right"><span class="tag t-ok">11/11</span></td></tr>
+              <tr><td>假引用清理</td><td style="text-align:right"><span class="tag t-ok">3 处</span></td></tr>
+              <tr><td>真引用带入</td><td style="text-align:right"><span class="tag t-ok">5 个</span></td></tr>
+              <tr><td>字节预算</td><td style="text-align:right"><span class="tag t-warn">V01 预警</span></td></tr>
+              <tr><td>与已装包重叠率</td><td style="text-align:right"><span class="tag t-info">0 %</span></td></tr>
+            </tbody>
+          </table>
+          <div class="note">超预算报 V01 而不是硬删规则正文——要么拆 references，要么提高预算。</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 包管理 -->
+    <section class="view" id="v-packs">
+      <div class="card">
+        <h3>打一个包</h3>
+        <div class="sub">pack 不调模型：合成 → 渲染 SKILL.md → 带入 references → 审计 → 写 EVIDENCE.md</div>
+        <div class="zh-pk-row">
+          <select id="zh-pk-skill"></select>
+          <button class="btn" id="zh-pk-go">开始打包</button>
+          <span class="zh-pk-msg" id="zh-pk-msg"></span>
+        </div>
+        <div class="zh-pk-steps">
+          <button class="btn ghost" id="zh-pk-install" disabled>② 安装到产品目录</button>
+          <button class="btn ghost" id="zh-pk-deploy" disabled>③ 部署进乾坤鼎</button>
+          <span class="zh-pk-msg" id="zh-pk-msg2"></span>
+        </div>        <div class="note">产物落 <code>patch\staging\packs\&lt;技能&gt;\</code>；重打会把旧包移到 <code>.history\</code>。审计没过会照实标出，不假装通过。</div>
+      </div>
+
+      <div class="card">
+        <h3>已产出的包</h3>
+        <div class="sub">来源哈希、带入了哪些引用、审计结论——都在 EVIDENCE.md 里</div>
+        <table>
+          <thead><tr><th>包</th><th>产出时间</th><th>证据开头</th></tr></thead>
+          <tbody id="zh-pk-list"><tr><td colspan="3" class="sub">正在读取…</td></tr></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h3>已安装包</h3>
+        <div class="sub">引擎侧的落点：packs/&lt;名&gt;/&lt;版本&gt;，每次动作记 registry.jsonl（下表仍是示意，真实状态看上面两张表）</div>
+        <table>
+          <thead><tr><th>包</th><th>版本</th><th>来源</th><th>来源哈希</th><th>重叠率</th><th style="width:150px"></th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="nm">cinedance-h3</td><td>0.1.0</td><td>乾坤鼎 06-prompt</td>
+              <td><code class="hash">9f3c…a21</code></td>
+              <td><span class="tag t-info">0 %</span></td>
+              <td><button class="btn ghost">回滚</button> <button class="btn ghost">查看证据</button></td>
+            </tr>
+            <tr>
+              <td class="nm">qkd-router</td><td>0.7.0</td><td>乾坤鼎 00-router</td>
+              <td><code class="hash">4173…db2</code></td>
+              <td><span class="tag t-warn">62 %</span></td>
+              <td><button class="btn ghost">回滚</button> <button class="btn ghost">查看证据</button></td>
+            </tr>
+            <tr>
+              <td class="nm">shotlist-basic</td><td>0.2.1</td><td>乾坤鼎 04-shotlist</td>
+              <td><code class="hash">77be…c90</code></td>
+              <td><span class="tag t-ok">12 %</span></td>
+              <td><button class="btn ghost">回滚</button> <button class="btn ghost">查看证据</button></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="note">重叠率超过 80% 会拒装，并报「和谁重、重多少」——同一个能力装两遍是技能库烂掉的最快方式。</div>
+      </div>
+
+      <div class="card">
+        <h3>已经装进乾坤鼎的技能</h3>
+        <div class="sub">data\skills\&lt;技能&gt;\ · 带 skill.pack.json 的，就是从包里装进来的</div>
+        <table>
+          <thead><tr><th>技能</th><th>版本</th><th>部署时间</th><th>SKILL.md 哈希</th></tr></thead>
+          <tbody id="zh-dp-list"><tr><td colspan="4" class="sub">正在读取…</td></tr></tbody>
+        </table>
+      </div>
+
+      <h2 class="sec">本机动作记录</h2>
+      <div class="card">
+        <div class="tl" id="zh-pk-log">
+          <div class="ev"><div class="t">还没有动作。上面点「开始打包」，这里会记下每一次的结果。</div><div class="m">—</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 评估对比 -->
+    <section class="view" id="v-eval">
+      <div class="grid2">
+        <div class="card">
+          <h3>两臂对比</h3>
+          <div class="sub">任务集 24 条 · 同一问题问两次，比断言命中</div>
+          <div class="arms">
+            <div class="arm a"><div class="t">A 臂 · 原技能</div><div class="v">14 / 24</div><div class="d">命中 58% · 平均 3.2k tokens</div></div>
+            <div class="arm b"><div class="t">B 臂 · 融合后</div><div class="v" style="color:var(--gold)">21 / 24</div><div class="d">命中 87% · 平均 4.1k tokens</div></div>
+          </div>
+          <div class="chart">
+            <div class="col"><div class="bar2">
+              <i style="height:58%;background:#3a4353"></i><i style="height:87%;background:linear-gradient(180deg,var(--gold),var(--gold-dim))"></i>
+            </div><b>命中率</b></div>
+            <div class="col"><div class="bar2">
+              <i style="height:42%;background:#3a4353"></i><i style="height:28%;background:linear-gradient(180deg,var(--gold),var(--gold-dim))"></i>
+            </div><b>截断率</b></div>
+            <div class="col"><div class="bar2">
+              <i style="height:64%;background:#3a4353"></i><i style="height:82%;background:linear-gradient(180deg,var(--gold),var(--gold-dim))"></i>
+            </div><b>tokens</b></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>逐条断言</h3>
+          <div class="sub">B 臂胜 9 条 · 持平 10 条 · 落后 2 条</div>
+          <table>
+            <tbody>
+              <tr><td>09 · 姿态与表演一致性</td><td style="text-align:right"><span class="tag t-ok">+1</span></td></tr>
+              <tr><td>09 · 镜头顺序与说话人标注</td><td style="text-align:right"><span class="tag t-ok">+1</span></td></tr>
+              <tr><td>09 · 时间戳递增</td><td style="text-align:right"><span class="tag t-ok">+1</span></td></tr>
+              <tr><td>09 · 与 Seedance 隔离</td><td style="text-align:right"><span class="tag t-ok">+1</span></td></tr>
+              <tr><td>05 · 台词原文不改写</td><td style="text-align:right"><span class="tag t-warn">0</span></td></tr>
+              <tr><td>04 · 场景切分粒度</td><td style="text-align:right"><span class="tag t-bad">-1</span></td></tr>
+            </tbody>
+          </table>
+          <div class="note">没有证据就不算优化。每次融合的收益都落一份 zhaohua-eval/v1 证据，能回放到具体断言。</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 证据链 -->
+    <section class="view" id="v-evidence">
+      <div class="grid2">
+        <div class="card">
+          <h3>EVIDENCE.md · cinedance-h3 0.1.0</h3>
+          <div class="sub">由 pack 生成，全程不调用模型</div>
+          <dl class="kv">
+            <dt>来源</dt><dd>D:\乾坤鼎\rendered\skills\06-prompt</dd>
+            <dt>来源哈希</dt><dd>sha256:b41e9d7c2f08…5c1a</dd>
+            <dt>宿主</dt><dd>data\skills\film-cinedance@0.1.42</dd>
+            <dt>宿主哈希</dt><dd>sha256:d7572ef9e277…20c0</dd>
+            <dt>审计结论</dt><dd style="color:var(--ok)">R01–R10 全通过</dd>
+            <dt>引用带入</dt><dd>5 个（h3-prompt-format / 十二维 / 镜表 …）</dd>
+            <dt>打包时间</dt><dd>2026-11-15 13:31:07</dd>
+          </dl>
+        </div>
+        <div class="card">
+          <h3>引用清单</h3>
+          <div class="sub">每个引用都有哈希与来源</div>
+          <table>
+            <tbody>
+              <tr><td class="nm">references/h3-prompt-format.md</td><td><code class="hash">4a17…</code></td></tr>
+              <tr><td class="nm">references/compile-dimensions.md</td><td><code class="hash">cc02…</code></td></tr>
+              <tr><td class="nm">references/generation-units.md</td><td><code class="hash">1e88…</code></td></tr>
+              <tr><td class="nm">references/soundscape-rules.md</td><td><code class="hash">90bb…</code></td></tr>
+              <tr><td class="nm">references/seedance-isolation.md</td><td><code class="hash">7d31…</code></td></tr>
+            </tbody>
+          </table>
+          <div class="note">W_URI_DERIVED 的提醒仍然有效：派生来源是本地路径生成的，不能当作者出处引用。</div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+  const meta = {
+    overview:["概览","技能的质量与来料，一屏看完。"],
+    health:["技能体检","inspect 与 audit 的实跑结果，按阶段排。"],
+    fuse:["融合台","把乾坤鼎的层，合进宿主的阶段技能。"],
+    packs:["包管理","装了什么、版本、来源、能不能回滚。"],
+    eval:["评估对比","老技能 vs 新技能，同一任务集两臂。"],
+    evidence:["证据链","每个包都能追到来源哈希与审计结论。"]
+  };
+  function go(key){
+    const a = document.querySelector(`#nav a[data-v="${key}"]`);
+    if (!a) return;
+    document.querySelectorAll('#nav a').forEach(x => x.classList.toggle('on', x === a));
+    document.querySelectorAll('.view').forEach(v => v.classList.toggle('on', v.id === 'v-' + key));
+    const m = meta[key];
+    document.getElementById('title').textContent = m[0];
+    document.getElementById('desc').textContent = m[1];
+  }
+  document.getElementById('nav').addEventListener('click', (e) => {
+    const a = e.target.closest('a[data-v]');
+    if (a) { go(a.dataset.v); history.replaceState(null, '', '#' + a.dataset.v); }
+  });
+  // 头顶三个入口：乾坤鼎 / 造化鼎 / 工作台 —— 前两个都回到乾坤鼎首页
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-go]');
+    if (b) location.href = b.dataset.go;
+  });
+  go((location.hash || '#overview').slice(1));
+</script>
+<script>
+/* ---------- 造化鼎：首屏 + 真数据 ---------- */
+(function () {
+  const BRIDGE = 'http://127.0.0.1:8791';
+
+  // 首屏（进入造化鼎先看到它，和乾坤鼎的欢迎页对称）
+  const welcome = document.createElement('div');
+  welcome.id = 'zh-welcome';
+  welcome.innerHTML = [
+    '<div class="zw-top">',
+    '  <div class="zw-brand"><div class="zw-mark">鼎</div>',
+    '    <div class="zw-names"><b>造化鼎</b><span>技能的尺子，就在这里</span></div></div>',
+    '  <div class="zw-topbtn">纯本地运行</div>',
+    '</div>',
+    '<div class="zw-body">',
+    '  <div class="zw-left">',
+    '    <div class="zw-eyebrow">一套尺子，量所有技能</div>',
+    '    <h1>技能写得好不好<br>先量一遍</h1>',
+    '    <p class="zw-desc">体检、融合、打包、回滚、评估——十五条技能的问题清单，一次跑完，每条都能追到证据。</p>',
+    '    <div class="zw-tags"><span>技能体检</span><span>融合优化</span><span>打包回滚</span><span>评估对比</span></div>',
+    '    <button type="button" class="zw-go">→ 进入造化鼎</button>',
+    '    <div class="zw-note">纯本地运行，技能不出本机。桥接 CLI 0.7.48，连不上时仍可看静态结果。',
+    '      <br><button type="button" class="zw-back">← 返回乾坤鼎</button></div>',
+    '  </div>',
+    '  <div class="zw-right">',
+    '    <div class="zw-visual">',
+    '      <div class="zw-vis-head"><span>audit 报告</span><span class="zw-vis-k">R01–R10</span></div>',
+    '      <div class="zw-vis-rows">',
+    '        <div><i></i>ai-film-router<span class="p">全过</span></div>',
+    '        <div><i></i>film-cinedance<span class="w">R10</span></div>',
+    '        <div><i></i>canvas<span class="p">全过</span></div>',
+    '        <div><i></i>workflow<span class="w">R05</span></div>',
+    '      </div>',
+    '      <div class="zw-vis-foot">15 技能 · 失败 12 · 58 ms</div>',
+    '      <div class="zw-vis-title">把技能的问题<br>一次说清</div>',
+    '    </div>',
+    '  </div>',
+    '</div>',
+    '<div class="zw-bottom"><span>CLI 0.7.48</span><span>受管产品 3 个</span></div>',
+  ].join('');
+  document.documentElement.appendChild(welcome);
+
+  const status = document.createElement('span');
+  status.id = 'zh-live';
+  status.textContent = '连接中…';
+  var selBox = document.querySelector('.head .sel');
+  if (selBox) selBox.appendChild(status);
+
+  const style = document.createElement('style');
+  style.textContent = `
+    #zh-welcome{position:fixed;inset:0;z-index:2147483000;display:flex;flex-direction:column;
+      padding:26px 40px 20px;box-sizing:border-box;
+      background:radial-gradient(1100px 720px at 72% 46%, #16202b 0%, #0a0e13 68%);}
+    #zh-welcome .zw-top{display:flex;justify-content:space-between;align-items:center}
+    #zh-welcome .zw-brand{display:flex;align-items:center;gap:12px}
+    #zh-welcome .zw-mark{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+      font-size:20px;font-weight:700;color:#14181d;background:linear-gradient(135deg,#e6cd93,#b58f45)}
+    #zh-welcome .zw-names{display:flex;flex-direction:column;line-height:1.35}
+    #zh-welcome .zw-names b{color:#f0ece2;font-size:17px;letter-spacing:.03em}
+    #zh-welcome .zw-names span{color:#7f8b99;font-size:12px}
+    #zh-welcome .zw-topbtn{border:1px solid #2a3340;color:#9aa7b6;font-size:12px;padding:8px 14px;border-radius:10px;background:rgba(255,255,255,.02)}
+    #zh-welcome .zw-body{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center;
+      max-width:1180px;width:100%;margin:0 auto}
+    #zh-welcome .zw-left{max-width:470px}
+    #zh-welcome .zw-eyebrow{color:#8b98a8;font-size:12px;letter-spacing:.14em;margin-bottom:16px}
+    #zh-welcome h1{font-size:46px;line-height:1.28;color:#f4f1ea;margin:0 0 18px;letter-spacing:.01em}
+    #zh-welcome .zw-desc{color:#9aa7b6;font-size:14px;line-height:1.95;margin:0 0 22px}
+    #zh-welcome .zw-tags{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:26px}
+    #zh-welcome .zw-tags span{font-size:12px;color:#c9b489;border:1px solid #3a3427;background:#171410;padding:6px 11px;border-radius:8px}
+    #zh-welcome .zw-go{width:340px;padding:16px 0;border:0;border-radius:12px;background:#f3efe6;color:#14181d;
+      font-size:15px;font-weight:600;cursor:pointer}
+    #zh-welcome .zw-go:hover{background:#fff}
+    #zh-welcome .zw-note{margin-top:14px;font-size:12px;color:#6f7d8c;line-height:1.8}
+    #zh-welcome .zw-back{margin-top:8px;padding:0;border:0;background:transparent;color:#8b98a8;font-size:12px;cursor:pointer}
+    #zh-welcome .zw-back:hover{color:#d8b26a}
+    #zh-welcome .zw-right{display:flex;justify-content:flex-end}
+    #zh-welcome .zw-visual{width:100%;max-width:520px;aspect-ratio:4/3;border-radius:18px;padding:22px 24px;box-sizing:border-box;
+      display:flex;flex-direction:column;border:1px solid #1e2833;overflow:hidden;
+      background:linear-gradient(160deg,#121a23 0%,#0d131a 60%,#141c25 100%);box-shadow:0 24px 60px rgba(0,0,0,.45)}
+    #zh-welcome .zw-vis-head{display:flex;justify-content:space-between;color:#8b98a8;font-size:12px;letter-spacing:.08em;margin-bottom:16px}
+    #zh-welcome .zw-vis-k{color:#6b5d3d}
+    #zh-welcome .zw-vis-rows{display:flex;flex-direction:column;gap:9px;flex:1}
+    #zh-welcome .zw-vis-rows div{display:flex;align-items:center;gap:9px;font-size:13px;color:#c3ccd6;
+      border-bottom:1px dashed #1c2530;padding-bottom:8px}
+    #zh-welcome .zw-vis-rows i{width:6px;height:6px;border-radius:50%;background:#3d4753}
+    #zh-welcome .zw-vis-rows .p{color:#5fbf7f;margin-left:auto;font-size:12px}
+    #zh-welcome .zw-vis-rows .w{color:#d8b26a;margin-left:auto;font-size:12px}
+    #zh-welcome .zw-vis-foot{color:#6f7d8c;font-size:12px;margin-top:14px}
+    #zh-welcome .zw-vis-title{margin-top:10px;color:#f0ece2;font-size:26px;line-height:1.35;letter-spacing:.02em}
+    #zh-welcome .zw-bottom{display:flex;gap:10px}
+    #zh-welcome .zw-bottom span{font-size:12px;color:#6f7d8c;border:1px solid #222b35;border-radius:9px;
+      padding:6px 12px;background:rgba(255,255,255,.02)}
+    #zh-live{margin-left:10px;font-size:12px;color:#6f7d8c;align-self:center}
+    #zh-live.ok{color:#5fbf7f}
+    #zh-live.bad{color:#e07a5f}
+    .zh-banner{margin:0 0 14px;padding:10px 14px;border:1px solid #2b3440;border-radius:10px;
+      font-size:13px;color:#9aa7b6;background:#12171d}
+    .zh-banner b{color:#e8e2d5}
+    .zh-pk-row{display:flex;gap:10px;align-items:center;margin:14px 0 12px;flex-wrap:wrap}
+    .zh-pk-row select{background:#0f141a;border:1px solid #2b3440;color:#dfe6ee;border-radius:9px;padding:9px 12px;font-size:13px;min-width:220px}
+    .zh-pk-msg{font-size:12px;color:#8b98a8}
+    .zh-pk-steps{display:flex;gap:10px;align-items:center;margin:0 0 12px;flex-wrap:wrap}
+    .zh-pk-steps .btn[disabled]{opacity:.45;cursor:not-allowed}
+  `;
+  document.head.appendChild(style);
+
+  const closeWelcome = () => { welcome.style.display = 'none'; };
+  welcome.querySelector('.zw-go').onclick = closeWelcome;
+  welcome.querySelector('.zw-back').onclick = () => { location.href = '/'; };
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && welcome.style.display !== 'none') location.href = '/'; });
+  if (location.hash) welcome.style.display = 'none';
+
+  // 表格重绘
+  function paint(data) {
+    const tbody = document.querySelector('#v-health tbody');
+    const rows = [...data.skills].sort((a, b) => (a.stage || 'zz').localeCompare(b.stage || 'zz'));
+    tbody.innerHTML = rows.map((s) => {
+      const fails = s.rules.filter((r) => r.status === 'fail');
+      const tags = fails.length
+        ? fails.map((r) => `<span class="tag ${r.id === 'R10' ? 't-warn' : 't-bad'}" title="${r.message.replace(/"/g, '&quot;')}">${r.id}</span>`).join('')
+        : '<span class="tag t-ok">全过</span>';
+      const pct = Math.round(((11 - fails.length) / 11) * 100);
+      return `<tr><td class="nm">${s.name}</td><td><span class="stage">${s.stage || '桥'}</span></td>`
+        + `<td>${tags}</td><td><div class="bar"><i style="width:${pct}%"></i></div></td></tr>`;
+    }).join('');
+
+    const h3 = document.querySelector('#v-health .card h3');
+    if (h3) h3.textContent = `${data.total} 个技能的审计结果`;
+    const sub = document.querySelector('#v-health .card .sub');
+    if (sub) sub.textContent = `R01–R10 作者规则 · 失败 ${data.failed} 个 · 规则失败 ${data.rulesTotal} 条 · 用时 ${data.durationMs} ms`;
+
+    const kpis = document.querySelectorAll('#v-overview .kpi .n');
+    if (kpis.length >= 3) {
+      kpis[0].textContent = data.total;
+      kpis[1].textContent = data.passed;
+      kpis[2].textContent = data.rulesTotal;
+    }
+    const ov = document.querySelector('#v-overview');
+    let banner = document.getElementById('zh-ov-banner');
+    if (!banner) {
+      banner = document.createElement('div');
+      banner.id = 'zh-ov-banner';
+      banner.className = 'zh-banner';
+      ov.insertBefore(banner, ov.firstChild);
+    }
+    const tallyText = Object.entries(data.tally).map(function (kv) { return kv[0] + '=' + kv[1]; }).join(' · ');
+    banner.innerHTML = '实时：<b>' + data.total + '</b> 个技能，<b>' + data.failed + '</b> 个有失败项，'
+      + '规则失败合计 <b>' + data.rulesTotal + '</b> 条（' + tallyText + '），'
+      + 'audit 用时 <b>' + data.durationMs + ' ms</b>。';
+  }
+
+  async function load() {
+    try {
+      const h = await fetch(BRIDGE + '/health').then((r) => r.json());
+      if (!h.ok) throw new Error('bridge not ok');
+      status.textContent = '桥已连接';
+      status.className = 'ok';
+      const data = await fetch(BRIDGE + '/audit').then((r) => r.json());
+      paint(data);
+      status.textContent = `桥已连接 · ${data.durationMs} ms`;
+    } catch (err) {
+      status.textContent = '桥未连接（先启动 server.mjs）';
+      status.className = 'bad';
+      const sub = document.querySelector('#v-health .card .sub');
+      if (sub) sub.textContent = '实时数据不可用：造化鼎桥未启动。下面是上一次的静态结果。';
+    }
+  }
+  load();
+  document.querySelector('#nav a[data-v="health"]').addEventListener('click', () => setTimeout(load, 60));
+})();
+</script>
+<script>
+/* ---------- 包管理：真打包 ---------- */
+(function () {
+  const BRIDGE = 'http://127.0.0.1:8791';
+  const sel = document.getElementById('zh-pk-skill');
+  const go = document.getElementById('zh-pk-go');
+  const msg = document.getElementById('zh-pk-msg');
+  const list = document.getElementById('zh-pk-list');
+  const log = document.getElementById('zh-pk-log');
+  if (!sel || !go) return;
+  const pad = (n) => String(n).padStart(2, '0');
+  const fmt = (ms) => { const d = new Date(ms); return (d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()); };
+
+  async function loadPacks() {
+    try {
+      const d = await (await fetch(BRIDGE + '/packs')).json();
+      if (!d.packs || !d.packs.length) { list.innerHTML = '<tr><td colspan="3" class="sub">还没有包。上面打一个试试。</td></tr>'; return; }
+      list.innerHTML = d.packs.map((p) => '<tr><td class="nm">' + p.name + '</td><td>' + fmt(p.mtime) + '</td><td class="sub">' + String(p.head || '').slice(0, 120) + '</td></tr>').join('');
+    } catch (e) {
+      list.innerHTML = '<tr><td colspan="3" class="sub">桥未连接：先运行 patch\\start-bridge.ps1</td></tr>';
+    }
+  }
+  function pushLog(title, meta) {
+    const div = document.createElement('div');
+    div.className = 'ev';
+    div.innerHTML = '<div class="t">' + title + '</div><div class="m">' + meta + '</div>';
+    if (log.firstChild && log.firstChild.querySelector('.t') && log.firstChild.textContent.indexOf('还没有动作') >= 0) log.innerHTML = '';
+    log.prepend(div);
+  }
+  go.addEventListener('click', async () => {
+    const skill = sel.value;
+    if (!skill) return;
+    go.disabled = true; msg.textContent = '打包中…';
+    try {
+      const d = await (await fetch(BRIDGE + '/pack?skill=' + encodeURIComponent(skill))).json();
+      if (d.error) { msg.textContent = d.error; pushLog(skill + ' 打包失败', d.error); return; }
+      const ok = !!(d.pack && d.pack.ok);
+      msg.textContent = ok ? ('完成 · ' + d.durationMs + ' ms') : ('已产出，但审计有未过项 · ' + d.durationMs + ' ms');
+      pushLog(skill + ' 打包' + (ok ? '完成' : '（有未过项）') + ' · ' + (d.pack && d.pack.data ? d.pack.data.bytes : '?') + ' B',
+        new Date().toLocaleTimeString() + ' · pack ' + (ok ? 'pass' : 'fail') + (d.history ? ' · 旧包已移入 .history' : ''));
+      await loadPacks();
+      document.dispatchEvent(new CustomEvent('cauldron:packed', { detail: { skill: skill, ok: ok } }));
+    } catch (e) {
+      msg.textContent = '桥未连接';
+    } finally { go.disabled = false; }
+  });
+  document.getElementById('nav').addEventListener('click', (e) => {
+    const a = e.target.closest('a[data-v]');
+    if (a && a.dataset.v === 'packs') loadPacks();
+  });
+  loadPacks();
+  fetch(BRIDGE + '/audit').then((r) => r.json()).then((d) => {
+    if (!d.skills) return;
+    sel.innerHTML = d.skills.map((s) => '<option value="' + s.name + '">' + s.name + (s.ok ? '' : ' · 有失败项') + '</option>').join('');
+    const canvas = d.skills.find((s) => s.name === 'canvas');
+    if (canvas) sel.value = 'canvas';
+  }).catch(() => {
+    ['ai-film-router', 'film-cinedance', 'canvas', 'workflow'].forEach((n) => {
+      const o = document.createElement('option'); o.value = n; o.textContent = n; sel.appendChild(o);
+    });
+  });
+})();
+</script><script>
+/* ---------- 包管理：安装 + 部署 ---------- */
+(function () {
+  const BRIDGE = 'http://127.0.0.1:8791';
+  const sel = document.getElementById('zh-pk-skill');
+  const btnInstall = document.getElementById('zh-pk-install');
+  const btnDeploy = document.getElementById('zh-pk-deploy');
+  const msg = document.getElementById('zh-pk-msg2');
+  const dpList = document.getElementById('zh-dp-list');
+  if (!btnInstall || !btnDeploy) return;
+  let currentSkill = '';
+
+  const pad = (n) => String(n).padStart(2, '0');
+  const fmt = (ms) => { const d = new Date(ms); return (d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()); };
+
+  const pk = () => document.getElementById('zh-pk-msg');
+
+  async function loadDeployed() {
+    try {
+      const d = await (await fetch(BRIDGE + '/deployed')).json();
+      const rows = (d.skills || []).filter((s) => s.version);
+      if (!rows.length) { dpList.innerHTML = '<tr><td colspan="4" class="sub">还没有从包装进来的技能。</td></tr>'; return; }
+      dpList.innerHTML = rows.map((s) => '<tr><td class="nm">' + s.name + '</td><td>' + s.version + '</td><td>' + fmt(s.mtime) + '</td><td><code class="hash">' + String(s.skillSha || '').slice(0, 10) + '…</code></td></tr>').join('');
+    } catch (e) {
+      dpList.innerHTML = '<tr><td colspan="4" class="sub">桥未连接：先运行 patch\\start-bridge.ps1</td></tr>';
+    }
+  }
+
+  // 打包完成后由上一个脚本 unlock：监听 select 与打包结果
+  const unlock = () => { currentSkill = sel.value; btnInstall.disabled = false; btnDeploy.disabled = true; msg.textContent = ''; };
+  sel.addEventListener('change', unlock);
+  ["click", "change"].forEach((ev) => pk() && pk().addEventListener(ev, () => { /* noop */ }));
+  document.addEventListener('cauldron:packed', (e) => { if (e.detail && e.detail.skill) { currentSkill = e.detail.skill; btnInstall.disabled = false; btnDeploy.disabled = true; } });
+
+  btnInstall.addEventListener('click', async () => {
+    const skill = currentSkill || sel.value;
+    if (!skill) return;
+    btnInstall.disabled = true; msg.textContent = '安装中…';
+    try {
+      const d = await (await fetch(BRIDGE + '/install?skill=' + encodeURIComponent(skill))).json();
+      if (d.error) { msg.textContent = d.error; return; }
+      msg.textContent = (d.action || 'pack-install') + ' · ' + (d.installed ? d.installed.version : '?') + (d.previous ? '（上一版 ' + d.previous + ' → .history）' : '') + ' · ' + d.durationMs + ' ms';
+      btnDeploy.disabled = false;
+    } catch (e) { msg.textContent = '桥未连接'; }
+    finally { btnInstall.disabled = false; }
+  });
+
+  let pending = null;
+  btnDeploy.addEventListener('click', async () => {
+    const skill = currentSkill || sel.value;
+    if (!skill) return;
+    if (!pending) {
+      const d = await (await fetch(BRIDGE + '/deploy?skill=' + encodeURIComponent(skill))).json();
+      if (d.needsConfirm) { pending = skill; msg.textContent = d.message + ' 再点一次确认。'; btnDeploy.textContent = '③ 确认写入'; return; }
+      if (d.error) { msg.textContent = d.error; return; }
+    }
+    msg.textContent = '写入中…';
+    try {
+      const d = await (await fetch(BRIDGE + '/deploy?skill=' + encodeURIComponent(skill) + '&confirm=yes')).json();
+      if (d.error) { msg.textContent = d.error; return; }
+      msg.textContent = d.ok ? ('已写入 v' + d.version + ' · 校验一致 · ' + (d.backup ? '旧目录已备份' : '无旧目录')) : '写入后校验不一致，请回滚';
+      pending = null; btnDeploy.textContent = '③ 部署进乾坤鼎';
+      loadDeployed();
+    } catch (e) { msg.textContent = '桥未连接'; }
+  });
+
+  loadDeployed();
+  document.getElementById('nav').addEventListener('click', (e) => {
+    const a = e.target.closest('a[data-v]');
+    if (a && a.dataset.v === 'packs') loadDeployed();
+  });
+})();
+</script></body>
+</html>

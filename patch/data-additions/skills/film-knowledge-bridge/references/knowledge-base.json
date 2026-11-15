@@ -1,0 +1,13 @@
+{
+  "name": "造化乾坤鼎本地专业知识库",
+  "mode": "markdown",
+  "root": "",
+  "database": "",
+  "catalog": "",
+  "festival_catalog": "",
+  "readable_documents": 0,
+  "indexed_documents": 0,
+  "indexed_chunks": 0,
+  "generated_at": "",
+  "note": "本文件是 film-knowledge-bridge 的后备配置：项目内 00-项目管理/knowledge-base.json 优先，这里只在本项目未配置时提供默认值。root 为空表示尚未选择知识库目录。"
+}
