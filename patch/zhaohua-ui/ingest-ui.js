@@ -28,7 +28,7 @@
       const where = it.action === 'gap'
         ? (top ? '<b>' + top.skill + '</b> <span class="sub">' + top.score + ' 分 · ' + (top.evidence || []).join(' ') + '</span>' : '<span class="sub">—</span>')
         : '<span class="sub">' + it.judgeWhy + '</span>';
-      return '<tr><td class="mono">' + it.rel + '</td>' +
+      return '<tr><td class="mono" title="' + it.rel + '">' + it.rel.split('/').pop() + '</td>' +
         '<td><span class="gp-k ' + (it.kind === 'method' ? 'gp-k-method' : it.kind === 'skill' ? 'gp-k-spec' : it.kind === 'spec' ? 'gp-k-spec' : it.kind === 'ledger' ? 'gp-k-ledger' : it.kind === 'code' ? 'gp-k-code' : 'gp-k-example') + '" title="' + (it.kindWhy || '') + '">' + it.kind + '</span></td>' +
         '<td><span class="gp-k ' + a.cls + '">' + a.text + '</span>' + conf + '</td>' +
         '<td class="mono">' + Math.round(it.bytes / 1024) + 'KB</td>' +
