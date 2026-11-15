@@ -5,7 +5,8 @@ import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, s
 import { createHash } from 'node:crypto';
 import { dirname, join } from 'node:path';
 const ZHAOHUA_DIR = process.env.ZHAOHUA_DIR || 'D:\\造化鼎';
-const SKILLS_DIR = process.env.ZHAOHUA_SKILLS || 'D:\\造化乾坤鼎-工作台\\patch\\staging\\skills';
+// 唯一真相：patch\skills（不再用 staging\skills 当打包源）
+const SKILLS_DIR = process.env.ZHAOHUA_SKILLS || 'D:\\造化乾坤鼎-工作台\\patch\\skills';
 const PORT = Number(process.env.ZHAOHUA_BRIDGE_PORT || 8791);
 const PACKS_DIR = process.env.ZHAOHUA_PACKS || 'D:\\造化乾坤鼎-工作台\\patch\\staging\\packs';
 const PRODUCT_DIR = process.env.ZHAOHUA_PRODUCT || 'D:\\造化乾坤鼎-工作台\\patch\\staging\\product';

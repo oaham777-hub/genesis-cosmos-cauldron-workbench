@@ -1,0 +1,20 @@
+{
+  "schema": "zhaohua-pack/v1",
+  "name": "canvas",
+  "version": "0.1.1",
+  "license": "UNLICENSED",
+  "description": "Toonflow 画布操作手册。使用画布工具创建、切换和重命名画布，添加、移动、重命名、连接和删除节点，自动整理整幅画布、调整视口，以及调用节点注册的函数。用户要求操作当前画布或搭建节点流程时使用；不要用于与上文定义无关的任务。",
+  "capabilities": [],
+  "rules": [],
+  "references": [
+    "references/assetGuide.md",
+    "references/productionGuide.md",
+    "references/videoProduction.md"
+  ],
+  "sources": [
+    {
+      "path": "canvas",
+      "sha256": "f9d171e0c647421ac5e40a19df4728e6d76d674ce2a9f7ab9468ba0e18f7e9cf"
+    }
+  ]
+}

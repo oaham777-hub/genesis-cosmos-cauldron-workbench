@@ -8,7 +8,7 @@
 |---|---|---|---|
 | 原件 | `D:\洋子工作台\_pristine\stable-0.1.42\` | 0.1.42 只读封存，diff / 回滚基准 | 谁也不写 |
 | 开发 | `D:\造化乾坤鼎-工作台\_work\stable\` | 我们的开发副本，改动都落这里 | 只由 `apply.ps1` 写 |
-| 补丁 | `D:\造化乾坤鼎-工作台\patch\`（本目录） | 字符串表 / 覆盖层 / data 增量 / 脚本 | 我们改这里 |
+| 补丁 | `D:\造化乾坤鼎-工作台\patch\`（本目录） | 字符串表 / 覆盖层 / **技能唯一真相** / 工具 / 脚本 | 我们改这里 |
 
 基线清单：`D:\洋子工作台\_pristine\manifest-baseline.jsonl`（12,474 个文件的 size + mtime + sha256）。
 
@@ -94,3 +94,31 @@ pwsh -File patch\verify.ps1 -Target "_work\stable"
 | 部署 | 桥的 `/deploy`（需 `confirm=yes`） | `_work\stable\data\skills\<技能>\`，旧目录先备份到 `patch\_backup\skills\<时间>\<技能>` |
 
 注意：`--adopt` 不加 `--manifest` 就不会产出 `skill.pack.json`，后面 pack-install 会直接报「下没有 skill.pack.json」。
+
+## 技能的唯一真相（2026-11-15 收口）
+
+技能只允许有**一份可编辑的源**：本目录的 `skills\`。其余都是它的下游。
+
+| 路径 | 角色 | 谁写 |
+|---|---|---|
+| `patch\skills\`（16 个技能 / 360 文件） | **唯一真相**，可编辑、进 git | 我们直接改这里 |
+| `_work\stable\data\skills\` | 运行时副本，乾坤鼎从这里读 | 只由 `apply.ps1 -Skills` 写 |
+| `patch\staging\packs\`、`patch\staging\product\` | 打包/安装产物（可再生） | 造化鼎 CLI 写 |
+| ~~`patch\staging\skills\`~~、~~`patch\data-additions\skills\`~~ | 已删除，不再保留第四份 | — |
+
+三条命令：
+
+```powershell
+# 1. 从真相同步到运行时（改了技能就跑这条）
+.\apply.ps1 -Target "D:\造化乾坤鼎-工作台\_work\stable" -Skills
+
+# 2. 只读检查有没有漂移（exit 0 一致 / 3 有漂移）
+.\apply.ps1 -Target "D:\造化乾坤鼎-工作台\_work\stable" -Check
+
+# 3. 改完技能体检一遍（16/16 应该全过）
+node ...\zhaohua.mjs audit D:\造化乾坤鼎-工作台\patch\skills
+```
+
+**纪律**：不要直接编辑 `_work\stable\data\skills\`。改那边的话，下一次 `-Skills` 会被真相覆盖，漂移检查也会报 `只在本机有`。要么改 `patch\skills\` 再同步，要么承认它是一次性实验。
+
+桥（`zhaohua-ui\server.mjs`）的打包源已从 `staging\skills` 改为 `patch\skills`，`/health` 会回 `skillsDir` 指到真相目录。

@@ -23,7 +23,9 @@ param(
   [switch]$Strings,
   [switch]$Overlay,
   [switch]$Pill,
+  [switch]$Skills,
   [switch]$Data,
+  [switch]$Check,
   [switch]$Stages,
   [switch]$All,
   [switch]$DryRun
@@ -31,8 +33,8 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $Root = $PSScriptRoot
-if ($All) { $Strings = $true; $Overlay = $true; $Pill = $true; $Data = $true; $Stages = $true }
-if (-not ($Strings -or $Overlay -or $Pill -or $Data -or $Stages)) { throw "至少指定 -Strings / -Overlay / -Pill / -Data / -Stages / -All 之一" }
+if ($All) { $Strings = $true; $Overlay = $true; $Pill = $true; $Skills = $true; $Data = $true; $Stages = $true }
+if (-not ($Strings -or $Overlay -or $Pill -or $Skills -or $Data -or $Stages -or $Check)) { throw "至少指定 -Strings / -Overlay / -Pill / -Skills / -Data / -Stages / -Check / -All 之一" }
 if (-not (Test-Path $Target)) { throw "目标不存在：$Target" }
 $Target = (Resolve-Path $Target).Path
 
@@ -153,10 +155,45 @@ if ($Overlay) {
   }
 }
 
+# ---------- B2. 唯一真相：patch\skills -> data\skills ----------
+if ($Skills) {
+  $canon = Join-Path $Root 'skills'
+  if (-not (Test-Path $canon)) {
+    Write-Warning "找不到 patch\skills，跳过"
+    $report.actions += @{ action = 'skills'; status = 'skipped'; reason = 'canonical-missing' }
+  } else {
+    $dstRoot = Join-Path $Target 'data\skills'
+    New-Item -ItemType Directory -Force -Path $dstRoot | Out-Null
+    $n = 0
+    foreach ($it in @(Get-ChildItem $canon -Directory | Sort-Object Name)) {
+      $dst = Join-Path $dstRoot $it.Name
+      if (-not $DryRun) {
+        if (-not (Test-Path $dst)) { New-Item -ItemType Directory -Force -Path $dst | Out-Null }
+        robocopy $it.FullName $dst /E /COPY:DAT /R:1 /W:1 /NFL /NDL /NJH /NJS | Out-Null
+      }
+      Write-Host "  同步技能 $($it.Name)" -ForegroundColor Cyan
+      $report.actions += @{ action = 'skills'; item = $it.Name; type = 'dir' }
+      $n++
+    }
+    Write-Host "技能同步：$n 个目录" -ForegroundColor Green
+  }
+}
+
+# ---------- B3. 漂移检查：patch\skills 与 data\skills 是否一致 ----------
+if ($Check) {
+  $node = Join-Path $Target 'app\Resources\app\runtime\node\node.exe'
+  $tool = Join-Path $Root 'tools\check-sync.mjs'
+  if ((Test-Path $node) -and (Test-Path $tool)) {
+    & $node $tool (Join-Path $Root 'skills') (Join-Path $Target 'data\skills')
+    $code = $LASTEXITCODE
+    $report.actions += @{ action = 'check'; exitCode = $code }
+    if ($code -ne 0) { Write-Warning "检测到漂移：data\skills 与 patch\skills 不一致（用 -Skills 重新同步）" }
+  } else { Write-Warning "缺 node 或 check-sync.mjs，跳过漂移检查" }
+}
 # ---------- C. data-additions ----------
 if ($Data) {
   $add = Join-Path $Root 'data-additions'
-  foreach ($kind in 'skills', 'tools', 'providers', 'ext') {
+  foreach ($kind in 'tools', 'providers', 'ext') {
     $src = Join-Path $add $kind
     if (-not (Test-Path $src)) { continue }
     $items = @(Get-ChildItem $src -Force | Where-Object { $_.Name -ne '.gitkeep' })
