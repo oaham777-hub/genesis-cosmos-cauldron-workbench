@@ -571,31 +571,12 @@
 
       <div class="card">
         <h3>已安装包</h3>
-        <div class="sub">引擎侧的落点：packs/&lt;名&gt;/&lt;版本&gt;，每次动作记 registry.jsonl（下表仍是示意，真实状态看上面两张表）</div>
+        <div class="sub">引擎侧的落点：<code>packs\&lt;名&gt;\&lt;版本&gt;\</code>，每次动作记 registry.jsonl。下表读的是 <code>/packs-installed</code> 真实目录。</div>
         <table>
-          <thead><tr><th>包</th><th>版本</th><th>来源</th><th>来源哈希</th><th>重叠率</th><th style="width:150px"></th></tr></thead>
-          <tbody>
-            <tr>
-              <td class="nm">cinedance-h3</td><td>0.1.0</td><td>乾坤鼎 06-prompt</td>
-              <td><code class="hash">9f3c…a21</code></td>
-              <td><span class="tag t-info">0 %</span></td>
-              <td><button class="btn ghost">回滚</button> <button class="btn ghost">查看证据</button></td>
-            </tr>
-            <tr>
-              <td class="nm">qkd-router</td><td>0.7.0</td><td>乾坤鼎 00-router</td>
-              <td><code class="hash">4173…db2</code></td>
-              <td><span class="tag t-warn">62 %</span></td>
-              <td><button class="btn ghost">回滚</button> <button class="btn ghost">查看证据</button></td>
-            </tr>
-            <tr>
-              <td class="nm">shotlist-basic</td><td>0.2.1</td><td>乾坤鼎 04-shotlist</td>
-              <td><code class="hash">77be…c90</code></td>
-              <td><span class="tag t-ok">12 %</span></td>
-              <td><button class="btn ghost">回滚</button> <button class="btn ghost">查看证据</button></td>
-            </tr>
-          </tbody>
+          <thead><tr><th>包</th><th>版本</th><th>来源目录</th><th>许可</th><th>来源 sha</th><th>引用/能力</th></tr></thead>
+          <tbody id="zh-pi"><tr><td colspan="6" class="sub">正在读取…</td></tr></tbody>
         </table>
-        <div class="note">重叠率超过 80% 会拒装，并报「和谁重、重多少」——同一个能力装两遍是技能库烂掉的最快方式。</div>
+        <div class="note" id="zh-pi-note">重叠率超过 80% 会拒装，并报「和谁重、重多少」——同一个能力装两遍是技能库烂掉的最快方式。</div>
       </div>
 
       <div class="card">
@@ -633,72 +614,31 @@
     <section class="view" id="v-eval">
       <div class="grid2">
         <div class="card">
-          <h3>两臂对比</h3>
-          <div class="sub">任务集 24 条 · 同一问题问两次，比断言命中</div>
-          <div class="arms">
-            <div class="arm a"><div class="t">A 臂 · 原技能</div><div class="v">14 / 24</div><div class="d">命中 58% · 平均 3.2k tokens</div></div>
-            <div class="arm b"><div class="t">B 臂 · 融合后</div><div class="v" style="color:var(--gold)">21 / 24</div><div class="d">命中 87% · 平均 4.1k tokens</div></div>
-          </div>
-          <div class="chart">
-            <div class="col"><div class="bar2">
-              <i style="height:58%;background:#3a4353"></i><i style="height:87%;background:linear-gradient(180deg,var(--gold),var(--gold-dim))"></i>
-            </div><b>命中率</b></div>
-            <div class="col"><div class="bar2">
-              <i style="height:42%;background:#3a4353"></i><i style="height:28%;background:linear-gradient(180deg,var(--gold),var(--gold-dim))"></i>
-            </div><b>截断率</b></div>
-            <div class="col"><div class="bar2">
-              <i style="height:64%;background:#3a4353"></i><i style="height:82%;background:linear-gradient(180deg,var(--gold),var(--gold-dim))"></i>
-            </div><b>tokens</b></div>
-          </div>
+          <h3>最近一次真实证据</h3>
+          <div class="sub" id="ev-meta">正在读取最近一份证据…</div>
+          <div class="arms" id="ev-arms"></div>
+          <div class="chart" id="ev-chart"></div>
+          <div class="note" id="ev-note"></div>
         </div>
         <div class="card">
-          <h3>逐条断言</h3>
-          <div class="sub">B 臂胜 9 条 · 持平 10 条 · 落后 2 条</div>
+          <h3>逐条断言命中</h3>
+          <div class="sub" id="ev-assert-sub">按「任务 × 断言」比对两臂，✓ 表示该臂命中</div>
           <table>
-            <tbody>
-              <tr><td>09 · 姿态与表演一致性</td><td style="text-align:right"><span class="tag t-ok">+1</span></td></tr>
-              <tr><td>09 · 镜头顺序与说话人标注</td><td style="text-align:right"><span class="tag t-ok">+1</span></td></tr>
-              <tr><td>09 · 时间戳递增</td><td style="text-align:right"><span class="tag t-ok">+1</span></td></tr>
-              <tr><td>09 · 与 Seedance 隔离</td><td style="text-align:right"><span class="tag t-ok">+1</span></td></tr>
-              <tr><td>05 · 台词原文不改写</td><td style="text-align:right"><span class="tag t-warn">0</span></td></tr>
-              <tr><td>04 · 场景切分粒度</td><td style="text-align:right"><span class="tag t-bad">-1</span></td></tr>
-            </tbody>
+            <thead><tr><th>任务 / 断言</th><th style="text-align:center" id="ev-th-a">A</th><th style="text-align:center" id="ev-th-b">B</th></tr></thead>
+            <tbody id="ev-asserts"><tr><td colspan="3" class="sub">正在读取…</td></tr></tbody>
           </table>
-          <div class="note">没有证据就不算优化。每次融合的收益都落一份 zhaohua-eval/v1 证据，能回放到具体断言。</div>
+          <div class="note">以上全部来自 <code>/eval-run</code> 返回的 zhaohua-eval/v1 证据文件，没跑过就是空的——不再放示意数字。</div>
         </div>
       </div>
     </section>
 
     <!-- 证据链 -->
     <section class="view" id="v-evidence">
-      <div class="grid2">
-        <div class="card">
-          <h3>EVIDENCE.md · cinedance-h3 0.1.0</h3>
-          <div class="sub">由 pack 生成，全程不调用模型</div>
-          <dl class="kv">
-            <dt>来源</dt><dd>D:\乾坤鼎\rendered\skills\06-prompt</dd>
-            <dt>来源哈希</dt><dd>sha256:b41e9d7c2f08…5c1a</dd>
-            <dt>宿主</dt><dd>data\skills\film-cinedance@0.1.42</dd>
-            <dt>宿主哈希</dt><dd>sha256:d7572ef9e277…20c0</dd>
-            <dt>审计结论</dt><dd style="color:var(--ok)">R01–R10 全通过</dd>
-            <dt>引用带入</dt><dd>5 个（h3-prompt-format / 十二维 / 镜表 …）</dd>
-            <dt>打包时间</dt><dd>2026-11-15 13:31:07</dd>
-          </dl>
-        </div>
-        <div class="card">
-          <h3>引用清单</h3>
-          <div class="sub">每个引用都有哈希与来源</div>
-          <table>
-            <tbody>
-              <tr><td class="nm">references/h3-prompt-format.md</td><td><code class="hash">4a17…</code></td></tr>
-              <tr><td class="nm">references/compile-dimensions.md</td><td><code class="hash">cc02…</code></td></tr>
-              <tr><td class="nm">references/generation-units.md</td><td><code class="hash">1e88…</code></td></tr>
-              <tr><td class="nm">references/soundscape-rules.md</td><td><code class="hash">90bb…</code></td></tr>
-              <tr><td class="nm">references/seedance-isolation.md</td><td><code class="hash">7d31…</code></td></tr>
-            </tbody>
-          </table>
-          <div class="note">W_URI_DERIVED 的提醒仍然有效：派生来源是本地路径生成的，不能当作者出处引用。</div>
-        </div>
+      <div class="card">
+        <h3 id="zh-ev-title">EVIDENCE.md</h3>
+        <div class="sub" id="zh-ev-sub">由 pack 生成，全程不调用模型 · 读的是已装包里真实的那一份</div>
+        <div id="zh-ev-body"><div class="sub">正在读取…</div></div>
+        <div class="note">想换一份就看包管理页装了什么；每装一个包，这里就多一份证据。</div>
       </div>
     </section>
   </main>
@@ -1080,19 +1020,6 @@
     out.style.cssText = 'margin-top:12px';
     box.appendChild(out);
     evalView.insertBefore(box, evalView.firstChild);
-    // 下面那张是设计稿里的示意数据，不是本机实测——标出来，别当真
-    Array.prototype.forEach.call(evalView.querySelectorAll('.card'), function (c) {
-      if (c === box) return;
-      var h3 = c.querySelector('h3');
-      if (h3 && /两臂对比|逐条断言/.test(h3.textContent)) {
-        var b = document.createElement('span');
-        b.className = 'tag';
-        b.textContent = '示例';
-        b.style.cssText = 'margin-left:8px;font-size:11px;border:1px solid #4a4030;color:#c9a86a;border-radius:999px;padding:1px 7px;vertical-align:middle';
-        h3.appendChild(b);
-        c.style.opacity = '0.55';
-      }
-    });
 
     api('/creds').then(function (c) {
       keyTag.textContent = c.hasKey ? 'key 已就绪（只在跑的时候注入子进程）' : '没有 key：把 key 放进 patch\\secrets\\deepseek.key';
@@ -1303,6 +1230,8 @@
 })();
 </script>
   
+  <script src="eval-ui.js"></script>
+  <script src="packs-ui.js"></script>
   <script src="distill.js?v=20261115e"></script>
   <script src="gap.js?v=1"></script>
   <script src="ingest-ui.js"></script>

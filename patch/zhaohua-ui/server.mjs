@@ -594,13 +594,90 @@ const server = Bun.serve({
           packs: listPacks(),
         });
       }
-      if (url.pathname === '/deployed') return reply({ dir: DEPLOY_DIR, skills: deployedList() });
+      if (url.pathname === '/packs-installed') {
+      const root = join(PRODUCT_DIR, 'packs');
+      const list = [];
+      try {
+        for (const name of readdirSync(root)) {
+          const nd = join(root, name);
+          let st; try { st = statSync(nd); } catch { continue; }
+          if (!st.isDirectory() || name === '.history') continue;
+          for (const ver of readdirSync(nd)) {
+            const vd = join(nd, ver);
+            let vs; try { vs = statSync(vd); } catch { continue; }
+            if (!vs.isDirectory()) continue;
+            const man = join(vd, 'skill.pack.json');
+            let meta = {};
+            if (existsSync(man)) { try { meta = JSON.parse(readFileSync(man, 'utf8')); } catch {} }
+            const src0 = (meta.sources || [])[0] || {};
+            list.push({
+              name, version: ver,
+              source: src0.path || meta.source || null,
+              license: meta.license || null,
+              sha256: (src0.sha256 || meta.sha256 || '').slice(0, 12) || null,
+              refs: (meta.references || []).length,
+              caps: (meta.capabilities || []).length,
+              mtime: vs.mtimeMs,
+            });
+          }
+        }
+      } catch {}
+      list.sort((a, b) => String(a.name).localeCompare(String(b.name)) || String(b.version).localeCompare(String(a.version)));
+      let history = 0;
+      try { const h = join(root, '.history'); if (existsSync(h)) history = readdirSync(h).length; } catch {}
+      return reply({ ok: true, dir: root, packs: list, history });
+    }
+
+    if (url.pathname === '/pack-evidence') {
+      const name = url.searchParams.get('name') || '';
+      const ver = url.searchParams.get('version') || '';
+      if (!/^[\w.\-]+$/.test(name) || !/^[\w.\-]+$/.test(ver)) return reply({ ok: false, error: 'name/version 非法' }, 400);
+      const p = join(PRODUCT_DIR, 'packs', name, ver, 'EVIDENCE.md');
+      if (!existsSync(p)) return reply({ ok: false, error: '这份包没有 EVIDENCE.md' }, 404);
+      const text = readFileSync(p, 'utf8');
+      return reply({ ok: true, name, version: ver, bytes: Buffer.byteLength(text), text: text.slice(0, 20000) });
+    }
+
+    if (url.pathname === '/deployed') return reply({ dir: DEPLOY_DIR, skills: deployedList() });
 
       // ── P4：评估（两臂）与融合（create）──────────────────────────────
       if (url.pathname === '/creds') {
         return reply({ keyFile: SECRET_FILE, hasKey: readSecret().length > 0 });
       }
-      if (url.pathname === '/eval-configs') {
+      if (url.pathname === '/eval-runs') {
+      const dir = join(EVAL_DIR, 'runs');
+      const list = [];
+      try {
+        for (const f of readdirSync(dir)) {
+          if (!f.endsWith('.json')) continue;
+          const p = join(dir, f);
+          let head = {};
+          try {
+            const j = JSON.parse(readFileSync(p, 'utf8'));
+            head = {
+              file: f, generated_at: j.generated_at || null, model: j.model || null,
+              tasks: ((j.config || {}).tasks || []).length,
+              arms: ((j.config || {}).arms || []).map((a) => a.id),
+              assertions: (j.assertions || []).length,
+              tokens: j.tokens || null,
+            };
+          } catch { head = { file: f, error: '解析失败' }; }
+          list.push({ ...head, bytes: statSync(p).size, mtime: statSync(p).mtimeMs });
+        }
+      } catch {}
+      list.sort((a, b) => (b.mtime || 0) - (a.mtime || 0));
+      return reply({ ok: true, dir, runs: list });
+    }
+
+    if (url.pathname === '/eval-run') {
+      const f = url.searchParams.get('file') || '';
+      if (!/^[\w.\-]+$/.test(f)) return reply({ ok: false, error: 'file 非法' }, 400);
+      const p = join(EVAL_DIR, 'runs', f);
+      if (!existsSync(p)) return reply({ ok: false, error: '没有这份证据：' + f }, 404);
+      return reply({ ok: true, file: f, evidence: JSON.parse(readFileSync(p, 'utf8')) });
+    }
+
+    if (url.pathname === '/eval-configs') {
         if (!existsSync(EVAL_DIR)) return reply({ dir: EVAL_DIR, configs: [] });
         const configs = readdirSync(EVAL_DIR)
           .filter((f) => f.endsWith('.json'))
