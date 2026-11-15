@@ -313,7 +313,18 @@ const server = Bun.serve({
         return json({ ok: true, seq: ev.seq });
       }
 
-      if (url.pathname === '/distill') return json(await runDistill(['map']));
+      if (url.pathname === '/sources') return json(await runDistill(['sources']));
+    if (url.pathname === '/distill-plan') {
+      return json(await runDistill(['plan', '--src', url.searchParams.get('src') || '', '--skill', url.searchParams.get('skill') || '', '--to', url.searchParams.get('to') || '']));
+    }
+    if (url.pathname === '/distill-land') {
+      const to = url.searchParams.get('to') || '';
+      if (!url.searchParams.get('src') || !url.searchParams.get('skill')) return json({ ok: false, error: '缺 src / skill' }, 400);
+      if (url.searchParams.get('confirm') !== 'yes') {
+        return json({ ok: false, needsConfirm: true, hint: '这会往 patch\\skills\\<技能>\\ 写一个文件并记一条账，确认后再点一次。' });
+      }
+      return json(await runDistill(['land', '--src', url.searchParams.get('src'), '--skill', url.searchParams.get('skill'), '--to', to, '--sections', url.searchParams.get('sections') || '', '--label', url.searchParams.get('label') || '']));
+    }    if (url.pathname === '/distill') return json(await runDistill(['map']));
     if (url.pathname === '/distill-timeline') return json(await runDistill(['timeline']));
     if (url.pathname === '/distill-updates') return json(await runDistill(['updates']));
 

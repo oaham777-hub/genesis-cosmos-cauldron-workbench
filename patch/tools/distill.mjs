@@ -131,10 +131,12 @@ function cmdMap() {
       const srcAbs = srcPathOf(st.src);
       const srcExists = existsSync(srcAbs);
       const srcNow = srcExists ? sha(srcAbs) : null;
+      const rec0 = rows.find(r => r.skill === s && r.to === rp);
+      const localChanged = rec0 && rec0.landedSha && rec0.landedSha !== cur;
       if (srcExists && srcNow !== st.srcSha) {
-        const rec = rows.find(r => r.skill === s && r.to === rp);
-        const localChanged = rec && rec.landedSha && rec.landedSha !== cur;
         state = localChanged ? 'branch' : 'update';
+      } else if (localChanged) {
+        state = 'local';
       }
       if (state === 'ok' && !bodyText.includes(basename(rp))) state = 'orphan';
       entries.push({ path: rp, layer: L, state, src: st.src, epoch: st.epoch, srcSha: st.srcSha, shaNow: cur });
@@ -182,6 +184,116 @@ function cmdUpdates() {
   console.log(JSON.stringify({ ok: true, updates: out, count: out.length }, null, 2));
 }
 
+// ---------- 来料清单 ----------
+function cmdSources() {
+  const rows = loadLedger();
+  const stamped = new Set(rows.map(r => r.srcId));
+  const targetOf = new Map();
+  for (const r of rows) {
+    if (!targetOf.has(r.srcId)) targetOf.set(r.srcId, []);
+    targetOf.get(r.srcId).push(r.skill + '/' + r.to);
+  }
+  const out = [];
+  const skillsDir = join(SRC_ROOT, 'skills');
+  for (const layer of readdirSyncSafe(skillsDir)) {
+    const refsDir = join(skillsDir, layer, 'references');
+    if (!existsSync(refsDir)) continue;
+    for (const f of readdirSyncSafe(refsDir)) {
+      if (!/\.(md|txt)$/i.test(f)) continue;
+      const abs = join(refsDir, f);
+      let st; try { st = statSync(abs); } catch { continue; }
+      if (!st.isFile()) continue;
+      const srcId = 'qkd:skills/' + layer + '/references/' + f;
+      out.push({
+        srcId, layer, name: f, bytes: st.size, sha: sha(abs),
+        stamped: stamped.has(srcId), targets: targetOf.get(srcId) || [],
+      });
+    }
+  }
+  out.sort((a, b) => (a.stamped === b.stamped ? b.bytes - a.bytes : (a.stamped ? 1 : -1)));
+  console.log(JSON.stringify({ ok: true, sources: out, total: out.length, unstamped: out.filter(s => !s.stamped).length }, null, 2));
+}
+
+// ---------- 拆件：按标题切节 ----------
+function splitSections(text) {
+  const lines = text.split(/\r?\n/);
+  const secs = [];
+  let cur = { level: 0, title: '(开篇)', start: 0, lines: [] };
+  lines.forEach((ln, i) => {
+    const m = /^(#{1,3})\s+(.*)$/.exec(ln);
+    if (m) {
+      if (cur.lines.length) secs.push(cur);
+      cur = { level: m[1].length, title: m[2].trim(), start: i, lines: [ln] };
+    } else {
+      cur.lines.push(ln);
+    }
+  });
+  if (cur.lines.length) secs.push(cur);
+  return secs.map((s, i) => ({ n: i + 1, level: s.level, title: s.title, lines: s.lines.length, chars: s.lines.join('\n').length, body: s.lines }));
+}
+
+function parseSel(sel, max) {
+  if (!sel) return null;
+  const set = new Set();
+  for (const part of String(sel).split(',')) {
+    const m = /^(\d+)(?:-(\d+))?$/.exec(part.trim());
+    if (!m) continue;
+    const a = Number(m[1]), b = Number(m[2] || m[1]);
+    for (let i = Math.min(a, b); i <= Math.max(a, b); i++) if (i >= 1 && i <= max) set.add(i);
+  }
+  return set.size ? set : null;
+}
+
+function cmdPlan(srcId, skill, to) {
+  const abs = srcPathOf(srcId);
+  if (!existsSync(abs)) { console.log(JSON.stringify({ ok: false, error: '来料不存在: ' + abs })); return; }
+  const text = readFileSync(abs, 'utf8');
+  const secs = splitSections(text);
+  const target = join(SKILLS, skill, (to || 'references/' + basenameSafe(srcId)).replace(/\//g, '\\'));
+  console.log(JSON.stringify({
+    ok: true, srcId, skill, to: to || 'references/' + basenameSafe(srcId),
+    srcBytes: statSync(abs).size, srcSha: sha(abs),
+    sections: secs.map(s => ({ n: s.n, level: s.level, title: s.title, lines: s.lines, chars: s.chars })),
+    collision: existsSync(target), targetAbs: target,
+  }, null, 2));
+}
+function basenameSafe(srcId) { return srcId.split('/').pop(); }
+
+function cmdLand(srcId, skill, to, sel, epochArg, labelArg) {
+  const abs = srcPathOf(srcId);
+  if (!existsSync(abs)) { console.log(JSON.stringify({ ok: false, error: '来料不存在' })); process.exit(1); }
+  if (!skill) { console.log(JSON.stringify({ ok: false, error: '缺 --skill' })); process.exit(1); }
+  const text = readFileSync(abs, 'utf8');
+  const secs = splitSections(text);
+  const want = parseSel(sel, secs.length);
+  let body;
+  if (want) body = secs.filter(s => want.has(s.n)).map(s => s.body.join('\n').trim()).join('\n\n') + '\n';
+  else body = text;
+  const epoch = Number(epochArg) || nextEpoch();
+  const relTo = (to || 'references/' + basenameSafe(srcId)).replace(/\\/g, '/');
+  const targetAbs = join(SKILLS, skill, relTo.replace(/\//g, '\\'));
+  mkdirSync(dirname(targetAbs), { recursive: true });
+  const stamp = `<!-- src: ${srcId} | epoch: ${epoch} | sha: ${sha(abs)} -->`;
+  const existed = existsSync(targetAbs);
+  writeFileSync(targetAbs, stamp + '\r\n' + body, 'utf8');
+  const row = {
+    epoch, ts: new Date().toISOString(), srcId, srcSha: sha(abs),
+    skill, to: relTo, layer: layerOf(relTo),
+    landedSha: sha(targetAbs), bytes: statSync(targetAbs).size,
+    by: 'ui-land', sections: want ? [...want].sort((a, b) => a - b) : null,
+  };
+  appendJsonl(LEDGER, row);
+  const eps = readJsonl(EPOCHS);
+  if (!eps.some(e => e.epoch === epoch)) {
+    appendJsonl(EPOCHS, { epoch, ts: row.ts, label: labelArg || ('投放：' + srcId.replace('qkd:skills/', '') + ' → ' + skill + '/' + relTo), files: 1 });
+  }
+  console.log(JSON.stringify({ ok: true, epoch, to: relTo, targetAbs, bytes: row.bytes, landedSha: row.landedSha, overwrote: existed, sections: row.sections }, null, 2));
+}
+
+function nextEpoch() {
+  const eps = readJsonl(EPOCHS);
+  return (eps.reduce((m, e) => Math.max(m, e.epoch || 0), 0) || 0) + 1;
+}
 const [cmd] = process.argv.slice(2);
 const argv = process.argv.slice(2);
 const flag = (n) => argv.includes(n);
@@ -191,7 +303,10 @@ if (cmd === 'stamp') cmdStamp(flag('--dry'));
 else if (cmd === 'map') cmdMap();
 else if (cmd === 'timeline') cmdTimeline();
 else if (cmd === 'updates') cmdUpdates();
+else if (cmd === 'sources') cmdSources();
+else if (cmd === 'plan') cmdPlan(val('--src'), val('--skill'), val('--to'));
+else if (cmd === 'land') cmdLand(val('--src'), val('--skill'), val('--to'), val('--sections'), val('--epoch'), val('--label'));
 else {
-  console.error('用法: stamp|map|timeline|updates');
+  console.error('用法: stamp|map|timeline|updates|sources|plan|land');
   process.exit(2);
 }
