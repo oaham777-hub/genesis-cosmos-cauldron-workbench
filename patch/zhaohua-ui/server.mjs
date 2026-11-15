@@ -146,6 +146,17 @@ function deployedList() {
   out.sort((a, b) => b.mtime - a.mtime);
   return out;
 }
+const DISTILL = 'D:\\造化乾坤鼎-工作台\\patch\\tools\\distill.mjs';
+async function runDistill(args) {
+  const proc = Bun.spawn([Bun.argv[0], DISTILL, ...args], {
+    stdout: 'pipe',
+    stderr: 'pipe',
+    env: { ...process.env, NO_COLOR: '1', FORCE_COLOR: '0' },
+  });
+  const [out, err] = await Promise.all([new Response(proc.stdout).text(), new Response(proc.stderr).text()]);
+  const exitCode = await proc.exited;
+  try { return JSON.parse(out); } catch { return { ok: false, exitCode, stderr: err.slice(0, 800) }; }
+}
 const json = (data, status = 200) =>
   new Response(JSON.stringify(data, null, 2), {
     status,
@@ -302,7 +313,11 @@ const server = Bun.serve({
         return json({ ok: true, seq: ev.seq });
       }
 
-      if (url.pathname === '/health') {
+      if (url.pathname === '/distill') return json(await runDistill(['map']));
+    if (url.pathname === '/distill-timeline') return json(await runDistill(['timeline']));
+    if (url.pathname === '/distill-updates') return json(await runDistill(['updates']));
+
+    if (url.pathname === '/health') {
         return reply({ ok: true, zhaohuaDir: ZHAOHUA_DIR, skillsDir: SKILLS_DIR, skillsExists: existsSync(SKILLS_DIR) });
       }
       if (url.pathname === '/audit') {
