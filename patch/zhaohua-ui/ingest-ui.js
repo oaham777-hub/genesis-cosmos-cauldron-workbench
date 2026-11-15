@@ -184,6 +184,40 @@
     }
   }
 
+  async function loadBackups() {
+    const sel = $('zh-bak');
+    if (!sel) return;
+    try {
+      const d = await fetch(B + '/skill-backups').then((r) => r.json());
+      const opts = [];
+      for (const b of (d.backups || [])) {
+        for (const n of (b.skills || [])) {
+          const label = b.stamp + ' — ' + n;
+          const value = b.stamp + '|' + n;
+          opts.push('<option value="' + value + '">' + label + '</option>');
+        }
+      }
+      sel.innerHTML = '<option value="">选一份备份…</option>' + opts.join('');
+    } catch (e) {
+      sel.innerHTML = '<option value="">读取失败</option>';
+    }
+  }
+
+  async function doRestore() {
+    const sel = $('zh-bak');
+    if (!sel || !sel.value) { alert('先选一份备份'); return; }
+    const i = sel.value.indexOf('|');
+    const stamp = sel.value.slice(0, i), name = sel.value.slice(i + 1);
+    if (!confirm('把 ' + name + ' 恢复到 ' + stamp + ' 那一版？\n当前版本会先被备份到 patch\\_backup\\skills\\<新时间戳>-pre-restore。')) return;
+    try {
+      const d = await fetch(B + '/restore-skill?backup=' + encodeURIComponent(stamp) + '&name=' + encodeURIComponent(name) + '&confirm=yes').then((r) => r.json());
+      if (!d.ok) { alert('恢复失败：' + (d.error || '')); return; }
+      const tb = $('zh-truth');
+      if (tb) tb.insertAdjacentHTML('afterbegin', '<tr><td colspan="6" class="sub">已恢复 ' + d.name + '（备份 ' + stamp + '）· 同步运行区 ' + (d.synced ? '成功' : '未完成，请跑 apply.ps1 -Skills') + '</td></tr>');
+      loadTruth();
+    } catch (e) { alert('恢复失败：' + e.message); }
+  }
+
   function syncToGap() {
     const sel = $('gp-src');
     if (!sel || !window.__IG_SRC) return;
@@ -212,6 +246,7 @@
     if (a === 'goto') syncToGap();
     if (a === 'inst') doInstallSkill(Number(e.target.getAttribute('data-i')));
     if (a === 'un') doUninstall(e.target.getAttribute('data-name'));
+    if (e.target && e.target.id === 'zh-bak-go') doRestore();
     if (e.target && e.target.id === 'ig-scan') doScan();
   });
 
@@ -221,6 +256,6 @@
     if (ig) { const el = $('ig-path'); if (el) { el.value = ig; setTimeout(doScan, 600); } }
   })();
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { wire(); loadTruth(); });
-  else { wire(); loadTruth(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { wire(); loadTruth(); loadBackups(); });
+  else { wire(); loadTruth(); loadBackups(); }
 })();

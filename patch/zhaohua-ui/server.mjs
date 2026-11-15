@@ -405,7 +405,25 @@ const server = Bun.serve({
         return json({ ok: false, needsConfirm: true, hint: '会在 SKILL.md 末尾加一节「本层参考资料（投放接线）」，把没被正文引用的 references 列进去。' });
       }
       return json(await runDistill(sk ? ['wire', '--skill', sk] : ['wire']));
-    }    if (url.pathname === '/skills-truth') {
+    }    if (url.pathname === '/skill-backups') {
+      const r = Bun.spawnSync([process.execPath, INGEST, 'backups'], { stdout: 'pipe', stderr: 'pipe', env: { ...process.env, NO_COLOR: '1' } });
+      let j; try { j = JSON.parse(new TextDecoder().decode(r.stdout)); } catch { j = { ok: false, error: new TextDecoder().decode(r.stderr).slice(0, 300) }; }
+      return reply(j);
+    }
+
+    if (url.pathname === '/restore-skill') {
+      const stamp = url.searchParams.get('backup') || '';
+      const name = url.searchParams.get('name') || '';
+      if (!stamp || !name) return reply({ ok: false, error: '需要 backup 与 name' }, 400);
+      if (url.searchParams.get('confirm') !== 'yes') return reply({ ok: false, needsConfirm: true, name, backup: stamp, hint: '会覆盖 patch\\skills\\' + name + '（先再备份一次），再同步运行区。' });
+      const r = Bun.spawnSync([process.execPath, INGEST, 'restore', '--backup', stamp, '--name', name, '--confirm'], { stdout: 'pipe', stderr: 'pipe', env: { ...process.env, NO_COLOR: '1' } });
+      let j; try { j = JSON.parse(new TextDecoder().decode(r.stdout)); } catch { j = { ok: false, error: new TextDecoder().decode(r.stderr).slice(0, 300) }; }
+      if (!j.ok) return reply(j, 400);
+      const sync = Bun.spawnSync(['powershell', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', join(ROOT2, 'patch', 'apply.ps1'), '-Skills', '-Target', DEV_DIR], { stdout: 'pipe', stderr: 'pipe' });
+      return reply({ ...j, synced: sync.exitCode === 0 });
+    }
+
+    if (url.pathname === '/skills-truth') {
       const list = [];
       try {
         for (const d of readdirSync(SKILLS_DIR)) {
@@ -446,7 +464,8 @@ const server = Bun.serve({
       if (url.searchParams.get('confirm') !== 'yes') {
         return reply({ ok: false, needsConfirm: true, hint: '会在 patch\\skills\\ 下新建一份技能，并同步到运行区。确认请带 confirm=yes。' });
       }
-      const r = Bun.spawnSync([process.execPath, INGEST, 'install', '--pkg', pkg, '--rel', rel, '--confirm'], { stdout: 'pipe', stderr: 'pipe', env: { ...process.env, NO_COLOR: '1' } });
+      const forceArg = url.searchParams.get('force') === 'yes' ? ['--force'] : [];
+      const r = Bun.spawnSync([process.execPath, INGEST, 'install', '--pkg', pkg, '--rel', rel, '--confirm', ...forceArg], { stdout: 'pipe', stderr: 'pipe', env: { ...process.env, NO_COLOR: '1' } });
       let j; try { j = JSON.parse(new TextDecoder().decode(r.stdout)); } catch { j = { ok: false, error: new TextDecoder().decode(r.stderr).slice(0, 400) }; }
       if (!j.ok) return reply(j, j.error ? 400 : 200);
       const sync = Bun.spawnSync(['powershell', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', join(ROOT2, 'patch', 'apply.ps1'), '-Skills', '-Target', DEV_DIR], { stdout: 'pipe', stderr: 'pipe' });

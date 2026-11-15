@@ -32,6 +32,37 @@ const TEXT_EXT = new Set(['.md', '.txt', '.markdown']);
 const SKILL_FILE_RE = /(^|\/)SKILL\.md$/i;
 const SPEC_NAME_RE = /(规范|规格|契约|标准|schema|contract|convention|rules?\.md|guide)/i;
 
+// —— 查重：新技能与 patch\skills 现有技能的行重合率 ——
+const normLine = (s) => s.replace(/[`]+/g, '').replace(/[*_>#-]/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+function lineSet(dir) {
+  const set = new Set();
+  for (const f of walk(dir)) {
+    if (!TEXT_EXT.has(extname(f.rel).toLowerCase())) continue;
+    let txt = '';
+    try { txt = readFileSync(f.p, 'utf8'); } catch { continue; }
+    for (const l of txt.split(/\r?\n/)) {
+      const n = normLine(l);
+      if (n.length >= 12) set.add(n);
+    }
+  }
+  return set;
+}
+function overlapOf(dir) {
+  const mine = lineSet(dir);
+  if (!mine.size) return { ratio: 0, with: null, shared: 0, mine: 0 };
+  let best = { ratio: 0, with: null, shared: 0, mine: mine.size };
+  let names = [];
+  try { names = readdirSync(SKILLS).filter((d) => { try { return statSync(join(SKILLS, d)).isDirectory(); } catch { return false; } }); } catch {}
+  for (const n of names) {
+    const other = lineSet(join(SKILLS, n));
+    if (!other.size) continue;
+    let shared = 0;
+    for (const l of mine) if (other.has(l)) shared++;
+    const ratio = shared / mine.size;
+    if (ratio > best.ratio) best = { ratio, with: n, shared, mine: mine.size };
+  }
+  return best;
+}
 // —— 第一段：认「这是什么件」（结构判据优先，内容判据兜底） ——
 function frontmatter(text) {
   const m = /^---\r?\n([\s\S]*?)\r?\n---/.exec(text.slice(0, 4000));
@@ -238,10 +269,14 @@ if (cmd === 'scan') {
       else if (!has('--confirm') && !has('--dry-run')) out({ ok: false, needsConfirm: true, name, dir, hint: '加 --confirm 才会复制进 patch\\skills\\' + name });
       else {
         const dest = join(SKILLS, name);
+        const dup = overlapOf(dir);
+        if (dup.ratio >= 0.8 && dup.with !== name && !has('--force')) {
+          out({ ok: false, blocked: true, name, dup, error: '和已有技能 ' + dup.with + ' 重合 ' + Math.round(dup.ratio * 100) + '%，先确认是不是同一套东西（要装就加 --force）' });
+        } else {
         const files = walk(dir);
         const texts = files.filter((f) => TEXT_EXT.has(extname(f.rel).toLowerCase())).length;
         if (has('--dry-run')) {
-          out({ ok: true, dryRun: true, name, from: dir, dest, files: files.length, texts, exists: existsSync(dest) });
+          out({ ok: true, dryRun: true, name, from: dir, dest, files: files.length, texts, exists: existsSync(dest), dup });
         } else {
           let backed = null;
           if (existsSync(dest)) {
@@ -271,7 +306,8 @@ if (cmd === 'scan') {
             ts: new Date().toISOString(), name, from: dir, files: files.length, texts,
             backed: backed ? relative(ROOT, backed) : null, auditPass: audit.pass, exitCode: audit.exitCode,
           });
-          out({ ok: true, name, dest, files: files.length, texts, backed, audit });
+          out({ ok: true, name, dest, files: files.length, texts, backed, dup, audit });
+        }
         }
       }
     }
@@ -299,4 +335,43 @@ if (cmd === 'scan') {
     });
     out({ ok: true, name, removedTruth: !existsSync(truth), removedRuntime, backed, hint: '要恢复就把备份目录拷回 patch\\skills\\<' + name + '> 再跑 apply.ps1 -Skills' });
   }
-} else out({ ok: false, error: '用法: scan|ingest|suggest|kind|install|uninstall' });
+} else if (cmd === 'backups') {
+  const root = join(ROOT, 'patch', '_backup', 'skills');
+  const outList = [];
+  if (existsSync(root)) {
+    for (const stamp of readdirSync(root).sort().reverse()) {
+      const sp = join(root, stamp);
+      let names = [];
+      try { names = readdirSync(sp).filter((n) => { try { return statSync(join(sp, n)).isDirectory(); } catch { return false; } }); } catch {}
+      if (names.length) outList.push({ stamp, path: sp, skills: names });
+    }
+  }
+  out({ ok: true, root, backups: outList.slice(0, 40) });
+} else if (cmd === 'restore') {
+  const stamp = val('--backup');
+  const name = val('--name');
+  if (!stamp || !name) out({ ok: false, error: '需要 --backup <时间戳> 与 --name <技能名>' });
+  else {
+    const src = join(ROOT, 'patch', '_backup', 'skills', stamp, name);
+    if (!existsSync(src)) out({ ok: false, error: '备份不存在：' + src });
+    else if (!has('--confirm')) out({ ok: false, needsConfirm: true, name, from: src, hint: '会把备份拷回 patch\\skills\\' + name + '（若已有先再备份一次）' });
+    else {
+      const dest = join(SKILLS, name);
+      let before = null;
+      if (existsSync(dest)) {
+        before = join(ROOT, 'patch', '_backup', 'skills', new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19) + '-pre-restore', name);
+        mkdirSync(dirname(before), { recursive: true });
+        cpSync(dest, before, { recursive: true });
+        rmSync(dest, { recursive: true, force: true });
+      }
+      mkdirSync(dest, { recursive: true });
+      cpSync(src, dest, { recursive: true });
+      appendJsonl(join(ROOT, 'patch', 'ledger', 'installs.jsonl'), { ts: new Date().toISOString(), action: 'restore', name, from: relative(ROOT, src), before: before ? relative(ROOT, before) : null });
+      out({ ok: true, name, dest, from: src, before });
+    }
+  }
+} else if (cmd === 'overlap') {
+  const f = val('--from');
+  if (!f || !existsSync(f)) out({ ok: false, error: '需要 --from <技能目录>' });
+  else out({ ok: true, from: f, dup: overlapOf(statSync(f).isDirectory() ? f : dirname(f)) });
+} else out({ ok: false, error: '用法: scan|ingest|suggest|kind|install|uninstall|backups|restore|overlap' });

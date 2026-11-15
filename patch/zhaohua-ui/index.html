@@ -610,6 +610,11 @@
       <div class="card">
         <h3>已装技能（唯一真相 patch\skills）</h3>
         <div class="sub">每一行就是一份真技能。卸掉会先从 patch\skills 与运行区一起移除，并备份到 patch\_backup\skills。</div>
+        <div class="dz-drillbar" style="margin:10px 0">
+          <span class="sub">卸错了从这里恢复：</span>
+          <select id="zh-bak" class="dz-mini" style="min-width:340px"><option value="">读取备份…</option></select>
+          <button class="dz-mini" id="zh-bak-go">恢复这份</button>
+        </div>
         <table>
           <thead><tr><th>技能</th><th>SKILL.md</th><th>打包过</th><th>运行区</th><th>文件</th><th></th></tr></thead>
           <tbody id="zh-truth"><tr><td colspan="6" class="sub">正在读取…</td></tr></tbody>
