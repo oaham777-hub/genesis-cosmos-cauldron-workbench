@@ -1212,6 +1212,7 @@
             ? '<div class="sub" style="color:#7fcf9f">已记进账本：epoch ' + r.recorded.epoch + ' · ' + r.recorded.files + ' 个文件 · ' + r.recorded.bytes + ' B（会出现在蒸馏地图的版本时间线里）</div>'
               + '<div class="row" style="margin-top:8px"><button class="btn" id="adopt-btn">收编进鼎（写入 patch\\skills\\' + r.name + '）</button></div>'
             : '')
++ (r.bans ? '<div class="sub" style="color:' + (r.bans.missingCount ? '#e08c8c' : '#7fcf9f') + '">禁令核对：保留 ' + r.bans.kept + '/' + r.bans.total + ' 条（覆盖 ' + r.bans.coverage + '%）' + (r.bans.missingCount ? ' · <b>丢 ' + r.bans.missingCount + ' 条</b>' : '') + '</div>' : '')
           + (r.text ? '<pre style="white-space:pre-wrap;font-size:12px;color:#c8d2dc">' + r.text + '</pre>' : '');
         var ab = document.getElementById('adopt-btn');
         if (ab) ab.onclick = function () {
@@ -1219,6 +1220,14 @@
           ab.disabled = true; ab.textContent = '收编中…';
           api('/adopt?name=' + encodeURIComponent(r.name) + '&skill=' + encodeURIComponent(r.name) + '&confirm=yes')
             .then(function (x) {
+              if (x.blocked) {
+                ab.textContent = '被拦：禁令核对没过';
+                var miss = (x.bans && x.bans.missing ? x.bans.missing : []).slice(0, 6)
+                  .map(function (m) { return '<li>' + m.skill + ' · ' + m.text.slice(0, 60) + '</li>'; }).join('');
+                fout.insertAdjacentHTML('beforeend', '<div class="sub" style="color:#e08c8c">' + (x.reason || '被禁令门拦住') + '<br>' + (x.hint || '') + '</div>'
+                  + (miss ? '<ul style="margin:6px 0 0 18px;font-size:12px;color:#c8d2dc;line-height:1.8">' + miss + '</ul>' : ''));
+                return;
+              }
               if (x.error) { ab.textContent = '收编失败：' + x.error; return; }
               ab.textContent = '已收编 · epoch ' + (x.epoch || '?');
               fout.insertAdjacentHTML('beforeend', '<div class="sub" style="color:#7fcf9f">收编完成：' + (x.files || 0) + ' 个文件 → ' + (x.targetDir || '') + ' · 自动接线 ' + (x.wired || 0) + ' 条</div>');
@@ -1243,6 +1252,7 @@
         if (r.error) { fout.textContent = '出错：' + r.error; return; }
         fout.innerHTML = '<div class="sub">退出码 <b>' + r.exitCode + '</b>（3＝审计未过，属正常：融合产物是草稿，要人收口）· 用时 '
           + Math.round((r.durationMs || 0) / 1000) + 's<br>产物：' + r.out + '</div>'
++ (r.bans ? '<div class="sub" style="color:' + (r.bans.missingCount ? '#e08c8c' : '#7fcf9f') + '">禁令核对：保留 ' + r.bans.kept + '/' + r.bans.total + ' 条（覆盖 ' + r.bans.coverage + '%）' + (r.bans.missingCount ? ' · <b>丢 ' + r.bans.missingCount + ' 条</b>' : '') + '</div>' : '')
           + '<pre style="white-space:pre-wrap;font-size:12px;line-height:1.7;color:#c8d2dc;background:#0c1116;border:1px solid #222b35;border-radius:10px;padding:12px">'
           + (r.text || '') + '</pre>';
       }).catch(function (e) { fout.textContent = '请求失败：' + e.message; })

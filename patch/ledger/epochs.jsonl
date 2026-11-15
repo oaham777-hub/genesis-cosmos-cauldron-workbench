@@ -9,3 +9,8 @@
 {"epoch":9,"ts":"2026-11-15T13:37:34.667Z","label":"收编：沙盒 probe-merge → 技能 probe-merge","files":13,"kind":"adopt"}
 {"epoch":10,"ts":"2026-11-15T13:38:12.066Z","label":"融合产物：probe-merge2 ← film-acting,film-shotlist","files":13,"kind":"create","sandbox":"fused/probe-merge2"}
 {"epoch":11,"ts":"2026-11-15T13:38:12.224Z","label":"收编：沙盒 probe-merge2 → 技能 probe-merge2","files":13,"kind":"adopt"}
+{"epoch":12,"ts":"2026-11-15T13:40:32.419Z","label":"融合产物：ban-probe ← film-cinedance,film-shotlist","files":32,"kind":"create","sandbox":"fused/ban-probe"}
+{"epoch":13,"ts":"2026-11-15T13:41:29.873Z","label":"融合产物：film-treatment ← film-treatment,film-acting","files":8,"kind":"fuse","sandbox":"fused/film-treatment"}
+{"epoch":14,"ts":"2026-11-15T13:43:59.419Z","label":"收编：沙盒 probe-banned → 技能 probe-banned","files":8,"kind":"adopt"}
+{"epoch":15,"ts":"2026-11-15T13:44:14.998Z","label":"融合产物：fuse-film-treatment ← film-treatment,film-acting","files":8,"kind":"fuse","sandbox":"fused/fuse-film-treatment"}
+{"epoch":16,"ts":"2026-11-15T13:45:23.069Z","label":"融合产物：fuse-film-synopsis ← film-synopsis,film-treatment","files":7,"kind":"fuse","sandbox":"fused/fuse-film-synopsis"}

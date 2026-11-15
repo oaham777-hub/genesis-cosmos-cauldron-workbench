@@ -146,6 +146,7 @@ function deployedList() {
   out.sort((a, b) => b.mtime - a.mtime);
   return out;
 }
+const BANS = 'D:\\造化乾坤鼎-工作台\\patch\\tools\\bans.mjs';
 const DISTILL = 'D:\\造化乾坤鼎-工作台\\patch\\tools\\distill.mjs';
 const GAP = 'D:\\造化乾坤鼎-工作台\\patch\\tools\\gap.mjs';
 async function runTool(script, args) {
@@ -161,6 +162,13 @@ async function runTool(script, args) {
 async function runDistill(args) {
   return runTool(DISTILL, args);
 }
+async function runBans(args) {
+  return runTool(BANS, args);
+}
+function banArgs(fromSkills, dir) {
+  return ['check', '--from', fromSkills.join(','), '--dir', dir];
+}
+
 const json = (data, status = 200) =>
   new Response(JSON.stringify(data, null, 2), {
     status,
@@ -391,7 +399,19 @@ const server = Bun.serve({
         return json({ ok: false, needsConfirm: true, hint: '这会往 patch\\skills\\<技能>\\ 写一个文件并记一条账，确认后再点一次。' });
       }
       return json(await runDistill(['land', '--src', url.searchParams.get('src'), '--skill', url.searchParams.get('skill'), '--to', to, '--sections', url.searchParams.get('sections') || '', '--label', url.searchParams.get('label') || '']));
-    }    if (url.pathname === '/distill') { const r = url.searchParams.get('srcRoot'); return json(await runDistill(['map'].concat(r ? ['--src-root', r] : []))); }
+    }    if (url.pathname === '/bans') {
+        const from = (url.searchParams.get('from') || '').split(',').map((s) => s.trim()).filter(Boolean);
+        if (!from.length) return reply({ error: '要给 from（技能名，逗号分隔）' }, 400);
+        const dir = url.searchParams.get('dir');
+        if (dir) {
+          if (!existsSync(dir)) return reply({ error: '目录不存在：' + dir }, 404);
+          return reply(await runBans(banArgs(from, dir)));
+        }
+        const to = url.searchParams.get('to') || '';
+        if (!/^[a-z0-9][a-z0-9._-]*$/i.test(to)) return reply({ error: '要给 to（技能名）或 dir' }, 400);
+        return reply(await runBans(['check', '--from', from.join(','), '--to', to]));
+      }
+      if (url.pathname === '/distill') { const r = url.searchParams.get('srcRoot'); return json(await runDistill(['map'].concat(r ? ['--src-root', r] : []))); }
     if (url.pathname === '/distill-timeline') return json(await runDistill(['timeline']));
     if (url.pathname === '/distill-updates') { const r = url.searchParams.get('srcRoot'); return json(await runDistill(['updates'].concat(r ? ['--src-root', r] : []))); }
 
@@ -633,9 +653,11 @@ const server = Bun.serve({
         }
         mkdirSync(dirname(out), { recursive: true });
         const r = await runCli(['fuse-skill', baseDir, otherDir, '--out', out], 900000, { QKD_MODEL_API_KEY: key });
-        const rec = existsSync(out + '\\SKILL.md') ? await runDistill(['fuse-record', '--dir', out, '--name', base, '--kind', 'fuse', '--inputs', base + ',' + other]) : null;
+        const rec = existsSync(out + '\\SKILL.md') ? await runDistill(['fuse-record', '--dir', out, '--name', 'fuse-' + base, '--kind', 'fuse', '--inputs', base + ',' + other]) : null;
+        const fuseBans = existsSync(out + '\\SKILL.md') ? await runBans(banArgs([base, other], out)) : null;
         return reply({
           recorded: rec,
+          bans: fuseBans,
           adoptHint: existsSync(out + '\\SKILL.md') ? '产物还在沙盒：要进鼎点「收编进鼎」（带 confirm=yes 调 /adopt）' : null,
           ok: r.exitCode === 0,
           exitCode: r.exitCode,
@@ -653,7 +675,12 @@ const server = Bun.serve({
         const confirm = url.searchParams.get('confirm') === 'yes';
         if (!/^[a-z0-9][a-z0-9._-]*$/i.test(name)) return reply({ error: '名字不合法' }, 400);
         if (!/^[a-z0-9][a-z0-9._-]*$/i.test(skill)) return reply({ error: '技能名不合法' }, 400);
-        const dir = FUSED_DIR + '\\' + name;
+        let dir = FUSED_DIR + '\\' + name;
+        // fuse-skill 的产物会多一层同名目录（nested），两种都认
+        if (!existsSync(dir + '\\SKILL.md')) {
+          // fuse-skill 的产物会多一层同名目录（名字不一定是 name），扫一层找带 SKILL.md 的
+          try { for (const e of readdirSync(dir)) { const sub = dir + '\\' + e; if (statSync(sub).isDirectory() && existsSync(sub + '\\SKILL.md')) { dir = sub; break; } } } catch {}
+        }
         if (!existsSync(dir + '\\SKILL.md')) return reply({ error: '沙盒里没有这个产物：' + dir }, 404);
         const target = SKILLS_DIR + '\\' + skill;
         if (!confirm) {
@@ -666,6 +693,30 @@ const server = Bun.serve({
           const stampDir = DEPLOY_BACKUP + '\\' + stamp() + '\\' + skill;
           mkdirSync(dirname(stampDir), { recursive: true });
           cpSync(target, stampDir, { recursive: true });
+        }
+        // 禁令门：用账本里这笔产物的来料做基线
+        const ledgerPath = 'D:\\造化乾坤鼎-工作台\\patch\\ledger\\distill.jsonl';
+        let inputs = [];
+        try {
+          for (const line of readFileSync(ledgerPath, 'utf8').split(/\r?\n/)) {
+            if (!line.trim()) continue;
+            const row = JSON.parse(line);
+            if (row.by === 'fuse' && row.skill === name && row.inputs) inputs = String(row.inputs).split(',').filter(Boolean);
+          }
+        } catch {}
+        if (!inputs.length && existsSync(SKILLS_DIR + '\\\\' + skill + '\\\\SKILL.md')) inputs = [skill];
+        let bansGate = null;
+        if (inputs.length) {
+          bansGate = await runBans(banArgs(inputs, dir));
+          const force = url.searchParams.get('force') === 'yes';
+          if (bansGate && bansGate.missingCount > 0 && !force) {
+            return reply({
+              blocked: true,
+              reason: '禁令核对没过：模型融合把 ' + bansGate.missingCount + '/' + bansGate.total + ' 条「禁止/不得」弄丢了',
+              bans: bansGate,
+              hint: '确认要收编就带 force=yes 再调一次（不建议；先回去补正文更稳）',
+            }, 409);
+          }
         }
         const r = await runDistill(['adopt', '--dir', dir, '--skill', skill]);
         return reply(r);
