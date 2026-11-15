@@ -8,7 +8,7 @@
 //   - 断言只写"能从产出里数出来的东西"，不写主观判断
 //   - 不调用模型；真跑由 zhaohua eval 负责（需要 QKD_MODEL_API_KEY）
 
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import fs, { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 
 function arg(name, fallback = '') {
@@ -34,6 +34,45 @@ for (const [label, dir] of [['--a', A], ['--b', B]]) {
 }
 
 const readSkill = (dir) => readFileSync(path.join(dir, 'SKILL.md'), 'utf8').trim();
+
+// --refs：把 references/ 里被正文点名的资料一起装进 system（与真实使用一致）
+const withRefs = process.argv.includes('--refs');
+const refsBudget = Number(arg('refs-max-kb', '60')) * 1024;
+
+function collectRefs(dir, skillText) {
+  const refDir = path.join(dir, 'references');
+  if (!existsSync(refDir)) return [];
+  const names = [];
+  const walk = (d, prefix) => {
+    for (const f of fs.readdirSync(d, { withFileTypes: true })) {
+      const rel = prefix ? `${prefix}/${f.name}` : f.name;
+      if (f.isDirectory()) walk(path.join(d, f.name), rel);
+      else if (/\.(md|txt)$/i.test(f.name)) names.push(rel);
+    }
+  };
+  walk(refDir, '');
+  const named = new Set((skillText.match(/references\/[\w\-.\u4e00-\u9fa5/]+\.(?:md|txt)/gi) || [])
+    .map((s) => s.replace(/^references\//i, '')));
+  const ordered = names
+    .map((n) => ({ n, hit: named.has(n) ? 0 : 1, size: fs.statSync(path.join(refDir, n)).size }))
+    .sort((x, y) => x.hit - y.hit || x.size - y.size);
+  const out = [];
+  let used = 0;
+  for (const it of ordered) {
+    if (used + it.size > refsBudget) continue;
+    out.push({ path: it.n, text: readFileSync(path.join(refDir, it.n), 'utf8').trim() });
+    used += it.size;
+  }
+  return out;
+}
+
+const readArm = (dir) => {
+  const skill = readSkill(dir);
+  if (!withRefs) return { system: skill, refs: [] };
+  const refs = collectRefs(dir, skill);
+  const body = refs.map((r) => `\n\n---\n\n## 参考文件：references/${r.path}\n\n${r.text}`).join('');
+  return { system: skill + body, refs };
+};
 
 // 任务：都是"照着技能干活"，不额外加方法提示，差别只来自技能正文
 const tasks = [
@@ -64,6 +103,9 @@ const assertions = [
   { id: 'has-continuity', pattern: '连续性|一致|衔接|不跳轴|同光源' },
 ];
 
+const armA = readArm(A);
+const armB = readArm(B);
+
 const config = {
   schema: 'zhaohua-eval-config/v1',
   model: 'deepseek-chat',
@@ -71,8 +113,8 @@ const config = {
   temperature: 0.2,
   tasks,
   arms: [
-    { id: 'before', system: readSkill(A) },
-    { id: 'after', system: readSkill(B) },
+    { id: 'before', system: armA.system },
+    { id: 'after', system: armB.system },
   ],
   assertions,
 };
@@ -81,7 +123,7 @@ writeFileSync(out, JSON.stringify(config, null, 2), 'utf8');
 
 const kb = (s) => (Buffer.byteLength(s, 'utf8') / 1024).toFixed(1) + ' KB';
 console.log(`已生成：${out}`);
-console.log(`  臂 before = ${A}  (${kb(config.arms[0].system)})`);
-console.log(`  臂 after  = ${B}  (${kb(config.arms[1].system)})`);
+console.log(`  臂 before = ${A}  (${kb(armA.system)}，参考 ${armA.refs.length} 份)`);
+console.log(`  臂 after  = ${B}  (${kb(armB.system)}，参考 ${armB.refs.length} 份)`);
 console.log(`  任务 ${tasks.length} 条 · 断言 ${assertions.length} 条 · max_tokens ${maxTokens}`);
 console.log(`  粗算成本：${tasks.length * 2} 次调用 × ↑${Math.round((config.arms[0].system.length + config.arms[1].system.length) / 2 / 3.5)} tokens`);
