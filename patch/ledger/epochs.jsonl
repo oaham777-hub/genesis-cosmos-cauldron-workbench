@@ -2,3 +2,6 @@
 {"epoch":2,"ts":"2026-11-15T13:03:47.577Z","label":"投放：05-acting 对白戏导演层 → film-acting","files":1}
 {"epoch":3,"ts":"2026-11-15T13:05:51.420Z","label":"投放：03-assets 一致性锁 → film-lira-assets","files":1}
 {"epoch":4,"ts":"2026-11-15T13:09:03.193Z","label":"拉新版：film-lira-assets/references/consistency-lock.md","files":1}
+{"epoch":5,"ts":"2026-11-15T13:28:19.914Z","label":"补缺（文件）：film-cinedance/h3-six-block.md ← skills/06-prompt/references/h3-full-reference-six-block.md","files":1}
+{"epoch":6,"ts":"2026-11-15T13:28:36.601Z","label":"补缺（文件）：film-cinedance/h3-six-block.md ← skills/06-prompt/references/h3-full-reference-six-block.md","files":1}
+{"epoch":7,"ts":"2026-11-15T13:31:03.515Z","label":"补缺（文件）：film-shotlist/take-and-loop-design.md ← skills/04-shotlist/references/take-and-loop-design.md","files":1}

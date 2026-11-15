@@ -180,7 +180,18 @@
     .dz-diff{margin-top:12px;border-top:1px solid #1f262e;padding-top:10px;font-family:ui-monospace,Consolas,monospace;font-size:12px;max-height:260px;overflow:auto}
     .dz-dl{white-space:pre-wrap;line-height:1.5}
     .dz-dl.add{color:#8fd0a3}
-    .dz-dl.del{color:#d08f8f}  </style>
+    .dz-dl.del{color:#d08f8f}    .gp-form{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin:10px 0 4px}
+    .gp-form label{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--dim)}
+    .gp-form select{min-width:220px;background:#0f1318;color:#ded4c2;border:1px solid #2a2f36;border-radius:8px;padding:7px 9px;font-size:12px}
+    .gp-plan{margin-top:8px}
+    .gp-head{font-size:12px;color:#c9bfae;margin:6px 0 8px}
+    .gp-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}
+    .gp-in{flex:1;min-width:220px;background:#0f1318;color:#ded4c2;border:1px solid #2a2f36;border-radius:8px;padding:7px 9px;font-size:12px}
+    .gp-plan table{width:100%;border-collapse:collapse;font-size:12px}
+    .gp-plan th{color:var(--dim);font-weight:500;text-align:left;padding:6px 8px;border-bottom:1px solid #23282e}
+    .gp-plan td{padding:6px 8px;border-bottom:1px solid #1b2026;color:#cfc6b6}
+    .gp-plan .ok{color:#8ecf9f}.gp-plan .warn{color:#d8b26a}
+  </style>
 </head>
 <body>
 <div class="app">
@@ -355,6 +366,23 @@
 
     <!-- 融合台 -->
     <section class="view" id="v-fuse">
+      <div class="card" id="gp-card">
+        <h3>只补缺（来料 → 目标技能）</h3>
+        <div class="sub">不揉一起，只把目标里没有的节补进去。已有指纹命中的节会标「已有」，默认不勾。</div>
+        <div class="gp-form">
+          <label>来料<select id="gp-src"></select></label>
+          <label>目标技能<select id="gp-target">
+            <option>film-cinedance</option><option>film-shotlist</option><option>film-acting</option>
+            <option>film-lira-assets</option><option>film-screenplay</option><option>film-synopsis</option>
+            <option>film-characters</option><option>film-worldbuilding</option><option>film-treatment</option>
+            <option>film-stress-test</option><option>ai-film-router</option><option>canvas</option>
+            <option>workflow</option><option>v118workflow</option><option>film-knowledge-bridge</option>
+          </select></label>
+          <button class="dz-mini dz-strong" id="gp-do">对比</button>
+        </div>
+        <div id="gp-plan" class="gp-plan"><div class="sub">选好来料与目标，点「对比」。这里会列出缺哪几节。</div></div>
+      </div>
+
       <div class="grid3">
         <div class="card">
           <h3>来料</h3>
@@ -1209,5 +1237,6 @@
 </script>
   
   <script src="distill.js?v=20261115e"></script>
+  <script src="gap.js?v=1"></script>
 </body>
 </html>

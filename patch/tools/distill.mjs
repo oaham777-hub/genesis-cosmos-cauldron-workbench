@@ -205,7 +205,7 @@ function wireOne(skill) {
     next += '\n\n' + WIRE_MARK + '\n\n> 这一节是造化鼎投放时自动接的线：下面每个文件来自外部来料，文件头有来源戳；改它们之前先看 sha，因为来源可能更新。\n';
   }
   for (const a of add) {
-    next += '\n- `' + a.to + '` ← ' + a.srcId.replace('qkd:skills/', '') + '（epoch ' + a.epoch + '）';
+    next += '\n- `' + a.to + '` ← ' + a.srcId.replace('qkd:skills/', '').replace('/references/', '::') + '（epoch ' + a.epoch + '）';
   }
   writeFileSync(md, next + '\n', 'utf8');
   return { skill, ok: true, added: add.length, bytes: statSync(md).size, files: add.map(a => a.to) };

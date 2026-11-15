@@ -59,4 +59,4 @@ description: 撰写 07.5 镜表里已确认的某个镜头的表演与演出块�
 
 > 这一节是造化鼎投放时自动接的线：下面每个文件来自外部来料，文件头有来源戳；改它们之前先看 sha，因为来源可能更新。
 
-- `references/dialogue-performance.md` ← 05-acting/references/dialogue-performance.md（epoch 2）
+- `references/dialogue-performance.md` ← 05-acting::dialogue-performance.md（epoch 2）

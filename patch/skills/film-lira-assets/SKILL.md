@@ -60,4 +60,4 @@ APP中的LIRA完整提示词先同步为所有同名画布生成节点，作者�
 
 > 这一节是造化鼎投放时自动接的线：下面每个文件来自外部来料，文件头有来源戳；改它们之前先看 sha，因为来源可能更新。
 
-- `references/consistency-lock.md` ← 03-assets/references/consistency-lock.md（epoch 3）
+- `references/consistency-lock.md` ← 03-assets::consistency-lock.md（epoch 3）

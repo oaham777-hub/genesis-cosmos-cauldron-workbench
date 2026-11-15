@@ -89,3 +89,9 @@ description: 把一个已确认的剧本场拆成逐镜头镜表（镜号、时�
 - `references/scene-coverage-and-first-frame.md`——场次覆盖与首帧设计
 - `references/space-blocking-and-axis.md`——走位、轴线与越轴规则
 - `references/continuity-ledger.md`——连续性记录 schema 与状态机
+
+## 本层参考资料（投放接线）
+
+> 这一节是造化鼎投放时自动接的线：下面每个文件来自外部来料，文件头有来源戳；改它们之前先看 sha，因为来源可能更新。
+
+- `references/take-and-loop-design.md` ← 04-shotlist::take-and-loop-design.md（epoch 7）

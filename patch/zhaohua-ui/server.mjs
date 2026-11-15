@@ -147,8 +147,9 @@ function deployedList() {
   return out;
 }
 const DISTILL = 'D:\\造化乾坤鼎-工作台\\patch\\tools\\distill.mjs';
-async function runDistill(args) {
-  const proc = Bun.spawn([Bun.argv[0], DISTILL, ...args], {
+const GAP = 'D:\\造化乾坤鼎-工作台\\patch\\tools\\gap.mjs';
+async function runTool(script, args) {
+  const proc = Bun.spawn([Bun.argv[0], script, ...args], {
     stdout: 'pipe',
     stderr: 'pipe',
     env: { ...process.env, NO_COLOR: '1', FORCE_COLOR: '0' },
@@ -156,6 +157,9 @@ async function runDistill(args) {
   const [out, err] = await Promise.all([new Response(proc.stdout).text(), new Response(proc.stderr).text()]);
   const exitCode = await proc.exited;
   try { return JSON.parse(out); } catch { return { ok: false, exitCode, stderr: err.slice(0, 800) }; }
+}
+async function runDistill(args) {
+  return runTool(DISTILL, args);
 }
 const json = (data, status = 200) =>
   new Response(JSON.stringify(data, null, 2), {
@@ -313,7 +317,33 @@ const server = Bun.serve({
         return json({ ok: true, seq: ev.seq });
       }
 
-      if (url.pathname === '/distill-diff') {
+      if (url.pathname === '/gap') {
+      const target = url.searchParams.get('target') || '';
+      const from = url.searchParams.get('from') || '';
+      if (!target || !from) return json({ ok: false, error: '需要 target 与 from' }, 400);
+      return json(await runTool(GAP, ['plan', '--target', target, '--from', from]));
+    }
+    if (url.pathname === '/gap-files') {
+      const target = url.searchParams.get('target') || '';
+      const fromSkill = url.searchParams.get('fromSkill') || '';
+      if (!target || !fromSkill) return json({ ok: false, error: '需要 target 与 fromSkill' }, 400);
+      return json(await runTool(GAP, ['files', '--target', target, '--from-skill', fromSkill]));
+    }
+    if (url.pathname === '/gap-graft') {
+      const target = url.searchParams.get('target') || '';
+      const from = url.searchParams.get('from') || '';
+      const sections = url.searchParams.get('sections') || '';
+      const mode = url.searchParams.get('mode') || 'file';
+      const as = url.searchParams.get('as') || '';
+      if (!target || !from || !sections) return json({ ok: false, error: '需要 target、from、sections' }, 400);
+      if (url.searchParams.get('confirm') !== 'yes') {
+        return json({ ok: false, needsConfirm: true, message: '会改 patch\\skills\\' + target + '，并记一条新 epoch。带 confirm=yes 才写。' });
+      }
+      const args = ['graft', '--target', target, '--from', from, '--sections', sections, '--mode', mode, '--confirm'];
+      if (as) args.push('--as', as);
+      const r = await runTool(GAP, args);
+      return reply(r);
+    }    if (url.pathname === '/distill-diff') {
       const skill = url.searchParams.get('skill') || '';
       const to = url.searchParams.get('to') || '';
       if (!skill || !to) return json({ ok: false, error: '缺 skill 或 to' }, 400);
