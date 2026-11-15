@@ -1,0 +1,232 @@
+{
+  "schema": "zhaohua-eval/v1",
+  "generated_at": "2026-11-15T10:49:36.746Z",
+  "model": "deepseek-flash",
+  "max_tokens": 2600,
+  "temperature": 0.3,
+  "assertions": [
+    "d01-concept-purpose",
+    "d02-subject-binding",
+    "d03-camera-params",
+    "d04-shot-language",
+    "d05-visual-direction",
+    "d06-skin-or-material",
+    "d07-color-ratio",
+    "d08-lighting",
+    "d09-end-state",
+    "d10-timeline",
+    "d11-sound-tracks",
+    "d12-boundary"
+  ],
+  "config": {
+    "tasks": [
+      {
+        "id": "t1-shotlist",
+        "prompt": "素材：一场雨夜戏。外卖员陈默（@C-01）抱着保温箱蹲在 6 楼走廊门外，隔着门缝跟门内的女儿小陈（@C-02，只露手）说话，想把餐盒塞进去，被门链挡住。先按镜头表把这 30 秒拆成 6 个镜头（镜号、时长、景别、机位意图、运镜、画面内容、声音），再说明每镜交给下游做什么。"
+      },
+      {
+        "id": "t2-h3-prompt",
+        "prompt": "接上题，只写第 4 镜（门缝张开、手递餐盒、对白一句）的生成提示词：模型用 MiniMax H3 首帧模式（I2VA），时长 8 秒，竖屏 9:16。要能直接投给视频模型，不要解释写作过程。"
+      }
+    ],
+    "arms": [
+      {
+        "id": "A-current",
+        "rules_from": null
+      },
+      {
+        "id": "B-12d-inline",
+        "rules_from": null
+      }
+    ],
+    "assertions": [
+      {
+        "id": "d01-concept-purpose",
+        "pattern": "目的|本条要|观众要",
+        "flags": "",
+        "rule": null
+      },
+      {
+        "id": "d02-subject-binding",
+        "pattern": "@C-0\\d|@[A-Z]-\\d",
+        "flags": "",
+        "rule": null
+      },
+      {
+        "id": "d03-camera-params",
+        "pattern": "f/\\d|1/\\d{2,3}|ISO\\s*\\d",
+        "flags": "",
+        "rule": null
+      },
+      {
+        "id": "d04-shot-language",
+        "pattern": "景别|近景|中景|全景|特写|运镜",
+        "flags": "",
+        "rule": null
+      },
+      {
+        "id": "d05-visual-direction",
+        "pattern": "风格|质感|写实|色调体系",
+        "flags": "",
+        "rule": null
+      },
+      {
+        "id": "d06-skin-or-material",
+        "pattern": "皮肤|材质|水膜|纹理",
+        "flags": "",
+        "rule": null
+      },
+      {
+        "id": "d07-color-ratio",
+        "pattern": "\\d{1,3}\\s*%",
+        "flags": "",
+        "rule": null
+      },
+      {
+        "id": "d08-lighting",
+        "pattern": "主光|光比|补光|实用光",
+        "flags": "",
+        "rule": null
+      },
+      {
+        "id": "d09-end-state",
+        "pattern": "终态|结束时|最后停在",
+        "flags": "",
+        "rule": null
+      },
+      {
+        "id": "d10-timeline",
+        "pattern": "第\\s*\\d+\\s*秒|\\d+\\s*[-–]\\s*\\d+\\s*秒|0[-–]8\\s*秒",
+        "flags": "",
+        "rule": null
+      },
+      {
+        "id": "d11-sound-tracks",
+        "pattern": "同期声|音效|人声|音乐",
+        "flags": "",
+        "rule": null
+      },
+      {
+        "id": "d12-boundary",
+        "pattern": "A 段|B 段|边界|负向词",
+        "flags": "",
+        "rule": null
+      }
+    ],
+    "pairwise": null,
+    "baseDir": "D:\\造化乾坤鼎-工作台\\patch\\eval"
+  },
+  "rows": [
+    {
+      "task": "t1-shotlist",
+      "arm": "A-current",
+      "finish": "length",
+      "truncated": true,
+      "hit_count": 0,
+      "hits": [],
+      "text": "",
+      "context_sha256": "443181fe3541a35dc5ddec081d6b2cfdabfdd69db10f7b2418cad838ff41f260",
+      "input_tokens": 6973,
+      "output_tokens": 2600
+    },
+    {
+      "task": "t1-shotlist",
+      "arm": "B-12d-inline",
+      "finish": "length",
+      "truncated": true,
+      "hit_count": 0,
+      "hits": [],
+      "text": "",
+      "context_sha256": "229ed2d4299cff9645f83d3562c5966a3e35aad628848f3a544709aa4318cd31",
+      "input_tokens": 7485,
+      "output_tokens": 2600
+    },
+    {
+      "task": "t2-h3-prompt",
+      "arm": "A-current",
+      "finish": "length",
+      "truncated": true,
+      "hit_count": 0,
+      "hits": [],
+      "text": "",
+      "context_sha256": "2db92b32e70af98fea2c2ae0740e26a6dafb12d928467baa32034e60b84d893a",
+      "input_tokens": 6938,
+      "output_tokens": 2600
+    },
+    {
+      "task": "t2-h3-prompt",
+      "arm": "B-12d-inline",
+      "finish": "stop",
+      "truncated": false,
+      "hit_count": 7,
+      "hits": [
+        "d03-camera-params",
+        "d04-shot-language",
+        "d06-skin-or-material",
+        "d08-lighting",
+        "d10-timeline",
+        "d11-sound-tracks",
+        "d12-boundary"
+      ],
+      "text": "## 第 4 镜 · MiniMax H3 首帧模式（I2VA）\n\n**参数**：8 秒 / 9:16 竖屏 / 24fps / 无字幕 / 单镜不切\n\n---\n\n**【首帧图｜第 0 秒必须与此一致】**\n竖构图。画面左侧三分之一是一道半开的旧木门，门板漆面起皮，门缝宽度约两指。门内的暗部占据画面右侧，走廊顶灯从门缝斜切进来，在门板上打出一道竖直暖黄亮带，亮带边缘落在门框内侧。门缝暗处只露出一只手的指尖与一截深色袖口，指节微微收紧。画面不出现人脸，不出现全身。\n\n**【画面主体与动作】**\n门缝从内侧被缓慢推开，宽度从两指扩展到约一掌。一只成年人的手握着白色方形餐盒，从门缝中水平递出，手腕保持稳定。门外另一只手从画面右下入画接住餐盒，两手短暂交错后，餐盒转移到门外一侧。递出方的手臂在完成交接后缓慢收回门内，门缝不再继续扩大。\n\n**【摄影】**\n竖屏固定机位，略微仰角，35mm 等效焦距；T2.0 大光圈，浅景深，焦点起始在门缝指尖，随餐盒推出平滑跟随至餐盒正面，交接完成后焦点回落到门缝边缘。24fps，快门 1/48；白平衡 3200K 暖调。\n\n**【光影与色彩】**\n主光为走廊顶灯，方向从画左斜下，硬质直射，只照亮门缝亮带与递出的手背；门内为漫射暗部，光比约 4:1，暗部保留下颌与袖口的层次，不死黑。补光仅用走廊环境反弹，手指边缘有一层极薄的暖轮廓光。主体色为主体的暖白餐盒与深色衣袖，综合色调偏暖棕，暗部略带青灰冷调，暖冷占比约 7:3。\n\n**【时间轴】**\n0.0–1.5：门缝微张，指尖收紧，亮带稳定，只有极轻的手部预备动作。\n1.5–3.2：门缝被推开至一掌宽，门轴发出轻响，亮带随之加宽并扫过门板。\n3.2–5.2：餐盒沿门缝水平推出，手背朝上，焦点跟到餐盒正面。\n5.2–6.4：门外的手接住餐盒，两手在门缝处短暂交叠，餐盒重心转移到门外一侧。\n6.4–7.4：门内传出对白一句，语气压低，语速偏慢。\n7.4–8.0：递出的手臂收回门内，门缝保持一掌宽，画面最后定格在门缝与餐盒边缘。\n\n**【声音设计】**\n同期声：门轴摩擦的短促吱呀、餐盒塑料盖轻碰、走廊远处空调低频嗡鸣、衣袖摩擦。\n音效：门缝加宽时一声轻微木质回弹，交接瞬间一声餐盒落掌的闷响。\n人声：门内说话，声音近讲、压低、略带气声，与口型同步，台词逐字为：“＿＿＿＿＿＿＿＿”（填入本镜已确认台词，一句）。\n音乐：无旋律；仅保留一条极低音量的持续低频铺底，交接完成后淡出。\n\n**【约束】**\n正向保持：门缝宽度始终在一掌以内；手指数量与关节结构清晰正确；餐盒保持完整长方体、盒盖不脱落；手与门框的空间遮挡关系正确；镜头全程固定不推拉不晃动；曝光与色温稳定；竖屏构图上下留白一致。\n平台负向词：多余手指、畸形手部、人脸特写、突然切镜、镜头抖动、画面拉伸、变速、字幕、水印、logo、文字、卡通化、过度锐化、塑料感皮肤、门体形变。\n\n**【参考素材职责】**\n首帧图：只负责第 0 秒的门缝位置、亮带形状、指尖与袖口位置，不决定后续动作节奏。\n\n---\n\n台词请把引号内的占位替换为本场第 4 镜已确认的那一句，一字不改、不加语气词；其余可直接投喂。",
+      "context_sha256": "fd250c255f10d6bd04a13d574a5cffeaf8921f3cf60da3a0d40b660e0208208c",
+      "input_tokens": 7450,
+      "output_tokens": 2226
+    }
+  ],
+  "summary": {
+    "A-current": {
+      "runs": 2,
+      "hit": 0,
+      "total": 24,
+      "truncated": 2,
+      "chars": 0,
+      "verified": 0,
+      "passed": 0,
+      "pass_rate": null
+    },
+    "B-12d-inline": {
+      "runs": 2,
+      "hit": 7,
+      "total": 24,
+      "truncated": 1,
+      "chars": 1325,
+      "verified": 0,
+      "passed": 0,
+      "pass_rate": null
+    }
+  },
+  "summary_excluding_truncated": {
+    "A-current": {
+      "runs": 0,
+      "hit": 0,
+      "total": 0,
+      "truncated": 0,
+      "chars": 0,
+      "verified": 0,
+      "passed": 0,
+      "pass_rate": null
+    },
+    "B-12d-inline": {
+      "runs": 1,
+      "hit": 7,
+      "total": 12,
+      "truncated": 0,
+      "chars": 1325,
+      "verified": 0,
+      "passed": 0,
+      "pass_rate": null
+    }
+  },
+  "isolation": {
+    "baseline_arms": [],
+    "leaks": [],
+    "same_context": [],
+    "valid": true
+  },
+  "pairwise": null,
+  "tokens": {
+    "input": 28846,
+    "output": 10026
+  }
+}
