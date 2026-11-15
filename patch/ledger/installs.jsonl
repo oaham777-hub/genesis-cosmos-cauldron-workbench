@@ -1,0 +1,5 @@
+{"ts":"2026-11-15T14:26:19.475Z","name":"probe-install","from":"D:\\造化乾坤鼎-工作台\\patch\\_tmp\\probe-install","files":2,"texts":2,"backed":null,"auditPass":true,"exitCode":0}
+{"ts":"2026-11-15T14:27:09.000Z","name":"probe-install","from":"D:\\造化乾坤鼎-工作台\\patch\\sources\\_probe\\probe-install","files":2,"texts":2,"backed":null,"auditPass":true,"exitCode":0}
+{"ts":"2026-11-15T14:39:20.791Z","action":"uninstall","name":"probe-un","removedTruth":true,"removedRuntime":true,"backed":"patch\\_backup\\skills\\2026-11-15T14-39-20\\probe-un"}
+{"ts":"2026-11-15T14:47:30.691Z","action":"uninstall","name":"probe-rt","removedTruth":true,"removedRuntime":false,"backed":"patch\\_backup\\skills\\2026-11-15T14-47-30\\probe-rt"}
+{"ts":"2026-11-15T14:47:30.767Z","action":"restore","name":"probe-rt","from":"patch\\_backup\\skills\\2026-11-15T14-47-30\\probe-rt","before":null}
