@@ -1,3 +1,4 @@
+<!-- src: qkd:skills/06-prompt/references/compile-gate.md | epoch: 1 | sha: ac6c8c22c7f92b267b8daabc7e9b36a7620260ddcfcf3bfd41ad718f4126a919 -->
 # 编译闸检查表（L6 自检 · v2）
 
 每条提示词交付前逐项自检并如实报告（S-32：检查结果只报不拦；用户决定是否修改）。下列 `FAIL` 字样仅是问题标签/严重度沿用，不构成交付拦截。本表是提示词交付前核验，不包含生成后审片。

@@ -1,3 +1,4 @@
+<!-- src: qkd:skills/06-prompt/references/failure-modes.md | epoch: 1 | sha: 12af66fd8c279c67dc22469a2faebaf32f165e3b5da9fd408bfa19728113835d -->
 # 失败模式与迭代纪律（L6 · reference）
 
 > 用途：给「返工」这件事立规——**先分类失败、再决定是否重投、一次只改一个变量、账本留痕、有验收口径**。目标是把返工从「凭感觉不停重试」变成「可计数、可停止、可复盘」的流程。

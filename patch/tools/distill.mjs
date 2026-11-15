@@ -184,6 +184,38 @@ function cmdUpdates() {
   console.log(JSON.stringify({ ok: true, updates: out, count: out.length }, null, 2));
 }
 
+
+// ---------- 接线：把 references 写进 SKILL.md 正文 ----------
+const WIRE_MARK = '## 本层参考资料（投放接线）';
+function wireOne(skill) {
+  const md = join(SKILLS, skill, 'SKILL.md');
+  if (!existsSync(md)) return { skill, ok: false, error: '没有 SKILL.md' };
+  let text = readFileSync(md, 'utf8');
+  const rows = loadLedger().filter(r => r.skill === skill);
+  const add = [];
+  for (const r of rows) {
+    if (text.includes(r.to)) continue;
+    if (add.some(a => a.to === r.to)) continue;
+    add.push({ to: r.to, srcId: r.srcId, epoch: r.epoch });
+  }
+  if (!add.length) return { skill, ok: true, added: 0, bytes: statSync(md).size };
+  let next = text.replace(/\s+$/, '');
+  if (!next.includes(WIRE_MARK)) {
+    next += '\n\n' + WIRE_MARK + '\n\n> 这一节是造化鼎投放时自动接的线：下面每个文件来自外部来料，文件头有来源戳；改它们之前先看 sha，因为来源可能更新。\n';
+  }
+  for (const a of add) {
+    next += '\n- `' + a.to + '` ← ' + a.srcId.replace('qkd:skills/', '') + '（epoch ' + a.epoch + '）';
+  }
+  writeFileSync(md, next + '\n', 'utf8');
+  return { skill, ok: true, added: add.length, bytes: statSync(md).size, files: add.map(a => a.to) };
+}
+
+function cmdWire(skill) {
+  const rows = loadLedger();
+  const skills = skill ? [skill] : [...new Set(rows.map(r => r.skill))].sort();
+  const out = skills.map(s => wireOne(s));
+  console.log(JSON.stringify({ ok: true, result: out, totalAdded: out.reduce((a, b) => a + (b.added || 0), 0) }, null, 2));
+}
 // ---------- 来料清单 ----------
 function cmdSources() {
   const rows = loadLedger();
@@ -287,7 +319,8 @@ function cmdLand(srcId, skill, to, sel, epochArg, labelArg) {
   if (!eps.some(e => e.epoch === epoch)) {
     appendJsonl(EPOCHS, { epoch, ts: row.ts, label: labelArg || ('投放：' + srcId.replace('qkd:skills/', '') + ' → ' + skill + '/' + relTo), files: 1 });
   }
-  console.log(JSON.stringify({ ok: true, epoch, to: relTo, targetAbs, bytes: row.bytes, landedSha: row.landedSha, overwrote: existed, sections: row.sections }, null, 2));
+  const wire = flag('--no-wire') ? null : wireOne(skill);
+  console.log(JSON.stringify({ ok: true, epoch, to: relTo, targetAbs, bytes: row.bytes, landedSha: row.landedSha, overwrote: existed, sections: row.sections, wired: wire ? (wire.added || 0) : 0, skillMdBytes: wire ? wire.bytes : null }, null, 2));
 }
 
 function nextEpoch() {
@@ -305,8 +338,9 @@ else if (cmd === 'timeline') cmdTimeline();
 else if (cmd === 'updates') cmdUpdates();
 else if (cmd === 'sources') cmdSources();
 else if (cmd === 'plan') cmdPlan(val('--src'), val('--skill'), val('--to'));
+else if (cmd === 'wire') cmdWire(val('--skill'));
 else if (cmd === 'land') cmdLand(val('--src'), val('--skill'), val('--to'), val('--sections'), val('--epoch'), val('--label'));
 else {
-  console.error('用法: stamp|map|timeline|updates|sources|plan|land');
+  console.error('用法: stamp|map|timeline|updates|sources|plan|land|wire');
   process.exit(2);
 }

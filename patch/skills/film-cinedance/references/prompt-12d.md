@@ -1,3 +1,4 @@
+<!-- src: qkd:skills/06-prompt/references/prompt-12-dimensions.md | epoch: 1 | sha: 1179db290baad54bb69f6d66166ef36f347f8aa495f35cf2be00573e1505d2f9 -->
 # 12 维提示词框架（编译对照表）
 
 结构唯一来源：`specs/prompt-framework.md`（v2 · 12 维）。本文件是逐维填写对照，供编译时照单执行。

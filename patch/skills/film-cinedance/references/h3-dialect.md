@@ -1,3 +1,4 @@
+<!-- src: qkd:skills/06-prompt/references/h3-dialect.md | epoch: 1 | sha: 45c59e2b0f37c746ddf83cddc21865bec9d01f02002da0c980c3e13c8881027e -->
 # H3 方言操作篇（h3-dialect）
 
 > 用途：把 `specs/h3-profile.md`（结构与禁令）之外**必须先定下来才能落笔**的操作项一次写清：**模式分派 → 素材上限 → 对白容量 → 时长同步**。

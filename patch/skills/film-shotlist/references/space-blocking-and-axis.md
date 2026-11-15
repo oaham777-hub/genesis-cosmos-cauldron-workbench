@@ -1,3 +1,4 @@
+<!-- src: qkd:skills/04-shotlist/references/space-blocking-and-axis.md | epoch: 1 | sha: 2239070364af8bbb2c60ec16f2a7ecec5df593b6c1cb0320b0303a049d2cdd5e -->
 # 空间类型、调度与轴线（L4 · reference）
 
 > 用途：镜头设计前的第一步——先认空间，再排调度，最后才谈镜头。防止「物理不可行的镜头」与「越轴正反打」。

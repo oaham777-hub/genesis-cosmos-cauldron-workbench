@@ -1,3 +1,4 @@
+<!-- src: qkd:skills/04-shotlist/references/camera-exposure-combos.md | epoch: 1 | sha: fc35e7560e2dc6548d11eb8eda84d918ff90487cbe110ddf69d70d4bdd8ba829 -->
 # 曝光与运动组合表（L4 · reference）
 
 > 用途：给第 3 维「摄影参数」与第 4 维「镜头语言」提供**可直接抄用的组合矩阵**与**互斥判据**，让参数能反推画面结果（雨是线还是钉、暗部是厚还是脏），而不是堆数字。

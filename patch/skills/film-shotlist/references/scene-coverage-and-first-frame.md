@@ -1,3 +1,4 @@
+<!-- src: qkd:skills/04-shotlist/references/scene-coverage-and-first-frame.md | epoch: 1 | sha: e0f6fb99664e3ddd10a83530502f2c3d6e59b86d523f92c10e0ff47de1ab05a0 -->
 # 场景覆盖与首帧分镜（L4）
 
 > 状态：**已完成**｜版本：**v01**｜溯源：**自写件**（方法来源：用户投喂源 **第 29 号源** `chaoge-craftsmanship-2.12.4` 的 `first_frame_storyboard.md` ＋ `scene_360_coverage.md` ＋ `spatial_preflight.md`；该源**无 LICENSE 文件**，按**用户投喂源**使用；**本件为方法提炼，未复制其正文**）

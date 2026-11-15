@@ -185,7 +185,7 @@
         r = await fetch(url + '&confirm=yes').then(x => x.json());
       }
       if (r.ok) {
-        out.innerHTML = '<span class="badge ok">epoch ' + r.epoch + ' 已写入</span> <span class="sub">' + r.to + ' · ' + r.bytes + ' B · ' + String(r.landedSha).slice(0, 10) + '</span>';
+        out.innerHTML = '<span class="badge ok">epoch ' + r.epoch + ' 已写入</span> <span class="sub">' + r.to + ' · ' + r.bytes + ' B · ' + String(r.landedSha).slice(0, 10) + (r.wired ? ' · 已自动接线 ' + r.wired + ' 条' : '（正文里已有引用，没重接）') + '</span>';
         load(); loadSources();
       } else {
         out.innerHTML = '<span class="badge bad">失败</span> <span class="sub">' + (r.error || JSON.stringify(r).slice(0, 200)) + '</span>';
@@ -195,10 +195,32 @@
     }
   }
 
+
+  async function doWire() {
+    const out = $('dz-land-out');
+    const skill = $('dz-skill').value;
+    const url = B + '/distill-wire?skill=' + encodeURIComponent(skill);
+    try {
+      let r = await fetch(url).then(x => x.json());
+      if (r.needsConfirm) {
+        if (!confirm('把没被正文引用的 references 接进 ' + skill + ' 的 SKILL.md？')) return;
+        r = await fetch(url + '&confirm=yes').then(x => x.json());
+      }
+      if (r.ok) {
+        out.innerHTML = '<span class="badge ok">接线完成</span> <span class="sub">共 ' + (r.totalAdded || 0) + ' 条</span>';
+        load();
+      } else {
+        out.innerHTML = '<span class="badge bad">失败</span>';
+      }
+    } catch (e) {
+      out.innerHTML = '<span class="badge bad">失败</span> <span class="sub">' + e.message + '</span>';
+    }
+  }
   document.addEventListener('click', function (e) {
     if (e.target.id === 'dz-plan') doPlan();
     if (e.target.id === 'dz-land') doLand();
     if (e.target.id === 'dz-reload-src') loadSources();
+    if (e.target.id === 'dz-wire') doWire();
   });
 
   window.ZH_DISTILL_RELOAD = load;

@@ -313,7 +313,13 @@ const server = Bun.serve({
         return json({ ok: true, seq: ev.seq });
       }
 
-      if (url.pathname === '/sources') return json(await runDistill(['sources']));
+      if (url.pathname === '/distill-wire') {
+      const sk = url.searchParams.get('skill') || '';
+      if (url.searchParams.get('confirm') !== 'yes') {
+        return json({ ok: false, needsConfirm: true, hint: '会在 SKILL.md 末尾加一节「本层参考资料（投放接线）」，把没被正文引用的 references 列进去。' });
+      }
+      return json(await runDistill(sk ? ['wire', '--skill', sk] : ['wire']));
+    }    if (url.pathname === '/sources') return json(await runDistill(['sources']));
     if (url.pathname === '/distill-plan') {
       return json(await runDistill(['plan', '--src', url.searchParams.get('src') || '', '--skill', url.searchParams.get('skill') || '', '--to', url.searchParams.get('to') || '']));
     }

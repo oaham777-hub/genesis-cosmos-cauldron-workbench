@@ -1,3 +1,4 @@
+<!-- src: qkd:skills/06-prompt/references/multi-model-adapters.md | epoch: 1 | sha: 981ad3252087ef960b07f60b47a2ccb5fe0cb8b7690b9a2166a5ca3ce84445c9 -->
 # 多模型适配（L6 · reference）
 
 > 用途：同一份 12 维主版本，按目标平台改写为可提交格式。**主版本是唯一事实来源，适配只改组织方式，不改信息。**

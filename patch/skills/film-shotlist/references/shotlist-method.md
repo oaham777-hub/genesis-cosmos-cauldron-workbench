@@ -1,3 +1,4 @@
+<!-- src: qkd:skills/04-shotlist/SKILL.md | epoch: 1 | sha: 093b93c6931e374121ed0b80b0036c88948400371d07d5f37339726871222eae -->
 ---
 name: qkd-shotlist
 description: 乾坤鼎分镜层（L4）。当总控选中阶段 08 时使用；用于以导演与摄影师视角把剧本拆成镜头表，并产出分镜、摄影、画面、光影四类资产。不要用于最终提示词编译（交给 06-prompt）。

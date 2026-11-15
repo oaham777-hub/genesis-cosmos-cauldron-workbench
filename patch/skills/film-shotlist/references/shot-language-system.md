@@ -1,3 +1,4 @@
+<!-- src: qkd:skills/04-shotlist/references/shot-language-system.md | epoch: 1 | sha: df43cc63f3ce617ecddf17fc8b31e6c0144768837a1ff1e2a7c430d5d22dc273 -->
 # 镜头语言体系（L4 · reference）
 
 > 用途：为镜头表第 4 维「镜头语言」提供取值与判据。写作顺序固定：**景别 → 焦段 → 机位角度 → 运镜 → 构图与视点**。

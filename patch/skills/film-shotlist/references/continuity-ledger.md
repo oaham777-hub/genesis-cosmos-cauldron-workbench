@@ -1,3 +1,4 @@
+<!-- src: qkd:skills/04-shotlist/references/continuity-ledger.md | epoch: 1 | sha: 8b46831874744fc9fe03dcab52cdf3d2ad4f642a64652c1b9461608539bf710a -->
 # 连续性台账与跨集落幅（L4 · reference）
 
 > 用途：连续性字段定义。实际项目的逐镜连续性事实与接缝对账写入每场 `05_shots/<场次ID>/scene-registry.md`，不创建单独 ledger 文件。只记事实，不做成片质量判断；判断权归用户。
