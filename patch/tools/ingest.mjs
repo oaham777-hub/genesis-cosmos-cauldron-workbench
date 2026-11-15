@@ -4,10 +4,10 @@
 //   bun ingest.mjs ingest --path "<...>" --name <包名> [--confirm]
 //   bun ingest.mjs suggest --file "<解压/来源里的某个 md|txt>" [--json]
 //   bun ingest.mjs kind   --file "<md|txt>" [--json]
-import { existsSync, readFileSync, writeFileSync, mkdirSync, statSync, readdirSync, copyFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync, statSync, readdirSync, copyFileSync, cpSync, rmSync, appendFileSync} from 'node:fs';
 import { join, dirname, basename, extname, relative } from 'node:path';
 import { createHash } from 'node:crypto';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 
 const ROOT = 'D:\\造化乾坤鼎-工作台';
 const SOURCES = join(ROOT, 'patch', 'sources');
@@ -218,4 +218,62 @@ if (cmd === 'scan') {
     if (cmd === 'kind') out({ ok: true, kind });
     else out({ ok: true, file: f, kind, chars: text.length, sections: (text.match(/^#{1,3}\s+/gm) || []).length, suggest: scoreText(text) });
   }
-} else out({ ok: false, error: '用法: scan|ingest|suggest|kind' });
+} else if (cmd === 'install') {
+  // 把一份「技能件」装进唯一真相 patch\skills\<name>，体检后由调用方同步运行区
+  let from = val('--from');
+  const pkg = val('--pkg');
+  const rel = val('--rel');
+  if (!from && pkg && rel) from = join(SOURCES, pkg, rel);
+  if (!from) out({ ok: false, error: '需要 --from <技能目录> 或 --pkg + --rel' });
+  else if (!existsSync(from)) out({ ok: false, error: '路径不存在：' + from });
+  else {
+    const dir = statSync(from).isDirectory() ? from : dirname(from);
+    const sk = join(dir, 'SKILL.md');
+    if (!existsSync(sk)) out({ ok: false, error: '这个目录里没有 SKILL.md：' + dir });
+    else {
+      const text = readFileSync(sk, 'utf8');
+      const fm = frontmatter(text) || {};
+      const name = (val('--name') || fm.name || basename(dir)).toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '');
+      if (!fm.description) out({ ok: false, error: 'SKILL.md 缺 description，先补齐再装（造化鼎 R03 会拦）', name });
+      else if (!has('--confirm') && !has('--dry-run')) out({ ok: false, needsConfirm: true, name, dir, hint: '加 --confirm 才会复制进 patch\\skills\\' + name });
+      else {
+        const dest = join(SKILLS, name);
+        const files = walk(dir);
+        const texts = files.filter((f) => TEXT_EXT.has(extname(f.rel).toLowerCase())).length;
+        if (has('--dry-run')) {
+          out({ ok: true, dryRun: true, name, from: dir, dest, files: files.length, texts, exists: existsSync(dest) });
+        } else {
+          let backed = null;
+          if (existsSync(dest)) {
+            backed = join(ROOT, 'patch', '_backup', 'skills', new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19), name);
+            mkdirSync(dirname(backed), { recursive: true });
+            cpSync(dest, backed, { recursive: true });
+            rmSync(dest, { recursive: true, force: true });
+          }
+          mkdirSync(dest, { recursive: true });
+          for (const f of files) {
+            const to = join(dest, f.rel);
+            mkdirSync(dirname(to), { recursive: true });
+            copyFileSync(f.p, to);
+          }
+          let audit = { ok: false, note: '未跑' };
+          const CLI = join('D:\\造化鼎', 'core', 'bin', 'zhaohua.mjs');
+          if (existsSync(CLI)) {
+            const r = spawnSync(process.execPath, [CLI, 'audit', dest], { encoding: 'utf8' });
+            const txt = (r.stdout || '') + (r.stderr || '');
+            audit = {
+              exitCode: r.status, pass: r.status === 0,
+              fails: (txt.match(/R\d\d fail[^\n]*/g) || []).slice(0, 8),
+              tail: txt.split(/\r?\n/).filter(Boolean).slice(-4),
+            };
+          }
+          appendJsonl(join(ROOT, 'patch', 'ledger', 'installs.jsonl'), {
+            ts: new Date().toISOString(), name, from: dir, files: files.length, texts,
+            backed: backed ? relative(ROOT, backed) : null, auditPass: audit.pass, exitCode: audit.exitCode,
+          });
+          out({ ok: true, name, dest, files: files.length, texts, backed, audit });
+        }
+      }
+    }
+  }
+} else out({ ok: false, error: '用法: scan|ingest|suggest|kind|install' });

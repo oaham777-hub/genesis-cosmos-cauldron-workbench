@@ -33,8 +33,12 @@
         '<td><span class="gp-k ' + a.cls + '">' + a.text + '</span>' + conf + '</td>' +
         '<td class="mono">' + Math.round(it.bytes / 1024) + 'KB</td>' +
         '<td class="mono">' + (it.sections || 0) + '</td>' +
-        '<td>' + where + (it.skillName ? '<div class="sub mono">name: ' + it.skillName + '</div>' : '') + '</td>' +
-        '<td>' + (it.action === 'gap' ? '<button class="dz-mini" data-ig="pick" data-i="' + i + '">用这条判层</button>' : '') + '</td></tr>';
+        '<td>' + where + (it.skillName ? '<div class="sub mono">name: ' + it.skillName + '</div>' : '') + '<div class="sub" data-out="' + i + '"></div></td>' +
+        '<td>' + (it.action === 'gap'
+          ? '<button class="dz-mini" data-ig="pick" data-i="' + i + '">用这条判层</button>'
+          : it.action === 'install-skill'
+            ? '<button class="dz-mini dz-strong" data-ig="inst" data-i="' + i + '">装成技能</button>'
+            : '') + '</td></tr>';
     }).join('');
     box.innerHTML = (note ? '<div class="gp-head">' + note + '</div>' : '') +
       '<div class="gp-head">' + d.files + ' 个文件 · ' + d.texts + ' 份可读文本 · 类型：' + (kinds || '—') + (acts ? ' · 动作：' + acts : '') + (d.unzipped ? ' · 已解压' : '') + '</div>' +
@@ -122,6 +126,29 @@
     }
   }
 
+  async function doInstallSkill(i) {
+    const it = (LAST && LAST.items || [])[i];
+    if (!it) return;
+    const pkg = ($('ig-name').value || '').trim();
+    if (!INGESTED && !pkg) { alert('先把包投放进来（整包落 patch\\sources），才有可装的路径'); return; }
+    const out = document.querySelector('[data-out="' + i + '"]');
+    if (!confirm('会复制进 patch\\skills\\' + (it.skillName || '') + '（唯一真相），再体检、再同步到运行区。继续？')) return;
+    if (out) out.innerHTML = '正在装…';
+    try {
+      const q = 'pkg=' + encodeURIComponent(INGESTED || pkg) + '&rel=' + encodeURIComponent(it.rel) + '&confirm=yes';
+      const d = await fetch(B + '/install-skill?' + q).then((r) => r.json());
+      if (!d.ok) { if (out) out.innerHTML = '<span style="color:#c85550">装失败：' + (d.error || '') + '</span>'; return; }
+      const ok = d.audit && d.audit.pass;
+      if (out) {
+        out.innerHTML = '<span style="color:' + (ok ? '#7fcfa3' : '#d8b26a') + '">已装 ' + d.name + '（' + d.files + ' 文件）· 体检 ' + (ok ? 'PASS' : 'FAIL exit ' + (d.audit && d.audit.exitCode)) + '</span>' +
+          '<div class="sub">同步运行区：' + (d.synced ? '已同步' : '未同步（跑 apply.ps1 -Skills）') + (d.backed ? ' · 旧版备份 ' + d.backed : '') + '</div>' +
+          (d.audit && d.audit.fails && d.audit.fails.length ? '<div class="sub">' + d.audit.fails.join('；') + '</div>' : '');
+      }
+    } catch (e) {
+      if (out) out.innerHTML = '<span style="color:#c85550">装失败：' + e.message + '</span>';
+    }
+  }
+
   function syncToGap() {
     const sel = $('gp-src');
     if (!sel || !window.__IG_SRC) return;
@@ -148,6 +175,7 @@
     if (a === 'ingest') doIngest();
     if (a === 'pick') usePick(Number(e.target.getAttribute('data-i')));
     if (a === 'goto') syncToGap();
+    if (a === 'inst') doInstallSkill(Number(e.target.getAttribute('data-i')));
     if (e.target && e.target.id === 'ig-scan') doScan();
   });
 

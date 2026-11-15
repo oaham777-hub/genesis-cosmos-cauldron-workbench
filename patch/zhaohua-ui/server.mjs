@@ -151,6 +151,8 @@ const UPLOAD_STAGE = 'D:\\造化乾坤鼎-工作台\\patch\\_upload';
 const UPLOAD_MAX_MB = Number(process.env.ZHAOHUA_UPLOAD_MAX_MB || 150);
 const UPLOAD_MAX_FILES = Number(process.env.ZHAOHUA_UPLOAD_MAX_FILES || 1500);
 const INGEST = 'D:\\造化乾坤鼎-工作台\\patch\\tools\\ingest.mjs';
+const ROOT2 = 'D:\\造化乾坤鼎-工作台';
+const DEV_DIR = 'D:\\造化乾坤鼎-工作台\\_work\\stable';
 const DISTILL = 'D:\\造化乾坤鼎-工作台\\patch\\tools\\distill.mjs';
 const GAP = 'D:\\造化乾坤鼎-工作台\\patch\\tools\\gap.mjs';
 async function runTool(script, args) {
@@ -403,7 +405,22 @@ const server = Bun.serve({
         return json({ ok: false, needsConfirm: true, hint: '会在 SKILL.md 末尾加一节「本层参考资料（投放接线）」，把没被正文引用的 references 列进去。' });
       }
       return json(await runDistill(sk ? ['wire', '--skill', sk] : ['wire']));
-    }    if (url.pathname === '/ingest-upload' && req.method === 'POST') {
+    }    if (url.pathname === '/install-skill') {
+      const pkg = url.searchParams.get('pkg') || '';
+      const rel = url.searchParams.get('rel') || '';
+      if (!pkg || !rel) return reply({ ok: false, error: '需要 pkg 与 rel' }, 400);
+      if (url.searchParams.get('confirm') !== 'yes') {
+        return reply({ ok: false, needsConfirm: true, hint: '会在 patch\\skills\\ 下新建一份技能，并同步到运行区。确认请带 confirm=yes。' });
+      }
+      const r = Bun.spawnSync([process.execPath, INGEST, 'install', '--pkg', pkg, '--rel', rel, '--confirm'], { stdout: 'pipe', stderr: 'pipe', env: { ...process.env, NO_COLOR: '1' } });
+      let j; try { j = JSON.parse(new TextDecoder().decode(r.stdout)); } catch { j = { ok: false, error: new TextDecoder().decode(r.stderr).slice(0, 400) }; }
+      if (!j.ok) return reply(j, j.error ? 400 : 200);
+      const sync = Bun.spawnSync(['powershell', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', join(ROOT2, 'patch', 'apply.ps1'), '-Skills', '-Target', DEV_DIR], { stdout: 'pipe', stderr: 'pipe' });
+      const syncTxt = new TextDecoder().decode(sync.stdout) + new TextDecoder().decode(sync.stderr);
+      return reply({ ...j, synced: sync.exitCode === 0, syncTail: syncTxt.split(/\r?\n/).filter(Boolean).slice(-4) });
+    }
+
+    if (url.pathname === '/ingest-upload' && req.method === 'POST') {
       try {
         const form = await req.formData();
         const name = String(form.get('name') || '').replace(/[\\/:*?"<>|]/g, '_').trim() || ('upload-' + Date.now());
