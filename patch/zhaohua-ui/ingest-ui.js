@@ -149,6 +149,41 @@
     }
   }
 
+  async function loadTruth() {
+    const tb = $('zh-truth');
+    if (!tb) return;
+    try {
+      const d = await fetch(B + '/skills-truth').then((r) => r.json());
+      const rows = (d.skills || []).map((s) => '<tr><td class="mono">' + s.name + '</td>' +
+        '<td>' + (s.hasSkillMd ? '✓' : '<span style="color:#c85550">✗</span>') + '</td>' +
+        '<td>' + (s.hasPack ? '✓' : '—') + '</td>' +
+        '<td>' + (s.runtime ? '✓' : '<span class="sub">未同步</span>') + '</td>' +
+        '<td class="mono">' + s.files + '</td>' +
+        '<td><button class="dz-mini" data-ig="un" data-name="' + s.name + '">卸掉</button></td></tr>').join('');
+      tb.innerHTML = rows || '<tr><td colspan="6" class="sub">patch\\skills 里没有技能</td></tr>';
+      if (d.dir) tb.setAttribute('title', d.dir + ' → ' + d.runtimeDir);
+    } catch (e) {
+      tb.innerHTML = '<tr><td colspan="6" class="sub">读取失败：' + e.message + '</td></tr>';
+    }
+  }
+
+  async function doUninstall(name) {
+    if (!name) return;
+    if (!confirm('卸掉 ' + name + '？\n会从 patch\\skills 与运行区一起移除，并先备份到 patch\\_backup\\skills。')) return;
+    const tb = $('zh-truth');
+    if (tb) tb.insertAdjacentHTML('afterbegin', '<tr id="un-run"><td colspan="6" class="sub">正在卸 ' + name + '…</td></tr>');
+    try {
+      const d = await fetch(B + '/uninstall-skill?name=' + encodeURIComponent(name) + '&confirm=yes').then((r) => r.json());
+      const run = $('un-run');
+      if (run) run.remove();
+      if (!d.ok) { alert('卸失败：' + (d.error || '')); return; }
+      if (tb) tb.insertAdjacentHTML('afterbegin', '<tr><td colspan="6" class="sub">已卸 ' + d.name + '：真相 ' + (d.removedTruth ? '已移除' : '未找到') + ' · 运行区 ' + (d.removedRuntime ? '已移除' : '未找到') + (d.backed ? ' · 备份 ' + d.backed : '') + '</td></tr>');
+      loadTruth();
+    } catch (e) {
+      alert('卸失败：' + e.message);
+    }
+  }
+
   function syncToGap() {
     const sel = $('gp-src');
     if (!sel || !window.__IG_SRC) return;
@@ -176,6 +211,7 @@
     if (a === 'pick') usePick(Number(e.target.getAttribute('data-i')));
     if (a === 'goto') syncToGap();
     if (a === 'inst') doInstallSkill(Number(e.target.getAttribute('data-i')));
+    if (a === 'un') doUninstall(e.target.getAttribute('data-name'));
     if (e.target && e.target.id === 'ig-scan') doScan();
   });
 
@@ -185,6 +221,6 @@
     if (ig) { const el = $('ig-path'); if (el) { el.value = ig; setTimeout(doScan, 600); } }
   })();
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire);
-  else wire();
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { wire(); loadTruth(); });
+  else { wire(); loadTruth(); }
 })();

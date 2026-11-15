@@ -276,4 +276,27 @@ if (cmd === 'scan') {
       }
     }
   }
-} else out({ ok: false, error: '用法: scan|ingest|suggest|kind|install' });
+} else if (cmd === 'uninstall') {
+  const name = val('--name');
+  const truth = name ? join(SKILLS, name) : null;
+  const runtime = name ? join(ROOT, '_work', 'stable', 'data', 'skills', name) : null;
+  if (!name) out({ ok: false, error: '需要 --name' });
+  else if (!existsSync(truth) && !existsSync(runtime)) out({ ok: false, error: '没找到这份技能：' + name });
+  else if (!has('--confirm')) out({ ok: false, needsConfirm: true, name, truth, runtime, hint: '会从 patch\\skills 与运行区一起移除（先备份到 patch\\_backup\\skills）。确认请加 --confirm' });
+  else {
+    let backed = null;
+    if (existsSync(truth)) {
+      backed = join(ROOT, 'patch', '_backup', 'skills', new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19), name);
+      mkdirSync(dirname(backed), { recursive: true });
+      cpSync(truth, backed, { recursive: true });
+      rmSync(truth, { recursive: true, force: true });
+    }
+    let removedRuntime = false;
+    if (existsSync(runtime)) { rmSync(runtime, { recursive: true, force: true }); removedRuntime = true; }
+    appendJsonl(join(ROOT, 'patch', 'ledger', 'installs.jsonl'), {
+      ts: new Date().toISOString(), action: 'uninstall', name,
+      removedTruth: !existsSync(truth), removedRuntime, backed: backed ? relative(ROOT, backed) : null,
+    });
+    out({ ok: true, name, removedTruth: !existsSync(truth), removedRuntime, backed, hint: '要恢复就把备份目录拷回 patch\\skills\\<' + name + '> 再跑 apply.ps1 -Skills' });
+  }
+} else out({ ok: false, error: '用法: scan|ingest|suggest|kind|install|uninstall' });

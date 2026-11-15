@@ -405,7 +405,41 @@ const server = Bun.serve({
         return json({ ok: false, needsConfirm: true, hint: '会在 SKILL.md 末尾加一节「本层参考资料（投放接线）」，把没被正文引用的 references 列进去。' });
       }
       return json(await runDistill(sk ? ['wire', '--skill', sk] : ['wire']));
-    }    if (url.pathname === '/install-skill') {
+    }    if (url.pathname === '/skills-truth') {
+      const list = [];
+      try {
+        for (const d of readdirSync(SKILLS_DIR)) {
+          const p = join(SKILLS_DIR, d);
+          try {
+            if (!statSync(p).isDirectory()) continue;
+          } catch { continue; }
+          let files = 0;
+          try { files = readdirSync(p).length; } catch {}
+          list.push({
+            name: d,
+            hasSkillMd: existsSync(join(p, 'SKILL.md')),
+            hasPack: existsSync(join(p, 'skill.pack.json')),
+            runtime: existsSync(join(DEPLOY_DIR, d)),
+            files,
+          });
+        }
+      } catch {}
+      list.sort((a, b) => a.name.localeCompare(b.name));
+      return reply({ dir: SKILLS_DIR, runtimeDir: DEPLOY_DIR, skills: list });
+    }
+
+    if (url.pathname === '/uninstall-skill') {
+      const name = url.searchParams.get('name') || '';
+      if (!name) return reply({ ok: false, error: '需要 name' }, 400);
+      if (url.searchParams.get('confirm') !== 'yes') {
+        return reply({ ok: false, needsConfirm: true, name, hint: '会从 patch\\skills 与运行区一起移除（先备份）。确认请带 confirm=yes。' });
+      }
+      const r = Bun.spawnSync([process.execPath, INGEST, 'uninstall', '--name', name, '--confirm'], { stdout: 'pipe', stderr: 'pipe', env: { ...process.env, NO_COLOR: '1' } });
+      let j; try { j = JSON.parse(new TextDecoder().decode(r.stdout)); } catch { j = { ok: false, error: new TextDecoder().decode(r.stderr).slice(0, 400) }; }
+      return reply(j, j.ok ? 200 : 400);
+    }
+
+    if (url.pathname === '/install-skill') {
       const pkg = url.searchParams.get('pkg') || '';
       const rel = url.searchParams.get('rel') || '';
       if (!pkg || !rel) return reply({ ok: false, error: '需要 pkg 与 rel' }, 400);
