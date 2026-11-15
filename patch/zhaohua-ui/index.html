@@ -187,23 +187,13 @@
     <!-- 概览 -->
 
     <section class="view" id="v-obs">
-      <div class="obs-wrap">
-        <div class="obs-stage">
-          <canvas id="obs-canvas"></canvas>
-          <div class="obs-legend">
-            <span class="obs-lg"><i class="sw gold"></i>audit / verify · 沿口涟漪</span>
-            <span class="obs-lg"><i class="sw teal"></i>pack / install / deploy · 落进腹中</span>
-            <span class="obs-lg"><i class="sw gold"></i>eval · 两束对冲</span>
-            <span class="obs-meta" id="obs-meta">正在连桥…</span>
-          </div>
-        </div>
-        <aside class="obs-side">
-          <h3>活动流 <span class="hstat">按时间倒序，真实事件</span></h3>
-          <div class="obs-feed" id="obs-feed"></div>
-          <div class="note">
-            呼吸节奏跟活动量走：静时约 6.5 秒一轮，忙时压到 3.3 秒。沿口 16 个回纹刻度对应 16 个技能，被点到的那一格会亮一下。
-          </div>
-        </aside>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;font-size:12px;color:var(--dim)">
+        <span>观象台 · 乾坤鼎的技能活动，画成会呼吸的卦象</span>
+        <span style="margin-left:auto;font-family:'JetBrains Mono',ui-monospace,monospace">桥 <b id="obs-bridge" style="color:#7fcfa3">8791</b></span>
+      </div>
+      <div style="position:relative;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#05070a">
+        <iframe id="obs-frame" src="/zhaohua/obs-console.html?relay=http://127.0.0.1:8791"
+                style="display:block;width:100%;height:calc(100vh - 210px);min-height:640px;border:0;background:#05070a"></iframe>
       </div>
     </section>
     <section class="view on" id="v-overview">
@@ -1121,6 +1111,6 @@
   }
 })();
 </script>
-  <script src="obs.js"></script>
+  
 </body>
 </html>

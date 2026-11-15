@@ -204,7 +204,18 @@ function briefOf(kind, data) {
 }
 
 function emitEvent(kind, fields = {}) {
-  const ev = { seq: ++EV_SEQ, ts: Date.now(), kind, ...fields };
+  // 观象台（参考 HALOFLUX 页面）认的字段：platform / agent_name / kind / text
+  // 这里同时给出别名，让同一个事件既服务我们自己的面板，也能被那套视觉直接消费。
+  const alias = {
+    platform: (fields.target && fields.target !== '') ? fields.target : ('zhaohua-' + kind),
+    agent_name: (fields.target && fields.target !== '') ? fields.target : ('zhaohua-' + kind),
+    capability: kind,
+    role: 'assistant',
+    session_id: 'zhaohua-bridge',
+    text: fields.brief || (kind + (fields.ok === false ? ' failed' : ' ok')),
+    tokens: null
+  };
+  const ev = { seq: ++EV_SEQ, ts: Date.now(), kind, ...fields, ...alias };
   EVENTS.push(ev);
   if (EVENTS.length > EVENTS_MAX) EVENTS.shift();
   const line = 'data: ' + JSON.stringify(ev) + '\n\n';
