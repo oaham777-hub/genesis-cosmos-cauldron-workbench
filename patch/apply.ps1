@@ -135,24 +135,83 @@ if ($Pill) {
   }
 }
 
-# ---------- B. 启动覆盖层 ----------
+# ---------- B. 启动覆盖层（外链 + 构建戳，规避 WebView2 缓存旧静态页） ----------
 if ($Overlay) {
   $idx = Join-Path $Target 'app\Resources\app\views\mainview\index.html'
-  $frag = Join-Path $Root 'overlay\launcher.html'
-  if (-not (Test-Path $idx)) { Write-Warning "找不到 index.html：$idx"; $report.actions += @{ action = 'overlay'; status = 'failed'; reason = 'index.html-missing' } }
-  elseif (-not (Test-Path $frag)) { Write-Warning "找不到覆盖层片段：$frag"; $report.actions += @{ action = 'overlay'; status = 'failed'; reason = 'fragment-missing' } }
-  else {
+  $src = Join-Path $Root 'zhaohua-ui\overlay.js'
+  $dstDir = Join-Path $Target 'app\Resources\app\views\mainview\zhaohua'
+  $dst = Join-Path $dstDir 'overlay.js'
+  if (-not (Test-Path $idx)) {
+    Write-Warning "找不到 index.html：$idx"
+    $report.actions += @{ action = 'overlay'; status = 'failed'; reason = 'index.html-missing' }
+  } elseif (-not (Test-Path $src)) {
+    Write-Warning "找不到覆盖层脚本：$src（先跑 node patch\tools\build-overlay.mjs）"
+    $report.actions += @{ action = 'overlay'; status = 'failed'; reason = 'overlay-js-missing' }
+  } else {
     $html = [IO.File]::ReadAllText($idx, [Text.Encoding]::UTF8)
+    $changed = $false
+
+    # 1) 迁移：清掉老版本注入的内联覆盖层（<div id="cauldron-launcher">…</div>，按 div 配平）
     if ($html -match 'id="cauldron-launcher"') {
-      Write-Host "覆盖层已存在，跳过（幂等）" -ForegroundColor DarkGray
-      $report.actions += @{ action = 'overlay'; status = 'present' }
+      $i = $html.IndexOf('<div id="cauldron-launcher"')
+      if ($i -ge 0) {
+        # 连前面的注释块一起清掉（老版本注入时前面有段 <!-- 启动覆盖层 … --> 说明）
+        $ci = $html.LastIndexOf('<!--', $i)
+        if ($ci -ge 0 -and (($i - $ci) -lt 900) -and ($html.Substring($ci, $i - $ci) -notmatch '-->')) { $i = $ci }
+        $depth = 0; $j = $i
+        while ($j -lt $html.Length) {
+          $open = $html.IndexOf('<div', $j)
+          $close = $html.IndexOf('</div>', $j)
+          if ($close -lt 0) { break }
+          if ($open -ge 0 -and $open -lt $close) { $depth++; $j = $open + 4 }
+          else { $depth--; $j = $close + 6; if ($depth -le 0) { break } }
+        }
+        $html = $html.Remove($i, $j - $i)
+        $changed = $true
+        Write-Host "已移除旧的内联覆盖层（外链化迁移）" -ForegroundColor DarkYellow
+      }
+    }
+
+    # 1b) 兜底：只残留注释块时也清掉（老版本注入的说明注释）
+    if ($html -match 'id="cauldron-launcher"') {
+      $cm = [regex]::Match($html, '(?s)<!--[^>]*启动覆盖层[^>]*-->')
+      if ($cm.Success) {
+        $html = $html.Remove($cm.Index, $cm.Length)
+        $changed = $true
+        Write-Host "已清除覆盖层残留注释" -ForegroundColor DarkYellow
+      }
+    }
+    # 2) 脚本放到应用自带静态目录 /zhaohua/overlay.js
+    if (-not (Test-Path $dstDir)) { New-Item -ItemType Directory -Path $dstDir -Force | Out-Null }
+    Copy-Item $src $dst -Force
+    $stamp = (Get-FileHash $src -Algorithm SHA256).Hash.Substring(0, 8).ToLower()
+    $tag = '<script src="/zhaohua/overlay.js?v=' + $stamp + '"></script>'
+
+    # 3) 注入或刷新引用（放在 <body> 之后，先画覆盖层再画内容）
+    if ($html -match '(?is)<script[^>]*zhaohua/overlay\.js[^>]*>\s*</script>') {
+      $html = [regex]::Replace($html, '(?is)<script[^>]*zhaohua/overlay\.js[^>]*>\s*</script>', $tag)
+      $changed = $true
+    } elseif ($html -match '(?is)<body[^>]*>') {
+      # 插在 <body> 开标签之后，覆盖层先于内容出现
+      $rx = [regex]'(?is)<body[^>]*>'
+      $html = $rx.Replace($html, { param($m) $m.Value + "`r`n" + $tag }, 1)
+      $changed = $true
+    } elseif ($html -match '</body>') {
+      $html = [regex]::Replace($html, '(?is)</body>', ($tag + "`r`n</body>"), 1)
+      $changed = $true
     } else {
-      $block = [IO.File]::ReadAllText($frag, [Text.Encoding]::UTF8)
-      $new = if ($html -match '<body[^>]*>') { $html -replace '(?is)(<body[^>]*>)', ("`$1`r`n$block") } else { $html + "`r`n" + $block }
+      $html = $html + "`r`n" + $tag
+      $changed = $true
+    }
+
+    if ($changed) {
       Save-Backup $idx
-      Save-Text $idx $new
-      Write-Host "已注入启动覆盖层 -> index.html" -ForegroundColor Green
-      $report.actions += @{ action = 'overlay'; status = 'injected'; file = 'app\Resources\app\views\mainview\index.html' }
+      Save-Text $idx $html
+      Write-Host "覆盖层：外链注入 $tag（戳 $stamp）" -ForegroundColor Green
+      $report.actions += @{ action = 'overlay'; status = 'external'; stamp = $stamp; dest = 'views\mainview\zhaohua\overlay.js' }
+    } else {
+      Write-Host "覆盖层已是最新（幂等）" -ForegroundColor DarkGray
+      $report.actions += @{ action = 'overlay'; status = 'present' }
     }
   }
 }
