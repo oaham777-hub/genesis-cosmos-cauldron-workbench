@@ -198,7 +198,11 @@
     .gp-k-spec{background:rgba(216,178,106,.16);color:#e0c48a}
     .gp-k-example{background:rgba(160,160,160,.14);color:#bdbdbd}
     .gp-k-code{background:rgba(110,160,220,.16);color:#a6c8ec}
-    .gp-plan-box{margin-top:6px}</style>
+    .gp-plan-box{margin-top:6px}    .ig-up{grid-template-columns:auto auto auto 1fr;align-items:center}
+    .ig-pick{display:inline-flex;align-items:center;justify-content:center;cursor:pointer;border:1px solid rgba(255,255,255,.14);border-radius:8px;padding:7px 12px}
+    .ig-pick:hover{border-color:rgba(216,178,106,.6)}
+    .ig-drop{border:1px dashed rgba(255,255,255,.18);border-radius:10px;padding:14px;text-align:center;margin-top:8px}
+    .ig-drop.on{border-color:rgba(216,178,106,.7)}</style>
 </head>
 <body>
 <div class="app">
@@ -439,6 +443,12 @@
           <input id="ig-path" class="gp-in" placeholder="D:\下载\某个技能包 或 某个文件.md">
           <input id="ig-name" class="gp-in" placeholder="包名（会作为 src:包名/文件 的来料 id）">
           <button id="ig-scan" class="dz-mini dz-strong" data-ig="scan">扫描并判层</button>
+        </div>
+        <div class="dz-form ig-up">
+          <label class="dz-mini ig-pick">上传文件夹<input type="file" id="ig-dir" webkitdirectory directory multiple hidden></label>
+          <label class="dz-mini ig-pick">上传文件<input type="file" id="ig-files" multiple hidden></label>
+          <label class="dz-mini ig-pick">上传 zip<input type="file" id="ig-zip" accept=".zip" hidden></label>
+          <span class="sub">选中的东西会先传到本机桥（127.0.0.1:8791），再复制进 patch\sources\&lt;包名&gt;\；不联网、不出本机。</span>
         </div>
         <div id="ig-list" class="gp-plan-box"></div>
       </div>

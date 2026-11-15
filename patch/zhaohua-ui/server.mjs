@@ -147,6 +147,7 @@ function deployedList() {
   return out;
 }
 const BANS = 'D:\\造化乾坤鼎-工作台\\patch\\tools\\bans.mjs';
+const UPLOAD_STAGE = 'D:\\造化乾坤鼎-工作台\\patch\\_upload';
 const INGEST = 'D:\\造化乾坤鼎-工作台\\patch\\tools\\ingest.mjs';
 const DISTILL = 'D:\\造化乾坤鼎-工作台\\patch\\tools\\distill.mjs';
 const GAP = 'D:\\造化乾坤鼎-工作台\\patch\\tools\\gap.mjs';
@@ -389,6 +390,30 @@ const server = Bun.serve({
         return json({ ok: false, needsConfirm: true, hint: '会在 SKILL.md 末尾加一节「本层参考资料（投放接线）」，把没被正文引用的 references 列进去。' });
       }
       return json(await runDistill(sk ? ['wire', '--skill', sk] : ['wire']));
+    }    if (url.pathname === '/ingest-upload' && req.method === 'POST') {
+      try {
+        const form = await req.formData();
+        const name = String(form.get('name') || '').replace(/[\\/:*?"<>|]/g, '_').trim() || ('upload-' + Date.now());
+        const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+        const stage = join(UPLOAD_STAGE, stamp);
+        mkdirSync(stage, { recursive: true });
+        let n = 0;
+        for (const [k, v] of form.entries()) {
+          if (k !== 'files' || typeof v === 'string') continue;
+          const rel = String(v.name || 'file').replace(/\\/g, '/').replace(/^\/+/, '').split('/').filter((s) => s && s !== '..').join('\\');
+          const to = join(stage, rel || ('file-' + n));
+          mkdirSync(dirname(to), { recursive: true });
+          writeFileSync(to, Buffer.from(await v.arrayBuffer()));
+          n++;
+        }
+        if (!n) return reply({ ok: false, error: '没收到文件' }, 400);
+        const r = Bun.spawnSync([process.execPath, INGEST, 'ingest', '--path', stage, '--name', name, '--confirm'], { stdout: 'pipe', stderr: 'pipe', env: { ...process.env, NO_COLOR: '1' } });
+        const txt = new TextDecoder().decode(r.stdout);
+        let j; try { j = JSON.parse(txt); } catch { j = { ok: false, error: txt.slice(0, 400) }; }
+        return reply({ ...j, uploaded: n, staged: stage });
+      } catch (e) {
+        return reply({ ok: false, error: '上传失败：' + e.message }, 500);
+      }
     }    if (url.pathname === '/ingest-scan') {
       const p = url.searchParams.get('path') || '';
       if (!p) return reply({ ok: false, error: '缺少 path' }, 400);
