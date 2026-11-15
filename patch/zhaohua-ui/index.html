@@ -900,7 +900,7 @@
     api('/creds').then(function (c) {
       keyTag.textContent = c.hasKey ? 'key 已就绪（只在跑的时候注入子进程）' : '没有 key：把 key 放进 patch\\secrets\\deepseek.key';
       keyTag.style.color = c.hasKey ? 'var(--gold)' : '#e08a7a';
-    }).catch(function () { keyTag.textContent = '桥没连上，先启动 server.mjs'; });
+    }).catch(function () { keyTag.textContent = '桥没连上：双击 patch\\start-app.ps1（或跑 start-bridge.ps1）'; });
 
     api('/eval-configs').then(function (d) {
       sel.innerHTML = '';

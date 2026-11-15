@@ -122,3 +122,21 @@ node ...\zhaohua.mjs audit D:\造化乾坤鼎-工作台\patch\skills
 **纪律**：不要直接编辑 `_work\stable\data\skills\`。改那边的话，下一次 `-Skills` 会被真相覆盖，漂移检查也会报 `只在本机有`。要么改 `patch\skills\` 再同步，要么承认它是一次性实验。
 
 桥（`zhaohua-ui\server.mjs`）的打包源已从 `staging\skills` 改为 `patch\skills`，`/health` 会回 `skillsDir` 指到真相目录。
+
+## 日常怎么开（P5）
+
+```powershell
+# 一键：起桥 → （可选）清 WebView 缓存 → 开应用
+.\start-app.ps1
+.\start-app.ps1 -ClearCache      # 启动层偶发不出现时加这个
+.\start-app.ps1 -NoLaunch        # 只要桥
+.\start-app.ps1 -Status          # 只看状态
+```
+
+- **桥随登录自启**：`HKCU\...\Run\ZhaohuaBridge` → 隐藏窗口跑 `start-bridge.ps1`（幂等）。注意这是"登录时起"而不是"应用启动时起"——因为应用没有可挂的启动钩子，桥是旁挂进程。日志在 `patch\_reports\bridge.log`。
+- **启动层偶发不出现**：根因是 WebView2 缓存了旧页面，`start-app.ps1 -ClearCache` 清掉 4 个缓存目录即可（应用开着时清不掉，会提示先关）。
+- **路径重定向进脚本了**：`apply.ps1 -Redirect` 会幂等地把 `toonflow.ini`（GBK）与卸载注册表项的 `InstallLocation / toonflowInstallDirectory / DisplayIcon / DisplayName` 指向 `-Target`。不重定向的话，开发副本会去读原安装的数据，表现是"改了没生效"。
+
+## 三条纪律
+
+（见下文"技能的唯一真相"）

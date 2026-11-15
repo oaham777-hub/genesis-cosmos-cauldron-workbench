@@ -45,9 +45,12 @@ $bun = $bunCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
 if (-not $bun) { throw "找不到 bun.exe，试过：$($bunCandidates -join ' / ')" }
 if (-not (Test-Path $server)) { throw "找不到 server.mjs：$server" }
 
+$log = Join-Path $here "_reports\bridge.log"
+New-Item -ItemType Directory -Force -Path (Split-Path $log) | Out-Null
+Add-Content -Path $log -Value ("{0}  start  bun={1} server={2}" -f (Get-Date -Format s), $bun, $server) -Encoding UTF8
 Start-Process $bun -ArgumentList $server -WindowStyle Hidden
 for ($i = 0; $i -lt 10; $i++) {
   Start-Sleep -Milliseconds 500
-  if (Test-Bridge) { "桥已启动：http://127.0.0.1:$Port"; return }
+  if (Test-Bridge) { Add-Content -Path $log -Value ("{0}  up  pid={1}" -f (Get-Date -Format s), ((Get-BridgeProcs | ForEach-Object { $_.ProcessId }) -join ",")) -Encoding UTF8; "桥已启动：http://127.0.0.1:$Port"; return }
 }
 throw "桥启动失败：端口 $Port 没有响应，请检查 $server"

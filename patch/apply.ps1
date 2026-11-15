@@ -6,7 +6,8 @@
     -Overlay   向 index.html 注入启动覆盖层（带标记位，幂等）
     -Pill      向 index.html 注入常驻「造化鼎」切换按钮（带标记位，幂等）
     -Data      把 data-additions 同步进 data\（升级不覆盖，可重复执行）
-    -All       三件都做
+    -Redirect  ini + 卸载注册表重定向到 $Target（幂等；只在该副本里做，不动原件）
+-All       以上都做
 
   用法：
     pwsh -File apply.ps1 -Target "D:\造化乾坤鼎-工作台\_work\stable" -All -DryRun
@@ -27,6 +28,7 @@ param(
   [switch]$Data,
   [switch]$Check,
   [switch]$Stages,
+[switch]$Redirect,
   [switch]$All,
   [switch]$DryRun
 )
@@ -34,7 +36,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $Root = $PSScriptRoot
 if ($All) { $Strings = $true; $Overlay = $true; $Pill = $true; $Skills = $true; $Data = $true; $Stages = $true }
-if (-not ($Strings -or $Overlay -or $Pill -or $Skills -or $Data -or $Stages -or $Check)) { throw "至少指定 -Strings / -Overlay / -Pill / -Skills / -Data / -Stages / -Check / -All 之一" }
+if (-not ($Strings -or $Overlay -or $Pill -or $Skills -or $Data -or $Stages -or $Check -or $Redirect)) { throw "至少指定 -Strings / -Overlay / -Pill / -Skills / -Data / -Stages / -Check / -Redirect / -All 之一" }
 if (-not (Test-Path $Target)) { throw "目标不存在：$Target" }
 $Target = (Resolve-Path $Target).Path
 
@@ -257,6 +259,65 @@ if ($Stages) {
       }
     }
     Write-Host "阶段切分：$okCount 成功 / $failCount 失败" -ForegroundColor $(if ($failCount -eq 0) { 'Green' } else { 'Yellow' })
+  }
+}
+
+
+# ---------- 路径重定向（ini + 卸载注册表）----------
+# 为什么需要：应用启动时按 ini 与注册表里的 installDirectory 找数据目录。
+# 不重定向的话，开发副本会去读原安装（D:\洋子工作台\stable）的数据，
+# 表现是"改了没生效""开着两个实例互相抢"。
+if ($Redirect -or $All) {
+  Write-Host "`n== 路径重定向 ==" -ForegroundColor Cyan
+  $targetFull = [IO.Path]::GetFullPath($Target).TrimEnd('\')
+  $ini = Join-Path $targetFull 'toonflow.ini'
+  if (Test-Path $ini) {
+    $enc = [Text.Encoding]::GetEncoding(936)
+    $text = [IO.File]::ReadAllText($ini, $enc)
+    $new = [regex]::Replace($text, '(?m)^installDirectory=.*$', "installDirectory=$targetFull")
+    if ($new -ne $text) {
+      if ($DryRun) {
+        Write-Host "  [dry] ini installDirectory → $targetFull" -ForegroundColor Yellow
+      } else {
+        Save-Backup $ini
+        [IO.File]::WriteAllText($ini, $new, $enc)
+        Write-Host "  ini  installDirectory → $targetFull" -ForegroundColor Green
+      }
+      $report.actions += @{ action = 'redirect-ini'; file = $ini; status = $(if ($DryRun) { 'dry' } else { 'applied' }) }
+    } else {
+      Write-Host "  ini  已是目标路径（幂等）" -ForegroundColor DarkGray
+    }
+  } else {
+    Write-Warning "  没有 toonflow.ini：$ini"
+  }
+
+  # 卸载项：只改我们自己这一份（identifier 固定 local.aiStudio.yoko.stable）
+  $regPath = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\local.aiStudio.yoko.stable'
+  if (Test-Path $regPath) {
+    $cur = Get-ItemProperty -Path $regPath
+    $want = [ordered]@{
+      DisplayName               = '造化乾坤鼎'
+      InstallLocation           = $targetFull
+      toonflowInstallDirectory  = $targetFull
+      DisplayIcon               = (Join-Path $targetFull 'app\Resources\app.ico')
+    }
+    $changed = @()
+    foreach ($k in $want.Keys) {
+      if ($cur.$k -ne $want[$k]) { $changed += $k }
+    }
+    if ($changed.Count -gt 0) {
+      if ($DryRun) {
+        Write-Host "  [dry] 注册表待改：$($changed -join ', ')" -ForegroundColor Yellow
+      } else {
+        foreach ($k in $changed) { Set-ItemProperty -Path $regPath -Name $k -Value $want[$k] }
+        Write-Host "  注册表 → $targetFull（改了 $($changed.Count) 项：$($changed -join ', ')）" -ForegroundColor Green
+        $report.actions += @{ action = 'redirect-registry'; key = $regPath; fields = $changed; status = 'applied' }
+      }
+    } else {
+      Write-Host "  注册表已是目标值（幂等）" -ForegroundColor DarkGray
+    }
+  } else {
+    Write-Warning "  没有卸载注册表项：$regPath"
   }
 }
 
