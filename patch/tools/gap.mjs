@@ -60,19 +60,36 @@ function relink(body, targetDir) {
 function norm(s) { return s.replace(/\s+/g, '').replace(/[，。；：、,.;:!?！？"“”'‘’`]/g, ''); }
 
 function plan(target, fromId) {
-  const srcAbs = srcPath(fromId);
-  if (!existsSync(srcAbs)) return { ok: false, error: '来料不存在：' + srcAbs };
+  // 多来料：fromId 可以是 "a,b,c"
+  const ids = String(fromId).split(',').map((s) => s.trim()).filter(Boolean);
   const targetSkill = join(SKILLS, target, 'SKILL.md');
   if (!existsSync(targetSkill)) return { ok: false, error: '目标技能不存在：' + target };
-  const srcText = readFileSync(srcAbs, 'utf8');
   const tgtText = norm(readFileSync(targetSkill, 'utf8'));
-  const secs = sectionsOf(srcText).map((s) => {
-    const sig = sigLines(s.body);
-    const hit = sig.filter((l) => tgtText.includes(norm(l).slice(0, 24)));
-    return { no: s.no, title: s.title, chars: s.chars, share: s.share, present: hit.length > 0, hitLines: hit.length, preview: (s.body.split(/\r?\n/).find((l) => l.trim()) || '').slice(0, 80) };
-  });
-  const missing = secs.filter((s) => !s.present);
-  return { ok: true, target, from: fromId, srcBytes: statSync(srcAbs).size, sections: secs, missing: missing.map((s) => s.no), coverage: +((secs.length - missing.length) / (secs.length || 1)).toFixed(2) };
+  const all = [];
+  const srcs = [];
+  for (const id of ids) {
+    const srcAbs = srcPath(id);
+    if (!existsSync(srcAbs)) { srcs.push({ id, ok: false, error: '来料不存在' }); continue; }
+    srcs.push({ id, ok: true, bytes: statSync(srcAbs).size });
+    for (const s of sectionsOf(readFileSync(srcAbs, 'utf8'))) {
+      const sig = sigLines(s.body);
+      const hit = sig.filter((l) => tgtText.includes(norm(l).slice(0, 24)));
+      all.push({
+        from: id, no: s.no, title: s.title, chars: s.chars, share: s.share,
+        present: hit.length > 0, hitLines: hit.length,
+        preview: (s.body.split(/\r?\n/).find((l) => l.trim()) || '').slice(0, 80),
+      });
+    }
+  }
+  const missing = all.filter((s) => !s.present);
+  const bySrc = {};
+  for (const s of all) { bySrc[s.from] = bySrc[s.from] || { total: 0, missing: 0 }; bySrc[s.from].total += 1; if (!s.present) bySrc[s.from].missing += 1; }
+  return {
+    ok: true, target, from: ids, multi: ids.length > 1, srcs, bySrc,
+    sections: all, missing: missing.map((s) => ({ from: s.from, no: s.no })),
+    total: all.length, missingCount: missing.length,
+    coverage: +((all.length - missing.length) / (all.length || 1)).toFixed(2),
+  };
 }
 
 function filesGap(target, fromSkill) {
