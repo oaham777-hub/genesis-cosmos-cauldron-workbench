@@ -66,127 +66,112 @@
     if (mode !== 'bagua') {
       var span = g.R * 1.86;
       var x = g.cx - span / 2 + (i / (n - 1)) * span;
-      return { x: x, y: g.rimY + g.R * 0.11, a: 0 };
+      return { x: x, y: g.rimY + g.R * 0.085, a: 0 };
     }
     var a = -Math.PI / 2 + (i / n) * Math.PI * 2;
     return { x: g.cx + Math.cos(a) * g.R, y: g.cy + Math.sin(a) * g.rimRy, a: a };
   }
 
-  // 鼎：正视图（三足双耳圆鼎的立面），比透视椭圆更像鼎
+  // 鼎：用汉字"鼎"的字形当主体（形状是几千年前定下的，不跟它抢）
   function drawDing(g, breathe, dt) {
-    var a = 0.42 + 0.10 * breathe;
-    var R = g.R, cx = g.cx, rimY = g.rimY;
-    var bodyH = R * 1.02;
-    var bottomY = rimY + bodyH;
-    var baseHalf = R * 0.54;
+    var W2 = W, H2 = H;
+    var size = Math.min(H2 * 0.56, W2 * 0.40, g.R * 2.6);
+    var font = '"STKaiti","KaiTi","SimSun","Songti SC",serif';
+    var cx = W2 * 0.5;
 
-    ctx.lineJoin = 'round';
-    ctx.lineCap = 'round';
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+    ctx.font = '600 ' + size.toFixed(1) + 'px ' + font;
+    var m = ctx.measureText('鼎');
+    var ascent = m.actualBoundingBoxAscent || size * 0.86;
+    var descent = m.actualBoundingBoxDescent || size * 0.06;
+    var glyphH = ascent + descent;
+    // 视觉居中：字身中心落在画布中心偏上
+    var topY = H2 * 0.46 - glyphH * 0.5;
+    var baseline = topY + ascent;
 
-    // 腹中云气
-    drawVapor(g, breathe, dt);
+    // 背后的光
+    var halo = ctx.createRadialGradient(cx, topY + glyphH * 0.5, size * 0.08, cx, topY + glyphH * 0.5, size * 1.05);
+    halo.addColorStop(0, 'rgba(' + GOLD + ',' + (0.10 + 0.05 * breathe).toFixed(3) + ')');
+    halo.addColorStop(0.55, 'rgba(' + GOLD + ',0.03)');
+    halo.addColorStop(1, 'rgba(' + GOLD + ',0)');
+    ctx.fillStyle = halo;
+    ctx.fillRect(0, 0, W2, H2);
 
-    ctx.strokeStyle = 'rgba(' + GOLD + ',' + a.toFixed(3) + ')';
-    ctx.lineWidth = 1.3;
+    // 字身：实心低透明 + 极细亮边
+    ctx.shadowColor = 'rgba(' + GOLD + ',' + (0.10 + 0.08 * breathe).toFixed(3) + ')';
+    ctx.shadowBlur = 30 + 20 * breathe;
+    var grad = ctx.createLinearGradient(cx, topY, cx, topY + glyphH);
+    grad.addColorStop(0, 'rgba(' + GOLD + ',' + (0.26 + 0.06 * breathe).toFixed(3) + ')');
+    grad.addColorStop(1, 'rgba(' + GOLD + ',0.11)');
+    ctx.fillStyle = grad;
+    ctx.fillText('鼎', cx, baseline);
 
-    // 口沿：一条微弯的横线 + 上沿薄唇
-    ctx.beginPath();
-    ctx.moveTo(cx - R, rimY);
-    ctx.quadraticCurveTo(cx, rimY + R * 0.045, cx + R, rimY);
-    ctx.stroke();
-    ctx.strokeStyle = 'rgba(' + GOLD + ',' + (a * 0.55).toFixed(3) + ')';
-    ctx.beginPath();
-    ctx.moveTo(cx - R * 0.985, rimY - R * 0.035);
-    ctx.quadraticCurveTo(cx, rimY + R * 0.005, cx + R * 0.985, rimY - R * 0.035);
-    ctx.stroke();
-    ctx.strokeStyle = 'rgba(' + GOLD + ',' + a.toFixed(3) + ')';
+    ctx.shadowBlur = 0;
+    ctx.lineWidth = 0.9;
+    ctx.strokeStyle = 'rgba(' + GOLD + ',' + (0.42 + 0.08 * breathe).toFixed(3) + ')';
+    ctx.strokeText('鼎', cx, baseline);
 
-    // 腹壁：上段微外鼓，下段向内收到圆底
-    [-1, 1].forEach(function (s) {
-      ctx.beginPath();
-      ctx.moveTo(cx + s * R, rimY);
-      ctx.bezierCurveTo(cx + s * R * 1.03, rimY + bodyH * 0.40, cx + s * R * 0.92, rimY + bodyH * 0.72, cx + s * baseHalf, bottomY);
-      ctx.stroke();
-    });
-    // 圆底
-    ctx.beginPath();
-    ctx.moveTo(cx - baseHalf, bottomY);
-    ctx.quadraticCurveTo(cx, bottomY + R * 0.10, cx + baseHalf, bottomY);
-    ctx.stroke();
-
-    // 三足：左右两只前足 + 中间一只后足（略短、略淡）
-    function leg(xTop, dir, footY, alphaMul) {
-      ctx.strokeStyle = 'rgba(' + GOLD + ',' + (a * alphaMul).toFixed(3) + ')';
-      ctx.beginPath();
-      ctx.moveTo(xTop - R * 0.045, bottomY + R * 0.02);
-      ctx.quadraticCurveTo(xTop - R * 0.02 + dir * R * 0.05, footY - R * 0.16, xTop + dir * R * 0.055, footY);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(xTop + R * 0.045, bottomY + R * 0.02);
-      ctx.quadraticCurveTo(xTop + R * 0.02 + dir * R * 0.05, footY - R * 0.16, xTop + dir * R * 0.055 + R * 0.03, footY);
-      ctx.stroke();
-      // 足底
-      ctx.beginPath();
-      ctx.moveTo(xTop + dir * R * 0.055 - R * 0.035, footY);
-      ctx.lineTo(xTop + dir * R * 0.055 + R * 0.065, footY);
-      ctx.stroke();
-    }
-    leg(cx - baseHalf * 0.62, -1, bottomY + R * 0.42, 1);
-    leg(cx + baseHalf * 0.62, 1, bottomY + R * 0.42, 1);
-    leg(cx + R * 0.01, 0.1, bottomY + R * 0.34, 0.5);
-    ctx.strokeStyle = 'rgba(' + GOLD + ',' + a.toFixed(3) + ')';
-
-    // 双耳：立在口沿两端的把手（外翻小卷）
-    var earH = R * 0.19, earW = R * 0.058;
-    [-1, 1].forEach(function (s) {
-      var ex = cx + s * R * 0.60;
-      ctx.beginPath();
-      ctx.moveTo(ex - s * earW, rimY - R * 0.01);
-      ctx.lineTo(ex - s * earW, rimY - earH * 0.72);
-      ctx.quadraticCurveTo(ex - s * earW, rimY - earH, ex + s * earW * 0.6, rimY - earH);
-      ctx.quadraticCurveTo(ex + s * earW * 2.0, rimY - earH * 0.98, ex + s * earW * 2.0, rimY - earH * 0.62);
-      ctx.lineTo(ex + s * earW * 2.0, rimY - R * 0.01);
-      ctx.stroke();
-    });
-
-    // 沿下饕餮纹带：两条横线 + 17 个竖刻（16 个间隔 = 16 个技能）
-    var bandTop = rimY + R * 0.07, bandBot = rimY + R * 0.155;
-    ctx.strokeStyle = 'rgba(' + GOLD + ',' + (a * 0.5).toFixed(3) + ')';
+    // 承盘：字脚下一道浅弧，16 个技能点排在弧上
+    var arcCy = topY + glyphH + size * 0.10;
+    var arcR = size * 0.52;
+    ctx.strokeStyle = 'rgba(' + GOLD + ',' + (0.18 + 0.05 * breathe).toFixed(3) + ')';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(cx - R * 0.93, bandTop);
-    ctx.quadraticCurveTo(cx, bandTop + R * 0.03, cx + R * 0.93, bandTop);
-    ctx.moveTo(cx - R * 0.93, bandBot);
-    ctx.quadraticCurveTo(cx, bandBot + R * 0.03, cx + R * 0.93, bandBot);
+    ctx.ellipse(cx, arcCy, arcR, arcR * 0.30, 0, 0, Math.PI * 2);
     ctx.stroke();
 
     var n = SKILLS.length;
     for (var i = 0; i < n; i++) {
-      var p = tickPos(g, i, n);
       var glow = tickGlow[SKILLS[i]] || 0;
-      var sag = R * 0.015 * (1 - Math.pow((p.x - cx) / R, 2));
-      ctx.strokeStyle = 'rgba(' + GOLD + ',' + Math.min(0.95, 0.26 + glow * 0.85).toFixed(3) + ')';
-      ctx.lineWidth = glow > 0.1 ? 1.6 : 0.9;
+      var a = -Math.PI / 2 + (i / n) * Math.PI * 2;
+      var x = cx + Math.cos(a) * arcR;
+      var y = arcCy + Math.sin(a) * arcR * 0.30;
+      ctx.fillStyle = 'rgba(' + GOLD + ',' + Math.min(0.95, 0.18 + glow * 0.85).toFixed(3) + ')';
       ctx.beginPath();
-      ctx.moveTo(p.x, bandTop + sag);
-      ctx.lineTo(p.x, bandBot + sag - glow * R * 0.02);
-      ctx.stroke();
-      if (glow > 0.03) {
-        ctx.fillStyle = 'rgba(' + GOLD + ',' + (glow * 0.55).toFixed(3) + ')';
+      ctx.arc(x, y, 1.5 + glow * 3.2, 0, Math.PI * 2);
+      ctx.fill();
+      if (glow > 0.05) {
+        ctx.strokeStyle = 'rgba(' + GOLD + ',' + (glow * 0.32).toFixed(3) + ')';
+        ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.arc(p.x, (bandTop + bandBot) / 2 + sag, 1.6 + glow * 2.6, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.arc(x, y, 2.4 + glow * 11, 0, Math.PI * 2);
+        ctx.stroke();
       }
     }
 
-    // 侧光：让腹有体积
-    ctx.strokeStyle = 'rgba(' + GOLD + ',' + (a * 0.22).toFixed(3) + ')';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(cx - R * 0.72, rimY + R * 0.22);
-    ctx.quadraticCurveTo(cx - R * 0.58, rimY + bodyH * 0.62, cx - R * 0.30, bottomY - R * 0.04);
-    ctx.stroke();
-    ctx.strokeStyle = 'rgba(' + GOLD + ',' + a.toFixed(3) + ')';
+    // 少量云气：只在字的下半部飘，不裁形（避免生成难看的白块）
+    var want = Math.min(26, 4 + Math.round(actRate * 20));
+    while (vapors.length < want) {
+      vapors.push({
+        x: cx + (Math.random() - 0.5) * size * 0.9,
+        y: topY + glyphH * (0.55 + Math.random() * 0.45),
+        r: 1 + Math.random() * 1.6,
+        vy: -(6 + Math.random() * 10),
+        life: 0.4 + Math.random() * 0.45,
+        seed: Math.random() * 6.28
+      });
+    }
+    for (var k = vapors.length - 1; k >= 0; k--) {
+      var v = vapors[k];
+      v.y += v.vy * dt;
+      v.x += Math.sin(v.seed + performance.now() / 1700) * 6 * dt;
+      v.life -= dt * 0.12;
+      if (v.life <= 0 || v.y < topY + glyphH * 0.45) {
+        v.y = topY + glyphH * (0.85 + Math.random() * 0.15);
+        v.x = cx + (Math.random() - 0.5) * size * 0.9;
+        v.life = 0.4 + Math.random() * 0.45;
+        continue;
+      }
+      ctx.fillStyle = 'rgba(' + GOLD + ',' + (0.20 * v.life * (0.7 + 0.3 * breathe)).toFixed(3) + ')';
+      ctx.beginPath();
+      ctx.arc(v.x, v.y, v.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    if (vapors.length > want) vapors.length = want;
+
+    ctx.restore();
   }
 
   // ---------- 八卦 ----------
