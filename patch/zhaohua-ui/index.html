@@ -843,5 +843,241 @@
     if (a && a.dataset.v === 'packs') loadDeployed();
   });
 })();
-</script></body>
+</script><script>
+/* P4：评估对比 + 融合台，接本地桥（真跑要模型 key；dry-run 不要） */
+(function () {
+  var API = 'http://127.0.0.1:8791';
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+  function api(path) {
+    return fetch(API + path).then(function (r) { return r.json(); });
+  }
+  function card(title, sub) {
+    var c = el('div', 'card');
+    var h = el('h3', null, title); c.appendChild(h);
+    if (sub) c.appendChild(el('div', 'sub', sub));
+    return c;
+  }
+
+  /* ---------- 评估对比 ---------- */
+  var evalView = document.getElementById('v-eval');
+  if (evalView) {
+    var box = card('跑一次两臂评估', '同一套任务、同一个模型，差别只在技能正文。dry-run 不花钱，真跑按 token 计费。');
+    box.id = 'zh-eval-card';
+    var row = el('div'); row.style.cssText = 'display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:14px 0 6px';
+    var sel = el('select'); sel.id = 'zh-eval-cfg';
+    sel.style.cssText = 'background:#0f141a;border:1px solid #2b3440;color:#dfe6ee;border-radius:9px;padding:9px 12px;font-size:13px;min-width:260px';
+    var dryBtn = el('button', 'btn', 'dry-run 校验'); dryBtn.id = 'zh-eval-dry';
+    var runBtn = el('button', 'btn gold', '真跑两臂'); runBtn.id = 'zh-eval-run';
+    var keyTag = el('span', 'sub', '正在检查 key…'); keyTag.id = 'zh-eval-key';
+    row.appendChild(sel); row.appendChild(dryBtn); row.appendChild(runBtn); row.appendChild(keyTag);
+    box.appendChild(row);
+
+    var out = el('div'); out.id = 'zh-eval-out';
+    out.style.cssText = 'margin-top:12px';
+    box.appendChild(out);
+    evalView.insertBefore(box, evalView.firstChild);
+    // 下面那张是设计稿里的示意数据，不是本机实测——标出来，别当真
+    Array.prototype.forEach.call(evalView.querySelectorAll('.card'), function (c) {
+      if (c === box) return;
+      var h3 = c.querySelector('h3');
+      if (h3 && /两臂对比|逐条断言/.test(h3.textContent)) {
+        var b = document.createElement('span');
+        b.className = 'tag';
+        b.textContent = '示例';
+        b.style.cssText = 'margin-left:8px;font-size:11px;border:1px solid #4a4030;color:#c9a86a;border-radius:999px;padding:1px 7px;vertical-align:middle';
+        h3.appendChild(b);
+        c.style.opacity = '0.55';
+      }
+    });
+
+    api('/creds').then(function (c) {
+      keyTag.textContent = c.hasKey ? 'key 已就绪（只在跑的时候注入子进程）' : '没有 key：把 key 放进 patch\\secrets\\deepseek.key';
+      keyTag.style.color = c.hasKey ? 'var(--gold)' : '#e08a7a';
+    }).catch(function () { keyTag.textContent = '桥没连上，先启动 server.mjs'; });
+
+    api('/eval-configs').then(function (d) {
+      sel.innerHTML = '';
+      (d.configs || []).forEach(function (c) {
+        var o = el('option', null, c.name + '  (' + Math.round(c.size / 1024) + ' KB)');
+        o.value = c.name; sel.appendChild(o);
+      });
+      if (!(d.configs || []).length) {
+        var o = el('option', null, '（还没有评估配置）'); o.value = ''; sel.appendChild(o);
+      }
+    }).catch(function () {});
+
+    function showDry(r) {
+      out.innerHTML = '';
+      var pre = el('pre', null, (r.text || '').trim());
+      pre.style.cssText = 'white-space:pre-wrap;font-size:12.5px;line-height:1.7;color:#c8d2dc;background:#0c1116;border:1px solid #222b35;border-radius:10px;padding:12px;margin:0';
+      out.appendChild(pre);
+    }
+    function showRun(r) {
+      out.innerHTML = '';
+      if (r.error) { out.appendChild(el('div', 'sub', '出错：' + r.error)); return; }
+      var head = el('div', 'sub');
+      head.innerHTML = '模型 <b>' + (r.model || '?') + '</b> · max_tokens ' + (r.maxTokens || '?')
+        + ' · 用量 in ' + (r.tokens && r.tokens.input) + ' / out ' + (r.tokens && r.tokens.output)
+        + ' · 用时 ' + Math.round((r.durationMs || 0) / 1000) + 's';
+      out.appendChild(head);
+
+      var tb = el('table');
+      tb.style.cssText = 'width:100%;margin-top:10px';
+      tb.innerHTML = '<thead><tr><th>任务</th><th>臂</th><th>命中</th><th>截断</th><th>字数</th><th>漏掉的断言</th></tr></thead>';
+      var body = el('tbody');
+      (r.rows || []).forEach(function (x) {
+        var tr = el('tr');
+        tr.innerHTML = '<td>' + x.task + '</td><td>' + x.arm + '</td><td>' + (x.hit != null ? x.hit + '/8' : '—')
+          + '</td><td>' + (x.truncated ? '是' : '') + '</td><td>' + x.chars + '</td><td class="sub">' + (x.missed || []).join('、') + '</td>';
+        body.appendChild(tr);
+      });
+      tb.appendChild(body);
+      out.appendChild(tb);
+
+      var sum = el('div'); sum.style.cssText = 'margin-top:10px;display:flex;gap:10px;flex-wrap:wrap';
+      (r.summary || []).forEach(function (s) {
+        var chip = el('span', 'tag', s.arm + '  ' + s.hit + '/' + s.total);
+        chip.style.cssText = 'border:1px solid #2b3440;border-radius:999px;padding:6px 12px;font-size:12.5px;color:' + (s.arm === 'after' ? 'var(--gold)' : '#9fb0c0');
+        sum.appendChild(chip);
+      });
+      out.appendChild(sum);
+      out.appendChild(el('div', 'sub', '证据文件：' + r.evidenceFile));
+      try { localStorage.setItem('zh-eval-last', JSON.stringify({ at: Date.now(), data: r })); } catch (e) {}
+    }
+
+    try {
+      var last = JSON.parse(localStorage.getItem('zh-eval-last') || 'null');
+      if (last && last.data) {
+        showRun(last.data);
+        var stamp = document.createElement('div');
+        stamp.className = 'sub';
+        stamp.textContent = '（上面是上次跑的结果：' + new Date(last.at).toLocaleString() + '，不是这次实时跑的）';
+        out.insertBefore(stamp, out.firstChild);
+      }
+    } catch (e) {}
+
+    dryBtn.onclick = function () {
+      if (!sel.value) return;
+      dryBtn.disabled = true; out.textContent = '校验中…';
+      api('/eval?dry=1&config=' + encodeURIComponent(sel.value))
+        .then(showDry)
+        .catch(function (e) { out.textContent = '请求失败：' + e.message; })
+        .finally(function () { dryBtn.disabled = false; });
+    };
+    runBtn.onclick = function () {
+      if (!sel.value) return;
+      if (!confirm('真跑会调用模型并计费（本配置 4 次调用），继续？')) return;
+      runBtn.disabled = true; out.textContent = '真跑中…（大约 15–60 秒）';
+      api('/eval?config=' + encodeURIComponent(sel.value))
+        .then(showRun)
+        .catch(function (e) { out.textContent = '请求失败：' + e.message; })
+        .finally(function () { runBtn.disabled = false; });
+    };
+  }
+
+  /* ---------- 融合台 ---------- */
+  var fuseView = document.getElementById('v-fuse');
+  if (fuseView) {
+    var fbox = card('开始融合', '合并 create＝确定性合并（不调模型、秒级、可复现）；语义融合 fuse-skill＝交给模型重写（约 1 分钟、计费）。产物落 patch\\staging\\fused\\，不覆盖任何现有技能。');
+    fbox.id = 'zh-fuse-card';
+    var frow = el('div'); frow.style.cssText = 'display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:14px 0 6px';
+
+    var srcA = el('select'), srcB = el('select');
+    [srcA, srcB].forEach(function (s) {
+      s.style.cssText = 'background:#0f141a;border:1px solid #2b3440;color:#dfe6ee;border-radius:9px;padding:9px 12px;font-size:13px;min-width:200px';
+    });
+    var mode = el('select');
+    mode.style.cssText = srcA.style.cssText;
+    ['merge', 'absorb', 'compose'].forEach(function (m) { var o = el('option', null, m); o.value = m; mode.appendChild(o); });
+    var nm = el('input');
+    nm.placeholder = '新技能名（kebab-case）';
+    nm.style.cssText = 'background:#0f141a;border:1px solid #2b3440;color:#dfe6ee;border-radius:9px;padding:9px 12px;font-size:13px;min-width:180px';
+    var goBtn = el('button', 'btn', '合并 create（不调模型）');
+    var fuseBtn = el('button', 'btn gold', '语义融合 fuse-skill（调模型）');
+    frow.appendChild(srcA); frow.appendChild(srcB); frow.appendChild(mode); frow.appendChild(nm); frow.appendChild(goBtn); frow.appendChild(fuseBtn);
+    fbox.appendChild(frow);
+    var fout = el('div'); fout.style.cssText = 'margin-top:12px'; fbox.appendChild(fout);
+    fuseView.insertBefore(fbox, fuseView.firstChild);
+    // 下面几张是设计稿示意（来料/宿主/配方/预览），不是本机实测，标出来
+    Array.prototype.forEach.call(fuseView.querySelectorAll('.card'), function (c) {
+      if (c === fbox) return;
+      var h3 = c.querySelector('h3');
+      if (!h3) return;
+      var b = document.createElement('span');
+      b.className = 'tag';
+      b.textContent = '示例';
+      b.style.cssText = 'margin-left:8px;font-size:11px;border:1px solid #4a4030;color:#c9a86a;border-radius:999px;padding:1px 7px;vertical-align:middle';
+      h3.appendChild(b);
+      c.style.opacity = '0.5';
+    });
+
+    // 来料清单：直接问桥要技能目录（借 /audit 的名字表）
+    api('/audit').then(function (r) {
+      var names = (r.skills || []).map(function (s) { return s.name; });
+      [srcA, srcB].forEach(function (s, i) {
+        s.innerHTML = '';
+        names.forEach(function (n) {
+          var o = el('option', null, n); o.value = n;
+          if (i === 1 && n === 'film-shotlist') o.selected = true;
+          s.appendChild(o);
+        });
+        if (i === 0) { s.value = 'film-cinedance'; }
+      });
+    }).catch(function () {});
+
+    goBtn.onclick = function () {
+      var name = (nm.value || '').trim();
+      if (!name) { fout.textContent = '先给新技能起个名字（kebab-case）'; return; }
+      var q = '/create?sources=' + encodeURIComponent(srcA.value + ',' + srcB.value)
+        + '&name=' + encodeURIComponent(name) + '&mode=' + encodeURIComponent(mode.value);
+      goBtn.disabled = true; fout.textContent = '先问一次：看它打算做什么…';
+      api(q).then(function (r) {
+        if (r.error) { fout.textContent = '出错：' + r.error; return null; }
+        if (r.needsConfirm) {
+          fout.innerHTML = '<div class="sub">将要执行：<code>' + (r.would.argv || []).join(' ') + '</code><br>' + r.note + '</div>';
+          if (!confirm('确认融合？会调用模型并计费。')) return null;
+          fout.textContent = '融合中…（可能 1–3 分钟）';
+          return api(q + '&confirm=yes');
+        }
+        return r;
+      }).then(function (r) {
+        if (!r) return;
+        if (r.error) { fout.textContent = '出错：' + r.error; return; }
+        fout.innerHTML = '<div class="sub">完成：<b>' + r.name + '</b> → ' + r.out
+          + '<br>退出码 ' + r.exitCode + ' · 用时 ' + Math.round((r.durationMs || 0) / 1000) + 's</div>'
+          + (r.text ? '<pre style="white-space:pre-wrap;font-size:12px;color:#c8d2dc">' + r.text + '</pre>' : '');
+      }).catch(function (e) { fout.textContent = '请求失败：' + e.message; })
+        .finally(function () { goBtn.disabled = false; });
+    };
+
+    fuseBtn.onclick = function () {
+      var q = '/fuse?base=' + encodeURIComponent(srcA.value) + '&other=' + encodeURIComponent(srcB.value);
+      fuseBtn.disabled = true; fout.textContent = '先问一次：看它打算做什么…';
+      api(q).then(function (r) {
+        if (r.error) { fout.textContent = '出错：' + r.error; return null; }
+        fout.innerHTML = '<div class="sub">' + r.note + '<br>将执行：<code>' + (r.would.argv || []).join(' ') + '</code></div>';
+        if (!confirm('确认语义融合？会调用模型（约 1 分钟）并计费。')) return null;
+        fout.textContent = '语义融合中…（约 40–60 秒）';
+        return api(q + '&confirm=yes');
+      }).then(function (r) {
+        if (!r) return;
+        if (r.error) { fout.textContent = '出错：' + r.error; return; }
+        fout.innerHTML = '<div class="sub">退出码 <b>' + r.exitCode + '</b>（3＝审计未过，属正常：融合产物是草稿，要人收口）· 用时 '
+          + Math.round((r.durationMs || 0) / 1000) + 's<br>产物：' + r.out + '</div>'
+          + '<pre style="white-space:pre-wrap;font-size:12px;line-height:1.7;color:#c8d2dc;background:#0c1116;border:1px solid #222b35;border-radius:10px;padding:12px">'
+          + (r.text || '') + '</pre>';
+      }).catch(function (e) { fout.textContent = '请求失败：' + e.message; })
+        .finally(function () { fuseBtn.disabled = false; });
+    };
+  }
+})();
+</script>
+</body>
 </html>

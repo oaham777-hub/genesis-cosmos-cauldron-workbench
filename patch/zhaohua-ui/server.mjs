@@ -13,13 +13,27 @@ const PRODUCT_DIR = process.env.ZHAOHUA_PRODUCT || 'D:\\造化乾坤鼎-工作�
 const DEPLOY_DIR = process.env.ZHAOHUA_DEPLOY || 'D:\\造化乾坤鼎-工作台\\_work\\stable\\data\\skills';
 const DEPLOY_BACKUP = process.env.ZHAOHUA_DEPLOY_BACKUP || 'D:\\造化乾坤鼎-工作台\\patch\\_backup\\skills';
 const CLI = `${ZHAOHUA_DIR}\\core\\bin\\zhaohua.mjs`;
+const EVAL_DIR = process.env.ZHAOHUA_EVAL || 'D:\\造化乾坤鼎-工作台\\patch\\eval';
+const EVAL_OUT = process.env.ZHAOHUA_EVAL_OUT || 'D:\\造化乾坤鼎-工作台\\patch\\staging\\eval';
+const FUSED_DIR = process.env.ZHAOHUA_FUSED || 'D:\\造化乾坤鼎-工作台\\patch\\staging\\fused';
+const SECRET_FILE = process.env.ZHAOHUA_KEY_FILE || 'D:\\造化乾坤鼎-工作台\\patch\\secrets\\deepseek.key';
 
-async function runCli(args, timeoutMs = 180000) {
+// 模型 key 只在跑子进程时注入环境变量；接口只回报"有没有"，从不回显内容
+function readSecret() {
+  try {
+    const raw = readFileSync(SECRET_FILE, 'utf8').trim();
+    return raw.length > 8 ? raw : '';
+  } catch {
+    return '';
+  }
+}
+
+async function runCli(args, timeoutMs = 180000, extraEnv = null) {
   const started = Date.now();
   const proc = Bun.spawn([Bun.argv[0], CLI, ...args], {
     stdout: 'pipe',
     stderr: 'pipe',
-    env: { ...process.env, NO_COLOR: '1', FORCE_COLOR: '0' },
+    env: { ...process.env, NO_COLOR: '1', FORCE_COLOR: '0', ...(extraEnv || {}) },
   });
   const timer = setTimeout(() => { try { proc.kill(); } catch {} }, timeoutMs);
   const [out, err] = await Promise.all([new Response(proc.stdout).text(), new Response(proc.stderr).text()]);
@@ -147,6 +161,8 @@ const json = (data, status = 200) =>
 const server = Bun.serve({
   hostname: '127.0.0.1',
   port: PORT,
+  // 默认 idleTimeout 只有 10s：评估/融合一次要跑几十秒，会被掐断连接
+  idleTimeout: 240,
   async fetch(req) {
     const url = new URL(req.url);
     if (req.method === 'OPTIONS') return json({ ok: true });
@@ -203,6 +219,200 @@ const server = Bun.serve({
         });
       }
       if (url.pathname === '/deployed') return json({ dir: DEPLOY_DIR, skills: deployedList() });
+
+      // ── P4：评估（两臂）与融合（create）──────────────────────────────
+      if (url.pathname === '/creds') {
+        return json({ keyFile: SECRET_FILE, hasKey: readSecret().length > 0 });
+      }
+      if (url.pathname === '/eval-configs') {
+        if (!existsSync(EVAL_DIR)) return json({ dir: EVAL_DIR, configs: [] });
+        const configs = readdirSync(EVAL_DIR)
+          .filter((f) => f.endsWith('.json'))
+          .map((f) => {
+            const full = `${EVAL_DIR}\\${f}`;
+            const st = statSync(full);
+            return { name: f, size: st.size, mtime: st.mtime.toISOString() };
+          });
+        return json({ dir: EVAL_DIR, configs });
+      }
+      if (url.pathname === '/eval') {
+        const name = url.searchParams.get('config') || '';
+        const dry = url.searchParams.get('dry') === '1';
+        if (!/^[A-Za-z0-9._-]+\.json$/.test(name)) return json({ error: '配置名不合法' }, 400);
+        const cfg = `${EVAL_DIR}\\${name}`;
+        if (!existsSync(cfg)) return json({ error: `没有这份配置：${cfg}` }, 404);
+        const key = readSecret();
+        if (!dry && !key) {
+          return json({ error: '没有模型 key：把 key 放到 ' + SECRET_FILE + '（一行，sk- 开头）' }, 400);
+        }
+        // 注意：CLI 的 --out 是"目录"，证据文件落在 <目录>\eval-<配置名>-<时间戳>.json
+        const outDir = `${EVAL_OUT}\\${name.replace(/\.json$/, '')}`;
+        mkdirSync(outDir, { recursive: true });
+        const args = ['eval', cfg, '--out', outDir];
+        if (dry) args.push('--dry-run');
+        const r = await runCli(args, 900000, key ? { QKD_MODEL_API_KEY: key } : null);
+        if (dry) {
+          return json({ dry: true, config: name, exitCode: r.exitCode, durationMs: r.durationMs, text: (r.stdout + r.stderr).slice(-4000) });
+        }
+        const pickLatest = (dir) => {
+          try {
+            const files = readdirSync(dir)
+              .filter((f) => f.endsWith('.json'))
+              .map((f) => ({ f, m: statSync(`${dir}\\${f}`).mtimeMs }))
+              .sort((a, b) => b.m - a.m);
+            return files.length ? `${dir}\\${files[0].f}` : null;
+          } catch {
+            return null;
+          }
+        };
+        const evidenceFile = pickLatest(outDir);
+        let evidence = null;
+        if (evidenceFile) {
+          try {
+            evidence = JSON.parse(readFileSync(evidenceFile, 'utf8'));
+          } catch {
+            evidence = null;
+          }
+        }
+        if (!evidence) {
+          return json({ dry: false, config: name, ok: false, exitCode: r.exitCode, text: (r.stdout + r.stderr).slice(-4000) });
+        }
+        const arms = evidence.config?.arms?.map((a) => a.id) ?? [];
+        const allAssertions = evidence.config?.assertions?.map((a) => a.id) ?? [];
+        const summary = Object.entries(evidence.summary ?? {}).map(([arm, s]) => ({
+          arm,
+          hit: s.hit,
+          total: s.total,
+          verified: s.verified,
+          passed: s.passed,
+          rate: s.pass_rate,
+          truncated: s.truncated,
+          chars: s.chars,
+        }));
+        return json({
+          dry: false,
+          config: name,
+          ok: r.exitCode === 0,
+          exitCode: r.exitCode,
+          durationMs: r.durationMs,
+          model: evidence.model,
+          maxTokens: evidence.max_tokens,
+          tokens: evidence.tokens,
+          arms,
+          tasks: evidence.config?.tasks?.map((t) => t.id) ?? [],
+          assertions: allAssertions,
+          rows: (evidence.rows ?? []).map((row) => ({
+            task: row.task,
+            arm: row.arm,
+            finish: row.finish,
+            truncated: row.truncated === true,
+            tokens: (row.input_tokens ?? 0) + (row.output_tokens ?? 0),
+            hit: row.hit_count,
+            hits: row.hits ?? [],
+            missed: allAssertions.filter((id) => !(row.hits ?? []).includes(id)),
+            chars: (row.text ?? '').length,
+          })),
+          summary,
+          isolation: evidence.isolation ?? null,
+          evidenceFile,
+          text: (r.stdout || '').slice(-2000),
+        });
+      }
+      if (url.pathname === '/fused') {
+        if (!existsSync(FUSED_DIR)) return json({ dir: FUSED_DIR, dirs: [] });
+        const dirs = readdirSync(FUSED_DIR).map((d) => {
+          const full = `${FUSED_DIR}\\${d}`;
+          return { name: d, mtime: statSync(full).mtime.toISOString(), hasSkill: existsSync(`${full}\\SKILL.md`) };
+        });
+        return json({ dir: FUSED_DIR, dirs });
+      }
+      if (url.pathname === '/create') {
+        // 融合：把多份技能的正文交给模型合成一份新的（要 key，要确认，产物落 staging\fused）
+        const skill = url.searchParams.get('skill') || '';
+        const sources = (url.searchParams.get('sources') || '').split(',').map((s) => s.trim()).filter(Boolean);
+        const name = (url.searchParams.get('name') || skill).trim();
+        const mode = url.searchParams.get('mode') || 'merge';
+        const confirm = url.searchParams.get('confirm') === 'yes';
+        if (!/^[a-z0-9][a-z0-9._-]*$/i.test(name)) return json({ error: '名字不合法（用 kebab-case）' }, 400);
+        if (!['merge', 'absorb', 'compose'].includes(mode)) return json({ error: 'mode 只能是 merge / absorb / compose' }, 400);
+        if (!sources.length) return json({ error: '至少要给两份来料' }, 400);
+        const dirs = [];
+        for (const s of sources) {
+          if (!/^[a-z0-9][a-z0-9._-]*$/i.test(s)) return json({ error: `来料名不合法：${s}` }, 400);
+          const full = `${SKILLS_DIR}\\${s}`;
+          if (!existsSync(`${full}\\SKILL.md`)) return json({ error: `来料不是一个技能目录：${full}` }, 404);
+          dirs.push(full);
+        }
+        const key = readSecret();
+        if (!key) return json({ error: '没有模型 key：把 key 放到 ' + SECRET_FILE }, 400);
+        const out = `${FUSED_DIR}\\${name}`;
+        if (!confirm) {
+          return json({
+            needsConfirm: true,
+            would: { argv: ['create', ...dirs.map((d) => d.replace(SKILLS_DIR, '<skills>')), '--out', out, '--mode', mode, '--name', name], needsModel: true },
+            note: '融合会生成一份新技能正文（不覆盖任何现有技能）。确认后带 confirm=yes 再调一次。',
+          });
+        }
+        const r = await runCli(['create', ...dirs, '--out', out, '--mode', mode, '--name', name, '--json'], 900000, { QKD_MODEL_API_KEY: key });
+        let parsed = null;
+        try {
+          parsed = JSON.parse(r.stdout.trim());
+        } catch {
+          parsed = null;
+        }
+        return json({
+          ok: r.exitCode === 0,
+          exitCode: r.exitCode,
+          durationMs: r.durationMs,
+          out,
+          name,
+          mode,
+          summary: parsed
+            ? {
+                bytesOut: parsed.bytesOut ?? parsed.bytes ?? null,
+                rules: parsed.rules ?? parsed.rulesPassed ?? null,
+                failed: parsed.failed ?? null,
+              }
+            : null,
+          text: parsed ? null : (r.stdout + r.stderr).slice(-4000),
+        });
+      }
+
+      if (url.pathname === '/fuse') {
+        // 语义融合：走模型（fuse-skill），约 1 分钟；产物目录名必须等于 frontmatter name（R01）
+        const base = url.searchParams.get('base') || '';
+        const other = url.searchParams.get('other') || '';
+        const confirm = url.searchParams.get('confirm') === 'yes';
+        if (!/^[a-z0-9][a-z0-9._-]*$/i.test(base) || !/^[a-z0-9][a-z0-9._-]*$/i.test(other)) {
+          return json({ error: 'base / other 必须是技能目录名' }, 400);
+        }
+        const baseDir = SKILLS_DIR + '\\' + base;
+        const otherDir = SKILLS_DIR + '\\' + other;
+        for (const d of [baseDir, otherDir]) {
+          if (!existsSync(d + '\\SKILL.md')) return json({ error: '不是技能目录：' + d }, 404);
+        }
+        const key = readSecret();
+        if (!key) return json({ error: '没有模型 key：把 key 放到 ' + SECRET_FILE }, 400);
+        const out = FUSED_DIR + '\\fuse-' + base + '\\' + base;
+        if (!confirm) {
+          return json({
+            needsConfirm: true,
+            would: { argv: ['fuse-skill', base, other, '--out', out], needsModel: true, model: 'deepseek-flash', etaSeconds: 60 },
+            note: '语义融合会把两份正文交给模型重写合成一份新技能（约 1 分钟、按 token 计费）。不覆盖任何现有技能。',
+          });
+        }
+        mkdirSync(dirname(out), { recursive: true });
+        const r = await runCli(['fuse-skill', baseDir, otherDir, '--out', out], 900000, { QKD_MODEL_API_KEY: key });
+        return json({
+          ok: r.exitCode === 0,
+          exitCode: r.exitCode,
+          durationMs: r.durationMs,
+          out,
+          base,
+          other,
+          text: (r.stdout + r.stderr).slice(-4000),
+        });
+      }
       if (url.pathname === '/install') {
         const skill = url.searchParams.get('skill') || '';
         if (!/^[a-z0-9][a-z0-9._-]*$/i.test(skill)) return json({ error: '技能名不合法' }, 400);
@@ -248,7 +458,8 @@ const server = Bun.serve({
         const dstSha = sha256File(join(target, 'SKILL.md'));
         const verified = !!(srcSha && srcSha === dstSha);
         return json({ ok: verified, skill, version: latest.version, backup, verified, srcSha, dstSha, deployedAt: Date.now(), skills: deployedList() });
-      }      return json({ error: 'not found', path: url.pathname }, 404);
+      }
+      return json({ error: 'not found', path: url.pathname }, 404);
     } catch (e) {
       return json({ error: String(e && e.message ? e.message : e) }, 500);
     }
