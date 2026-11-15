@@ -1,0 +1,24 @@
+{
+  "note": "乾坤鼎 → 工作台 的导入清单。只投放文件，不改正文；每项记 sha256 进 patch\\ledger\\imports.jsonl。落位依据 patch\\docs\\PLACEMENT.md：镜表类资料归 07.5 film-shotlist，编译类资料归 09 film-cinedance，同一份规范只有一个家。",
+  "qkdRoot": "D:\\乾坤鼎\\乾坤鼎Agent",
+  "outRoot": "D:\\造化乾坤鼎-工作台\\patch\\data-additions\\skills",
+  "ledger": "D:\\造化乾坤鼎-工作台\\patch\\ledger\\imports.jsonl",
+  "targets": [
+    { "skill": "film-shotlist", "from": "skills/04-shotlist/SKILL.md", "to": "references/shotlist-method.md" },
+    { "skill": "film-shotlist", "from": "skills/04-shotlist/references/shot-language-system.md", "to": "references/shot-language-system.md" },
+    { "skill": "film-shotlist", "from": "skills/04-shotlist/references/camera-exposure-combos.md", "to": "references/camera-exposure-combos.md" },
+    { "skill": "film-shotlist", "from": "skills/04-shotlist/references/scene-coverage-and-first-frame.md", "to": "references/scene-coverage-and-first-frame.md" },
+    { "skill": "film-shotlist", "from": "skills/04-shotlist/references/space-blocking-and-axis.md", "to": "references/space-blocking-and-axis.md" },
+    { "skill": "film-shotlist", "from": "skills/04-shotlist/references/continuity-ledger.md", "to": "references/continuity-ledger.md" },
+    { "skill": "film-cinedance", "from": "skills/06-prompt/references/prompt-12-dimensions.md", "to": "references/prompt-12d.md" },
+    { "skill": "film-cinedance", "from": "skills/06-prompt/references/compile-gate.md", "to": "references/compile-gate.md" },
+    { "skill": "film-cinedance", "from": "skills/06-prompt/references/failure-modes.md", "to": "references/failure-modes.md" },
+    { "skill": "film-cinedance", "from": "skills/06-prompt/references/multi-model-adapters.md", "to": "references/model-adapters.md" },
+    { "skill": "film-cinedance", "from": "skills/06-prompt/references/h3-dialect.md", "to": "references/h3-dialect.md" }
+  ],
+  "skip": [
+    "skills/04-shotlist/references/absorbed-p2c.md （158.6 KB 台账，不进技能）",
+    "skills/06-prompt/references/absorbed-p2c.md （44.8 KB 台账，不进技能）",
+    "skills/06-prompt/references/h3-full-reference-six-block.md （25.1 KB，与已有 h3ReferenceGuide.txt 重复）"
+  ]
+}

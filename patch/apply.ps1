@@ -24,14 +24,15 @@ param(
   [switch]$Overlay,
   [switch]$Pill,
   [switch]$Data,
+  [switch]$Stages,
   [switch]$All,
   [switch]$DryRun
 )
 
 $ErrorActionPreference = 'Stop'
 $Root = $PSScriptRoot
-if ($All) { $Strings = $true; $Overlay = $true; $Pill = $true; $Data = $true }
-if (-not ($Strings -or $Overlay -or $Pill -or $Data)) { throw "至少指定 -Strings / -Overlay / -Pill / -Data / -All 之一" }
+if ($All) { $Strings = $true; $Overlay = $true; $Pill = $true; $Data = $true; $Stages = $true }
+if (-not ($Strings -or $Overlay -or $Pill -or $Data -or $Stages)) { throw "至少指定 -Strings / -Overlay / -Pill / -Data / -Stages / -All 之一" }
 if (-not (Test-Path $Target)) { throw "目标不存在：$Target" }
 $Target = (Resolve-Path $Target).Path
 
@@ -175,6 +176,51 @@ if ($Data) {
     }
   }
   if ($report.actions.Count -eq 0) { Write-Host "data-additions 为空，跳过" -ForegroundColor DarkGray }
+}
+
+# ---------- D. 阶段职责切分（strings.stages.json，精确命中一次） ----------
+if ($Stages) {
+  $stageFile = Join-Path $Root 'strings.stages.json'
+  if (-not (Test-Path $stageFile)) {
+    Write-Warning "找不到 strings.stages.json，跳过"
+    $report.actions += @{ action = 'stages'; status = 'skipped'; reason = 'config-missing' }
+  } else {
+    $stageCfg = Get-Content $stageFile -Raw -Encoding UTF8 | ConvertFrom-Json
+    $okCount = 0; $failCount = 0
+    foreach ($e in @($stageCfg.entries)) {
+      $file = Join-Path $Target "data\skills\$($e.file)"
+      if (-not (Test-Path $file)) {
+        Write-Warning "  缺文件：$($e.file)"
+        $report.actions += @{ action = 'stages'; file = $e.file; status = 'failed'; reason = 'file-missing' }
+        $failCount++; continue
+      }
+      $text = [IO.File]::ReadAllText($file, [Text.Encoding]::UTF8)
+      $hits = ([regex]::Matches($text, [regex]::Escape($e.find))).Count
+      if ($hits -eq 1) {
+        if ($e.find -ne $e.replace) {
+          $before = Get-Sha256 $file
+          Save-Backup $file
+          Save-Text $file ($text.Replace($e.find, $e.replace))
+          $after = if ($DryRun) { $before } else { Get-Sha256 $file }
+          Write-Host "  切分 $($e.file) · $($e.note)" -ForegroundColor Cyan
+          $report.actions += @{ action = 'stages'; file = $e.file; note = $e.note; status = 'applied'; before = $before; after = $after }
+        } else {
+          Write-Host "  切分 $($e.file) · $($e.note)（无变化）" -ForegroundColor DarkGray
+          $report.actions += @{ action = 'stages'; file = $e.file; note = $e.note; status = 'noop' }
+        }
+        $okCount++
+      } elseif ($hits -eq 0 -and $text.Contains($e.replace)) {
+        Write-Host "  切分 $($e.file) · $($e.note)（已是目标态，幂等跳过）" -ForegroundColor DarkGray
+        $report.actions += @{ action = 'stages'; file = $e.file; note = $e.note; status = 'present' }
+        $okCount++
+      } else {
+        Write-Warning "  切分 $($e.file) · $($e.note)：命中 $hits 次（要求恰好 1 次），未改动"
+        $report.actions += @{ action = 'stages'; file = $e.file; note = $e.note; status = 'failed'; hits = $hits }
+        $failCount++
+      }
+    }
+    Write-Host "阶段切分：$okCount 成功 / $failCount 失败" -ForegroundColor $(if ($failCount -eq 0) { 'Green' } else { 'Yellow' })
+  }
 }
 
 # ---------- 报告 ----------

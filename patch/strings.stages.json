@@ -1,0 +1,47 @@
+{
+    "note":  "阶段职责切分补丁：router 加 07.5、08 改按镜表、09 去掉拆分镜并接十二维。每条必须精确命中一次，命中 0 次或多次都算失败。",
+    "entries":  [
+                    {
+                        "replace":  "A. 从零开始创作（01 概念 → 02 角色 → 03 世界观可选 → 04 分场 → 05 剧本 → 06 压力测试可选 → 07 Lira → 07.5 SHOTLIST → 08 ACTING → 09 CINEDANCE）",
+                        "find":  "A. 从零开始创作（01 概念 → 02 角色 → 03 世界观可选 → 04 分场 → 05 剧本 → 06 压力测试可选 → 07 Lira → 08 ACTING → 09 CINEDANCE）",
+                        "file":  "ai-film-router\\SKILL.md",
+                        "note":  "A 线插入 07.5"
+                    },
+                    {
+                        "replace":  "1. **A 从零模式**：按 01 概念、02 角色、03 可选世界观、04 分场、05 剧本推进；05 确认后询问用户是否进入 `06 剧本压力测试`，随后进入 07 Lira、07.5 SHOTLIST、08 ACTING、09 CINEDANCE。",
+                        "find":  "1. **A 从零模式**：按 01 概念、02 角色、03 可选世界观、04 分场、05 剧本推进；05 确认后询问用户是否进入 `06 剧本压力测试`，随后进入 07 Lira、08 ACTING、09 CINEDANCE。",
+                        "file":  "ai-film-router\\SKILL.md",
+                        "note":  "A 从零模式插入 07.5"
+                    },
+                    {
+                        "replace":  "  - 镜表由 07.5 SHOTLIST 产出：本阶段只读镜表、不重新拆镜。确需临时补一镜时，读取 `references/shot-planning.md` 只为该镜补位，并把新增镜号登记回镜表。",
+                        "find":  "- 整场戏、长段剧本或整集需要拆镜：读取 `references/shot-planning.md`。",
+                        "file":  "film-cinedance\\SKILL.md",
+                        "note":  "09 不再负责拆镜"
+                    },
+                    {
+                        "replace":  "- 输出 Seedance 2.0：读取 `references/source.md`。\r\n  - 编译前读 `references/prompt-12d.md`（十二维框架）、`references/compile-gate.md`（编译门禁）、`references/failure-modes.md`（失败模式）；换模型时读 `references/model-adapters.md`；写 MiniMax H3 时另读 `references/h3-dialect.md`。",
+                        "find":  "- 输出 Seedance 2.0：读取 `references/source.md`。",
+                        "file":  "film-cinedance\\SKILL.md",
+                        "note":  "09 追加十二维/门禁/适配引用"
+                    },
+                    {
+                        "replace":  "## 上游：07.5 镜表\r\n表演块按镜号写：先读镜表里该镜的景别、机位与镜头语言，再写身体动作、节拍与情绪。镜表未出或该镜状态为 `待定` 时，先提示一次，允许写预演版并标注依据。不切镜头、不改镜号。\r\n\r\n## 局部制作与已有图片（APP当前规则）",
+                        "find":  "## 局部制作与已有图片（APP当前规则）",
+                        "file":  "film-acting\\SKILL.md",
+                        "note":  "08 加\"上游：07.5 镜表\""
+                    },
+                    {
+                        "file":  "film-cinedance\\SKILL.md",
+                        "find":  "规划分镜镜头与 Seedance 2.5/2.0、MiniMax H3 视频提示词，锁定导演方案与动作对白时间轴。当处于 09 CINEDANCE 阶段、已有 05 剧本与 08 表演块并需转成可生成镜头时使用。",
+                        "replace":  "读取已确认的镜表，逐镜编译 Seedance 2.5/2.0、MiniMax H3 视频提示词，锁定导演方案与动作对白时间轴；不重新拆镜。当处于 09 CINEDANCE 阶段、已有 07.5 镜表与 08 表演块、需要按镜逐镜出提示词时使用。",
+                        "note":  "09 描述改为读镜表逐镜编译（中文描述版）"
+                    },
+                    {
+                        "file":  "film-acting\\SKILL.md",
+                        "find":  "撰写已批准场景或镜头的表演与演出块。当路由选中 08 阶段，或已有 06 压力测试结论与 07 资产简报需落地表演时使用。",
+                        "replace":  "撰写 07.5 镜表里已确认的某个镜头的表演与演出块，不改镜头、不切镜。当路由选中 08 阶段、且该镜在镜表中已确认时使用。",
+                        "note":  "08 描述改为按镜表某个镜头（中文描述版）"
+                    }
+                ]
+}
