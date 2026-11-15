@@ -10,24 +10,38 @@
     return '<span class="gp-k ' + cls + '">' + k + '</span>';
   };
 
+  const ACT = {
+    gap: { text: '补资料', cls: 'gp-k-method' },
+    'install-skill': { text: '装成技能', cls: 'gp-k-spec' },
+    skip: { text: '不收', cls: 'gp-k-ledger' },
+  };
+
   function render(d, note) {
     LAST = d;
     const box = $('ig-list');
     const kinds = Object.keys(d.byKind || {}).map((k) => k + ' ' + d.byKind[k]).join(' · ');
+    const acts = Object.keys(d.byAction || {}).map((k) => (ACT[k] ? ACT[k].text : k) + ' ' + d.byAction[k]).join(' · ');
     const rows = (d.items || []).map((it, i) => {
       const top = (it.suggest || [])[0];
-      const low = top && top.score < 25;
-      return '<tr><td class="mono">' + it.rel + '</td><td>' + badge(it.kind) + '</td><td class="mono">' + Math.round(it.bytes / 1024) + 'KB</td>' +
+      const a = ACT[it.action] || { text: it.action, cls: 'gp-k-method' };
+      const conf = it.confidence === 'high' ? '' : it.confidence === 'low' ? ' <span class="sub">（低）</span>' : ' <span class="sub">（判不出）</span>';
+      const where = it.action === 'gap'
+        ? (top ? '<b>' + top.skill + '</b> <span class="sub">' + top.score + ' 分 · ' + (top.evidence || []).join(' ') + '</span>' : '<span class="sub">—</span>')
+        : '<span class="sub">' + it.judgeWhy + '</span>';
+      return '<tr><td class="mono">' + it.rel + '</td>' +
+        '<td><span class="gp-k ' + (it.kind === 'method' ? 'gp-k-method' : it.kind === 'skill' ? 'gp-k-spec' : it.kind === 'spec' ? 'gp-k-spec' : it.kind === 'ledger' ? 'gp-k-ledger' : it.kind === 'code' ? 'gp-k-code' : 'gp-k-example') + '" title="' + (it.kindWhy || '') + '">' + it.kind + '</span></td>' +
+        '<td><span class="gp-k ' + a.cls + '">' + a.text + '</span>' + conf + '</td>' +
+        '<td class="mono">' + Math.round(it.bytes / 1024) + 'KB</td>' +
         '<td class="mono">' + (it.sections || 0) + '</td>' +
-        '<td>' + (top ? (low ? '<span class="sub">判不准（' + top.score + ' 分，低于阈值，请手选）</span>' : '<b>' + top.skill + '</b> <span class="sub">' + top.score + ' · ' + (top.evidence || []).join(' ') + '</span>') : '<span class="sub">判不出</span>') + '</td>' +
-        '<td><button class="dz-mini" data-ig="pick" data-i="' + i + '">用这条判层</button></td></tr>';
+        '<td>' + where + (it.skillName ? '<div class="sub mono">name: ' + it.skillName + '</div>' : '') + '</td>' +
+        '<td>' + (it.action === 'gap' ? '<button class="dz-mini" data-ig="pick" data-i="' + i + '">用这条判层</button>' : '') + '</td></tr>';
     }).join('');
     box.innerHTML = (note ? '<div class="gp-head">' + note + '</div>' : '') +
-      '<div class="gp-head">' + d.files + ' 个文件 · ' + d.texts + ' 份可读文本 · ' + (kinds || '—') + (d.unzipped ? ' · 已解压' : '') + '</div>' +
-      '<table class="dz-map"><thead><tr><th>文件</th><th>类型</th><th>大小</th><th>节数</th><th>建议落位（确定性关键词判层）</th><th></th></tr></thead><tbody>' + rows + '</tbody></table>' +
+      '<div class="gp-head">' + d.files + ' 个文件 · ' + d.texts + ' 份可读文本 · 类型：' + (kinds || '—') + (acts ? ' · 动作：' + acts : '') + (d.unzipped ? ' · 已解压' : '') + '</div>' +
+      '<table class="dz-map"><thead><tr><th>文件</th><th>类型</th><th>动作</th><th>大小</th><th>节数</th><th>该去哪（确定性判层 / 不收的理由）</th><th></th></tr></thead><tbody>' + rows + '</tbody></table>' +
       '<div class="gp-actions">' + (INGESTED
         ? '<span class="sub">已投放，可用来料 id：<b>src:' + INGESTED + '/…</b></span>'
-        : '<button class="dz-mini dz-strong" data-ig="ingest">投放进来（复制到 patch\\sources）</button><span class="sub">或用 <b>src:&lt;包名&gt;/&lt;文件&gt;</b> 参与只补缺</span>') + '</div>';
+        : '<button class="dz-mini dz-strong" data-ig="ingest">投放进来（复制到 patch\\sources）</button><span class="sub">整包投放后，单份文件也能用 <b>src:&lt;包名&gt;/&lt;文件&gt;</b> 参与只补缺</span>') + '</div>';
   }
 
   async function doScan() {

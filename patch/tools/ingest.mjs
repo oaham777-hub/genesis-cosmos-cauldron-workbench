@@ -29,14 +29,36 @@ const EXAMPLE_RE = /(example|template|样例|示例|sample)/i;
 const CODE_EXT = new Set(['.js', '.ts', '.mjs', '.cjs', '.json', '.yaml', '.yml', '.py', '.sh', '.ps1', '.command', '.html', '.css']);
 const TEXT_EXT = new Set(['.md', '.txt', '.markdown']);
 
+const SKILL_FILE_RE = /(^|\/)SKILL\.md$/i;
+const SPEC_NAME_RE = /(规范|规格|契约|标准|schema|contract|convention|rules?\.md|guide)/i;
+
+// —— 第一段：认「这是什么件」（结构判据优先，内容判据兜底） ——
+function frontmatter(text) {
+  const m = /^---\r?\n([\s\S]*?)\r?\n---/.exec(text.slice(0, 4000));
+  if (!m) return null;
+  const fm = {};
+  for (const line of m[1].split(/\r?\n/)) {
+    const kv = /^([A-Za-z_][\w-]*)\s*:\s*(.*)$/.exec(line);
+    if (kv) fm[kv[1]] = kv[2].replace(/^["']|["']$/g, '').trim();
+  }
+  return fm;
+}
+
 function kindOf(rel, text) {
   const r = rel.replace(/\\/g, '/');
-  if (LEDGER_RE.test(r)) return 'ledger';
-  if (SPEC_RE.test(r)) return 'spec';
-  if (text && /投喂来源吸收|逐字副本|台账/.test(text.slice(0, 1200))) return 'ledger';
-  if (EXAMPLE_RE.test(r)) return 'example';
-  if (CODE_EXT.has(extname(r).toLowerCase())) return 'code';
-  return 'method';
+  const ext = extname(r).toLowerCase();
+  if (SKILL_FILE_RE.test(r)) return { kind: 'skill', why: '文件名 SKILL.md' };
+  if (LEDGER_RE.test(r)) return { kind: 'ledger', why: '文件名命中台账清单' };
+  if (text && /投喂来源吸收|逐字副本|台账/.test(text.slice(0, 1200))) return { kind: 'ledger', why: '正文自称台账/逐字副本' };
+  if (ext === '.md' || ext === '.markdown') {
+    const fm = frontmatter(text);
+    if (fm && fm.name && fm.description) return { kind: 'skill', why: 'frontmatter 有 name+description（技能件）' };
+  }
+  if (SPEC_RE.test(r)) return { kind: 'spec', why: '在 specs/ 目录下' };
+  if (SPEC_NAME_RE.test(basename(r))) return { kind: 'spec', why: '文件名像规范/契约' };
+  if (EXAMPLE_RE.test(r)) return { kind: 'example', why: '文件名像样例/模板' };
+  if (CODE_EXT.has(ext)) return { kind: 'code', why: '代码/配置扩展名' };
+  return { kind: 'method', why: '默认（普通资料）' };
 }
 
 // —— 判层：按阶段技能的关键词画像打分（确定性、可复核） ——
@@ -99,24 +121,62 @@ function expand(pathArg) {
   return { ok: true, type: 'file', files: [{ p: abs, rel: basename(abs), bytes: st.size, abs }] };
 }
 
+// —— 第二段：认「它该去哪」 ——
+const GATE_OK = 25;   // 只补缺的建议阈值
+const GATE_WEAK = 12; // 低于此不猜
+
+function judge(rel, text, kindObj) {
+  const kind = kindObj.kind;
+  if (kind === 'ledger') return { action: 'skip', confidence: 'high', why: '台账/逐字副本，不该进任何阶段正文', suggest: [] };
+  if (kind === 'example') return { action: 'skip', confidence: 'mid', why: '样例/模板，先看清是格式示意还是真资料', suggest: [] };
+  if (kind === 'code') return { action: 'skip', confidence: 'high', why: '代码/配置，不是给模型读的散文', suggest: [] };
+  const sug = scoreText(text);
+  const top = sug[0] || null;
+  if (kind === 'skill') {
+    const fm = frontmatter(text) || {};
+    return {
+      action: 'install-skill',
+      confidence: 'high',
+      why: '这是一整份技能（' + (fm.name || '无名') + '），该走 skillOperator 装成技能，拆成资料会丢它的编排',
+      skillName: fm.name || null,
+      description: (fm.description || '').slice(0, 160),
+      suggest: sug.slice(0, 2),
+    };
+  }
+  if (!top) return { action: 'gap', confidence: 'none', why: '关键词一个都没命中，只能手选目标技能', suggest: [] };
+  if (top.score >= GATE_OK) return { action: 'gap', confidence: 'high', why: '判层 ' + top.skill + '（' + top.score + ' 分）', suggest: sug };
+  if (top.score >= GATE_WEAK) return { action: 'gap', confidence: 'low', why: '分数偏低（' + top.score + '），建议先看内容再手选', suggest: sug };
+  return { action: 'gap', confidence: 'none', why: '判不准（最高 ' + top.score + ' 分），请手选', suggest: sug };
+}
+
 function inspectFiles(files) {
   const items = [];
   for (const f of files) {
     if (!TEXT_EXT.has(extname(f.rel).toLowerCase())) continue;
     const text = readFileSync(f.abs, 'utf8');
     const sections = (text.match(/^#{1,3}\s+/gm) || []).length;
-    const kind = kindOf(f.rel, text);
-    const sug = scoreText(text);
-    items.push({ rel: f.rel.replace(/\\/g, '/'), abs: f.abs, bytes: f.bytes, kind, sections, chars: text.length, suggest: sug, top: sug[0] || null, head: text.split(/\r?\n/).filter((l) => l.trim()).slice(0, 3).join(' / ').slice(0, 120) });
+    const k = kindOf(f.rel, text);
+    const j = judge(f.rel, text, k);
+    items.push({
+      rel: f.rel.replace(/\\/g, '/'), abs: f.abs, bytes: f.bytes,
+      kind: k.kind, kindWhy: k.why,
+      action: j.action, confidence: j.confidence, judgeWhy: j.why,
+      skillName: j.skillName || null, description: j.description || null,
+      sections, chars: text.length,
+      suggest: j.suggest || [], top: (j.suggest || [])[0] || null,
+      head: text.split(/\r?\n/).filter((l) => l.trim()).slice(0, 3).join(' / ').slice(0, 120),
+    });
   }
   items.sort((a, b) => b.bytes - a.bytes);
   const byKind = {};
+  const byAction = {};
   const bySkill = {};
   for (const it of items) {
     byKind[it.kind] = (byKind[it.kind] || 0) + 1;
+    byAction[it.action] = (byAction[it.action] || 0) + 1;
     if (it.top) bySkill[it.top.skill] = (bySkill[it.top.skill] || 0) + 1;
   }
-  return { items, byKind, bySkill };
+  return { items, byKind, byAction, bySkill };
 }
 
 if (cmd === 'scan') {
@@ -124,7 +184,7 @@ if (cmd === 'scan') {
   if (!e.ok) out(e);
   else {
     const r = inspectFiles(e.files);
-    out({ ok: true, type: e.type, unzipped: e.unzipped || null, files: e.files.length, texts: r.items.length, byKind: r.byKind, bySkill: r.bySkill, items: r.items.map(({ abs, ...rest }) => rest) });
+    out({ ok: true, type: e.type, unzipped: e.unzipped || null, files: e.files.length, texts: r.items.length, byKind: r.byKind, byAction: r.byAction, bySkill: r.bySkill, items: r.items.map(({ abs, ...rest }) => rest) });
   }
 } else if (cmd === 'ingest') {
   const e = expand(val('--path'));
@@ -147,7 +207,7 @@ if (cmd === 'scan') {
     }
     const r = inspectFiles(e.files);
     appendJsonl(SRC_LEDGER, { ts: new Date().toISOString(), name, from: val('--path'), type: e.type, copied, texts: r.items.length, byKind: r.byKind, bySkill: r.bySkill });
-    out({ ok: true, name, dir: dest, copied, texts: r.items.length, byKind: r.byKind, bySkill: r.bySkill, items: r.items.map(({ abs, ...rest }) => rest) });
+    out({ ok: true, name, dir: dest, copied, texts: r.items.length, byKind: r.byKind, byAction: r.byAction, bySkill: r.bySkill, items: r.items.map(({ abs, ...rest }) => rest) });
   }
 } else if (cmd === 'suggest' || cmd === 'kind') {
   const f = val('--file');

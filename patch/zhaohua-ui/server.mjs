@@ -1,7 +1,7 @@
 // 造化鼎本地桥：把 zhaohua CLI 变成页面能点的接口
 // 启动：bun.exe server.mjs   （默认 127.0.0.1:8791）
 // 只用本机回环地址，不出网。
-import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync, writeFileSync, rmSync, copyFileSync, openSync, readSync, closeSync} from 'node:fs';
 import { createHash } from 'node:crypto';
 import { dirname, join } from 'node:path';
 const ZHAOHUA_DIR = process.env.ZHAOHUA_DIR || 'D:\\造化鼎';
@@ -148,6 +148,8 @@ function deployedList() {
 }
 const BANS = 'D:\\造化乾坤鼎-工作台\\patch\\tools\\bans.mjs';
 const UPLOAD_STAGE = 'D:\\造化乾坤鼎-工作台\\patch\\_upload';
+const UPLOAD_MAX_MB = Number(process.env.ZHAOHUA_UPLOAD_MAX_MB || 150);
+const UPLOAD_MAX_FILES = Number(process.env.ZHAOHUA_UPLOAD_MAX_FILES || 1500);
 const INGEST = 'D:\\造化乾坤鼎-工作台\\patch\\tools\\ingest.mjs';
 const DISTILL = 'D:\\造化乾坤鼎-工作台\\patch\\tools\\distill.mjs';
 const GAP = 'D:\\造化乾坤鼎-工作台\\patch\\tools\\gap.mjs';
@@ -266,6 +268,17 @@ function reply(data, status = 200) {
   } catch {}
   return json(data, status);
 }
+
+// 启动时清 7 天前的上传暂存（只删我们自己的目录）
+try {
+  if (existsSync(UPLOAD_STAGE)) {
+    const cutoff = Date.now() - 7 * 24 * 3600 * 1000;
+    for (const d of readdirSync(UPLOAD_STAGE)) {
+      const p = join(UPLOAD_STAGE, d);
+      try { if (statSync(p).isDirectory() && statSync(p).mtimeMs < cutoff) rmSync(p, { recursive: true, force: true }); } catch {}
+    }
+  }
+} catch {}
 
 const server = Bun.serve({
   hostname: '127.0.0.1',
@@ -398,8 +411,12 @@ const server = Bun.serve({
         const stage = join(UPLOAD_STAGE, stamp);
         mkdirSync(stage, { recursive: true });
         let n = 0;
+        let total = 0;
         for (const [k, v] of form.entries()) {
           if (k !== 'files' || typeof v === 'string') continue;
+          total += v.size || 0;
+          if (n + 1 > UPLOAD_MAX_FILES) return reply({ ok: false, error: '文件数超过上限 ' + UPLOAD_MAX_FILES + '，先解压挑文件再传' }, 413);
+          if (total > UPLOAD_MAX_MB * 1024 * 1024) return reply({ ok: false, error: '体积超过上限 ' + UPLOAD_MAX_MB + 'MB，先解压挑文件再传' }, 413);
           const rel = String(v.name || 'file').replace(/\\/g, '/').replace(/^\/+/, '').split('/').filter((s) => s && s !== '..').join('\\');
           const to = join(stage, rel || ('file-' + n));
           mkdirSync(dirname(to), { recursive: true });
