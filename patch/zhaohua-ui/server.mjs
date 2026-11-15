@@ -158,6 +158,79 @@ const json = (data, status = 200) =>
     },
   });
 
+// ---------- 事件总线（观象台燃料）----------
+// 只存内存、只在回环口；观象台断开也不影响业务。
+const EVENTS = [];
+const EVENTS_MAX = Number(process.env.ZHAOHUA_EVENTS_MAX || 400);
+const EV_CLIENTS = new Set();
+let EV_SEQ = 0;
+let lastPath = '';
+let lastSkill = '';
+let reqT0 = Date.now();
+
+const KIND_BY_PATH = {
+  '/audit': 'audit',
+  '/inspect': 'inspect',
+  '/verify': 'verify',
+  '/pack': 'pack',
+  '/install': 'install',
+  '/deploy': 'deploy',
+  '/eval': 'eval',
+  '/create': 'create',
+  '/fuse': 'fuse',
+};
+
+function briefOf(kind, data) {
+  try {
+    if (!data || typeof data !== 'object') return '';
+    if (kind === 'audit') {
+      if (Number.isFinite(data.failed)) return `失败 ${data.failed} · 通过 ${data.passed}`;
+      if (data.error) return String(data.error).slice(0, 120);
+    }
+    if (kind === 'pack' && data.outDir) return String(data.outDir).split(/[\\/]/).slice(-1)[0];
+    if (kind === 'install') return `${data.action || ''} ${data.installed?.name || ''} ${data.installed?.version || ''}`.trim();
+    if (kind === 'deploy') return data.deployed ? `落地 ${data.deployed.name || ''} ${data.deployed.version || ''}`.trim() : (data.needsConfirm ? '待确认' : '');
+    if (kind === 'eval') {
+      const s = data.summary;
+      if (s && typeof s === 'object') {
+        return Object.entries(s).map(([k, v]) => `${k} ${v.hit}/${v.total}`).join(' · ');
+      }
+    }
+    if (kind === 'fuse' && data.outDir) return String(data.outDir).split(/[\\/]/).slice(-1)[0];
+    if (kind === 'create' && data.outDir) return String(data.outDir).split(/[\\/]/).slice(-1)[0];
+    if (data.error) return String(data.error).slice(0, 120);
+  } catch {}
+  return '';
+}
+
+function emitEvent(kind, fields = {}) {
+  const ev = { seq: ++EV_SEQ, ts: Date.now(), kind, ...fields };
+  EVENTS.push(ev);
+  if (EVENTS.length > EVENTS_MAX) EVENTS.shift();
+  const line = 'data: ' + JSON.stringify(ev) + '\n\n';
+  for (const c of EV_CLIENTS) {
+    try { c.enqueue(line); } catch {}
+  }
+  return ev;
+}
+
+// 所有路由的出口都走这里：先广播一条事件，再返回（事件失败绝不影响业务）
+function reply(data, status = 200) {
+  try {
+    const kind = KIND_BY_PATH[lastPath];
+    if (kind) {
+      const ok = status < 400 && data && data.ok !== false;
+      emitEvent(kind, {
+        target: lastSkill || '',
+        ok,
+        ms: Date.now() - reqT0,
+        brief: briefOf(kind, data),
+      });
+    }
+  } catch {}
+  return json(data, status);
+}
+
 const server = Bun.serve({
   hostname: '127.0.0.1',
   port: PORT,
@@ -165,36 +238,87 @@ const server = Bun.serve({
   idleTimeout: 240,
   async fetch(req) {
     const url = new URL(req.url);
-    if (req.method === 'OPTIONS') return json({ ok: true });
+    lastPath = url.pathname;
+    lastSkill = url.searchParams.get('skill') || url.searchParams.get('config') || url.searchParams.get('name') || '';
+    reqT0 = Date.now();
+    if (req.method === 'OPTIONS') return reply({ ok: true });
     try {
+// 观象台：首屏快照
+      if (url.pathname === '/history') {
+        const since = Math.max(0, Number(url.searchParams.get('since') || 0));
+        return new Response(JSON.stringify({ ok: true, seq: EV_SEQ, events: EVENTS.filter((e) => e.seq > since) }), {
+          headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' },
+        });
+      }
+
+      // 观象台：SSE 长连接
+      if (url.pathname === '/events') {
+        const since = Math.max(0, Number(url.searchParams.get('since') || 0));
+        const stream = new ReadableStream({
+          start(controller) {
+            try {
+              for (const ev of EVENTS) {
+                if (ev.seq > since) controller.enqueue('data: ' + JSON.stringify(ev) + '\n\n');
+              }
+              controller.enqueue(': connected\n\n');
+              EV_CLIENTS.add(controller);
+            } catch {}
+          },
+          cancel(ctl) { EV_CLIENTS.delete(ctl); },
+        });
+        return new Response(stream, {
+          headers: {
+            'Content-Type': 'text/event-stream; charset=utf-8',
+            'Cache-Control': 'no-cache, no-transform',
+            'Connection': 'keep-alive',
+            'Access-Control-Allow-Origin': '*',
+          },
+        });
+      }
+
+      // 手动投一条（脚本 / 工具 / 以后的乾坤鼎埋点都走这里）
+      if (url.pathname === '/emit' && req.method === 'POST') {
+        let body = {};
+        try { body = await req.json(); } catch {}
+        const kind = String(body.kind || 'note').slice(0, 24);
+        const ev = emitEvent(kind, {
+          target: String(body.target || '').slice(0, 96),
+          ok: body.ok !== false,
+          ms: Number.isFinite(body.ms) ? body.ms : null,
+          brief: String(body.brief || '').slice(0, 160),
+          src: String(body.src || 'manual').slice(0, 24),
+        });
+        return json({ ok: true, seq: ev.seq });
+      }
+
       if (url.pathname === '/health') {
-        return json({ ok: true, zhaohuaDir: ZHAOHUA_DIR, skillsDir: SKILLS_DIR, skillsExists: existsSync(SKILLS_DIR) });
+        return reply({ ok: true, zhaohuaDir: ZHAOHUA_DIR, skillsDir: SKILLS_DIR, skillsExists: existsSync(SKILLS_DIR) });
       }
       if (url.pathname === '/audit') {
         const target = url.searchParams.get('dir') || SKILLS_DIR;
         const r = await runCli(['audit', target]);
-        return json({ ...parseAudit(r.stdout + r.stderr), exitCode: r.exitCode, durationMs: r.durationMs, target, raw: r.stdout.slice(-4000) });
+        return reply({ ...parseAudit(r.stdout + r.stderr), exitCode: r.exitCode, durationMs: r.durationMs, target, raw: r.stdout.slice(-4000) });
       }
       if (url.pathname === '/verify') {
         const product = url.searchParams.get('product') || `${ZHAOHUA_DIR}\\zhaohua.product.json`;
         const r = await runCli(['verify', product]);
-        return json({ exitCode: r.exitCode, durationMs: r.durationMs, text: (r.stdout + r.stderr).slice(-8000) });
+        return reply({ exitCode: r.exitCode, durationMs: r.durationMs, text: (r.stdout + r.stderr).slice(-8000) });
       }
       if (url.pathname === '/inspect') {
         const skill = url.searchParams.get('skill');
-        if (!skill) return json({ error: '缺少 skill 参数' }, 400);
+        if (!skill) return reply({ error: '缺少 skill 参数' }, 400);
         const r = await runCli(['inspect', `${SKILLS_DIR}\\${skill}`]);
-        return json({ exitCode: r.exitCode, durationMs: r.durationMs, text: r.stdout + r.stderr });
+        return reply({ exitCode: r.exitCode, durationMs: r.durationMs, text: r.stdout + r.stderr });
       }
       if (url.pathname === '/packs') {
-        return json(listPacks());
+        return reply(listPacks());
       }
       if (url.pathname === '/pack') {
         const skill = url.searchParams.get('skill');
-        if (!skill) return json({ error: '缺少 skill 参数' }, 400);
-        if (!/^[a-z0-9][a-z0-9._-]*$/i.test(skill)) return json({ error: '技能名不合法' }, 400);
+        if (!skill) return reply({ error: '缺少 skill 参数' }, 400);
+        if (!/^[a-z0-9][a-z0-9._-]*$/i.test(skill)) return reply({ error: '技能名不合法' }, 400);
         const src = `${SKILLS_DIR}\\${skill}`;
-        if (!existsSync(src)) return json({ error: `找不到技能目录：${src}` }, 404);
+        if (!existsSync(src)) return reply({ error: `找不到技能目录：${src}` }, 404);
         const out = `${PACKS_DIR}\\${skill}`;
         let history = null;
         if (existsSync(out)) {
@@ -206,7 +330,7 @@ const server = Bun.serve({
         const r = await runCli(['pack', src, '--adopt', '--out', out, '--manifest', '--version', version, '--json']);
         let parsed = null;
         try { parsed = JSON.parse(r.stdout.trim()); } catch { parsed = null; }
-        return json({
+        return reply({
           ok: r.exitCode === 0 || r.exitCode === 3,
           exitCode: r.exitCode,
           durationMs: r.durationMs,
@@ -218,14 +342,14 @@ const server = Bun.serve({
           packs: listPacks(),
         });
       }
-      if (url.pathname === '/deployed') return json({ dir: DEPLOY_DIR, skills: deployedList() });
+      if (url.pathname === '/deployed') return reply({ dir: DEPLOY_DIR, skills: deployedList() });
 
       // ── P4：评估（两臂）与融合（create）──────────────────────────────
       if (url.pathname === '/creds') {
-        return json({ keyFile: SECRET_FILE, hasKey: readSecret().length > 0 });
+        return reply({ keyFile: SECRET_FILE, hasKey: readSecret().length > 0 });
       }
       if (url.pathname === '/eval-configs') {
-        if (!existsSync(EVAL_DIR)) return json({ dir: EVAL_DIR, configs: [] });
+        if (!existsSync(EVAL_DIR)) return reply({ dir: EVAL_DIR, configs: [] });
         const configs = readdirSync(EVAL_DIR)
           .filter((f) => f.endsWith('.json'))
           .map((f) => {
@@ -233,17 +357,17 @@ const server = Bun.serve({
             const st = statSync(full);
             return { name: f, size: st.size, mtime: st.mtime.toISOString() };
           });
-        return json({ dir: EVAL_DIR, configs });
+        return reply({ dir: EVAL_DIR, configs });
       }
       if (url.pathname === '/eval') {
         const name = url.searchParams.get('config') || '';
         const dry = url.searchParams.get('dry') === '1';
-        if (!/^[A-Za-z0-9._-]+\.json$/.test(name)) return json({ error: '配置名不合法' }, 400);
+        if (!/^[A-Za-z0-9._-]+\.json$/.test(name)) return reply({ error: '配置名不合法' }, 400);
         const cfg = `${EVAL_DIR}\\${name}`;
-        if (!existsSync(cfg)) return json({ error: `没有这份配置：${cfg}` }, 404);
+        if (!existsSync(cfg)) return reply({ error: `没有这份配置：${cfg}` }, 404);
         const key = readSecret();
         if (!dry && !key) {
-          return json({ error: '没有模型 key：把 key 放到 ' + SECRET_FILE + '（一行，sk- 开头）' }, 400);
+          return reply({ error: '没有模型 key：把 key 放到 ' + SECRET_FILE + '（一行，sk- 开头）' }, 400);
         }
         // 注意：CLI 的 --out 是"目录"，证据文件落在 <目录>\eval-<配置名>-<时间戳>.json
         const outDir = `${EVAL_OUT}\\${name.replace(/\.json$/, '')}`;
@@ -252,7 +376,7 @@ const server = Bun.serve({
         if (dry) args.push('--dry-run');
         const r = await runCli(args, 900000, key ? { QKD_MODEL_API_KEY: key } : null);
         if (dry) {
-          return json({ dry: true, config: name, exitCode: r.exitCode, durationMs: r.durationMs, text: (r.stdout + r.stderr).slice(-4000) });
+          return reply({ dry: true, config: name, exitCode: r.exitCode, durationMs: r.durationMs, text: (r.stdout + r.stderr).slice(-4000) });
         }
         const pickLatest = (dir) => {
           try {
@@ -275,7 +399,7 @@ const server = Bun.serve({
           }
         }
         if (!evidence) {
-          return json({ dry: false, config: name, ok: false, exitCode: r.exitCode, text: (r.stdout + r.stderr).slice(-4000) });
+          return reply({ dry: false, config: name, ok: false, exitCode: r.exitCode, text: (r.stdout + r.stderr).slice(-4000) });
         }
         const arms = evidence.config?.arms?.map((a) => a.id) ?? [];
         const allAssertions = evidence.config?.assertions?.map((a) => a.id) ?? [];
@@ -289,7 +413,7 @@ const server = Bun.serve({
           truncated: s.truncated,
           chars: s.chars,
         }));
-        return json({
+        return reply({
           dry: false,
           config: name,
           ok: r.exitCode === 0,
@@ -319,12 +443,12 @@ const server = Bun.serve({
         });
       }
       if (url.pathname === '/fused') {
-        if (!existsSync(FUSED_DIR)) return json({ dir: FUSED_DIR, dirs: [] });
+        if (!existsSync(FUSED_DIR)) return reply({ dir: FUSED_DIR, dirs: [] });
         const dirs = readdirSync(FUSED_DIR).map((d) => {
           const full = `${FUSED_DIR}\\${d}`;
           return { name: d, mtime: statSync(full).mtime.toISOString(), hasSkill: existsSync(`${full}\\SKILL.md`) };
         });
-        return json({ dir: FUSED_DIR, dirs });
+        return reply({ dir: FUSED_DIR, dirs });
       }
       if (url.pathname === '/create') {
         // 融合：把多份技能的正文交给模型合成一份新的（要 key，要确认，产物落 staging\fused）
@@ -333,21 +457,21 @@ const server = Bun.serve({
         const name = (url.searchParams.get('name') || skill).trim();
         const mode = url.searchParams.get('mode') || 'merge';
         const confirm = url.searchParams.get('confirm') === 'yes';
-        if (!/^[a-z0-9][a-z0-9._-]*$/i.test(name)) return json({ error: '名字不合法（用 kebab-case）' }, 400);
-        if (!['merge', 'absorb', 'compose'].includes(mode)) return json({ error: 'mode 只能是 merge / absorb / compose' }, 400);
-        if (!sources.length) return json({ error: '至少要给两份来料' }, 400);
+        if (!/^[a-z0-9][a-z0-9._-]*$/i.test(name)) return reply({ error: '名字不合法（用 kebab-case）' }, 400);
+        if (!['merge', 'absorb', 'compose'].includes(mode)) return reply({ error: 'mode 只能是 merge / absorb / compose' }, 400);
+        if (!sources.length) return reply({ error: '至少要给两份来料' }, 400);
         const dirs = [];
         for (const s of sources) {
-          if (!/^[a-z0-9][a-z0-9._-]*$/i.test(s)) return json({ error: `来料名不合法：${s}` }, 400);
+          if (!/^[a-z0-9][a-z0-9._-]*$/i.test(s)) return reply({ error: `来料名不合法：${s}` }, 400);
           const full = `${SKILLS_DIR}\\${s}`;
-          if (!existsSync(`${full}\\SKILL.md`)) return json({ error: `来料不是一个技能目录：${full}` }, 404);
+          if (!existsSync(`${full}\\SKILL.md`)) return reply({ error: `来料不是一个技能目录：${full}` }, 404);
           dirs.push(full);
         }
         const key = readSecret();
-        if (!key) return json({ error: '没有模型 key：把 key 放到 ' + SECRET_FILE }, 400);
+        if (!key) return reply({ error: '没有模型 key：把 key 放到 ' + SECRET_FILE }, 400);
         const out = `${FUSED_DIR}\\${name}`;
         if (!confirm) {
-          return json({
+          return reply({
             needsConfirm: true,
             would: { argv: ['create', ...dirs.map((d) => d.replace(SKILLS_DIR, '<skills>')), '--out', out, '--mode', mode, '--name', name], needsModel: true },
             note: '融合会生成一份新技能正文（不覆盖任何现有技能）。确认后带 confirm=yes 再调一次。',
@@ -360,7 +484,7 @@ const server = Bun.serve({
         } catch {
           parsed = null;
         }
-        return json({
+        return reply({
           ok: r.exitCode === 0,
           exitCode: r.exitCode,
           durationMs: r.durationMs,
@@ -384,18 +508,18 @@ const server = Bun.serve({
         const other = url.searchParams.get('other') || '';
         const confirm = url.searchParams.get('confirm') === 'yes';
         if (!/^[a-z0-9][a-z0-9._-]*$/i.test(base) || !/^[a-z0-9][a-z0-9._-]*$/i.test(other)) {
-          return json({ error: 'base / other 必须是技能目录名' }, 400);
+          return reply({ error: 'base / other 必须是技能目录名' }, 400);
         }
         const baseDir = SKILLS_DIR + '\\' + base;
         const otherDir = SKILLS_DIR + '\\' + other;
         for (const d of [baseDir, otherDir]) {
-          if (!existsSync(d + '\\SKILL.md')) return json({ error: '不是技能目录：' + d }, 404);
+          if (!existsSync(d + '\\SKILL.md')) return reply({ error: '不是技能目录：' + d }, 404);
         }
         const key = readSecret();
-        if (!key) return json({ error: '没有模型 key：把 key 放到 ' + SECRET_FILE }, 400);
+        if (!key) return reply({ error: '没有模型 key：把 key 放到 ' + SECRET_FILE }, 400);
         const out = FUSED_DIR + '\\fuse-' + base + '\\' + base;
         if (!confirm) {
-          return json({
+          return reply({
             needsConfirm: true,
             would: { argv: ['fuse-skill', base, other, '--out', out], needsModel: true, model: 'deepseek-flash', etaSeconds: 60 },
             note: '语义融合会把两份正文交给模型重写合成一份新技能（约 1 分钟、按 token 计费）。不覆盖任何现有技能。',
@@ -403,7 +527,7 @@ const server = Bun.serve({
         }
         mkdirSync(dirname(out), { recursive: true });
         const r = await runCli(['fuse-skill', baseDir, otherDir, '--out', out], 900000, { QKD_MODEL_API_KEY: key });
-        return json({
+        return reply({
           ok: r.exitCode === 0,
           exitCode: r.exitCode,
           durationMs: r.durationMs,
@@ -415,16 +539,16 @@ const server = Bun.serve({
       }
       if (url.pathname === '/install') {
         const skill = url.searchParams.get('skill') || '';
-        if (!/^[a-z0-9][a-z0-9._-]*$/i.test(skill)) return json({ error: '技能名不合法' }, 400);
+        if (!/^[a-z0-9][a-z0-9._-]*$/i.test(skill)) return reply({ error: '技能名不合法' }, 400);
         const packDir = `${PACKS_DIR}\\${skill}`;
-        if (!existsSync(packDir)) return json({ error: `还没有包：${packDir}，先打包` }, 404);
+        if (!existsSync(packDir)) return reply({ error: `还没有包：${packDir}，先打包` }, 404);
         // 已经装过同名包 → 用 pack-upgrade（旧版进 .history），否则第一次装用 pack-install
         const already = latestInstall(skill);
         const sub = already ? 'pack-upgrade' : 'pack-install';
         const r = await runCli([sub, packDir, '--into', PRODUCT_DIR, '--json']);
         let parsed = null;
         try { parsed = JSON.parse(r.stdout.trim()); } catch { parsed = null; }
-        return json({
+        return reply({
           ok: parsed ? parsed.ok : r.exitCode === 0,
           exitCode: r.exitCode,
           durationMs: r.durationMs,
@@ -438,11 +562,11 @@ const server = Bun.serve({
       }
       if (url.pathname === '/deploy') {
         const skill = url.searchParams.get('skill') || '';
-        if (!/^[a-z0-9][a-z0-9._-]*$/i.test(skill)) return json({ error: '技能名不合法' }, 400);
+        if (!/^[a-z0-9][a-z0-9._-]*$/i.test(skill)) return reply({ error: '技能名不合法' }, 400);
         const latest = latestInstall(skill);
-        if (!latest) return json({ error: '还没安装到产品目录（先点「安装」）' }, 400);
+        if (!latest) return reply({ error: '还没安装到产品目录（先点「安装」）' }, 400);
         if (url.searchParams.get('confirm') !== 'yes') {
-          return json({ needsConfirm: true, skill, version: latest.version, dir: latest.dir,
+          return reply({ needsConfirm: true, skill, version: latest.version, dir: latest.dir,
             message: `确认把 ${skill}@${latest.version} 写进乾坤鼎的 data\\skills ？会先把现有目录备份到 patch\\_backup\\skills。` });
         }
         const target = join(DEPLOY_DIR, skill);
@@ -457,11 +581,11 @@ const server = Bun.serve({
         const srcSha = sha256File(join(latest.dir, 'SKILL.md'));
         const dstSha = sha256File(join(target, 'SKILL.md'));
         const verified = !!(srcSha && srcSha === dstSha);
-        return json({ ok: verified, skill, version: latest.version, backup, verified, srcSha, dstSha, deployedAt: Date.now(), skills: deployedList() });
+        return reply({ ok: verified, skill, version: latest.version, backup, verified, srcSha, dstSha, deployedAt: Date.now(), skills: deployedList() });
       }
-      return json({ error: 'not found', path: url.pathname }, 404);
+      return reply({ error: 'not found', path: url.pathname }, 404);
     } catch (e) {
-      return json({ error: String(e && e.message ? e.message : e) }, 500);
+      return reply({ error: String(e && e.message ? e.message : e) }, 500);
     }
   },
 });

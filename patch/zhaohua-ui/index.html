@@ -127,7 +127,26 @@
   .note{border-left:2px solid var(--gold-dim);padding:8px 12px;color:var(--muted);
     font-size:12px;background:#12141a;border-radius:0 8px 8px 0;margin-top:12px}
   .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-</style>
+    /* ---- 观象台 ---- */
+    .obs-wrap{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:18px;align-items:stretch}
+    .obs-stage{position:relative;border:1px solid var(--line);border-radius:12px;background:radial-gradient(62% 62% at 42% 54%,#0e1117 0%,#0a0c10 68%,#07090c 100%);height:640px;overflow:hidden}
+    #obs-canvas{display:block;width:100%;height:100%}
+    .obs-legend{position:absolute;left:16px;right:16px;bottom:12px;display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',ui-monospace,monospace}
+    .obs-lg{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+    .obs-lg .sw{width:7px;height:7px;border-radius:50%;background:rgba(216,178,106,.8)}
+    .obs-lg .sw.teal{background:rgba(127,207,163,.8)}
+    .obs-meta{margin-left:auto;color:var(--dim)}
+    .obs-meta.live{color:#7fcfa3}
+    .obs-side{display:flex;flex-direction:column;gap:12px;min-width:0}
+    .obs-feed{flex:1;overflow:auto;max-height:520px;border:1px solid var(--line);border-radius:12px;padding:8px;background:#0b0d11}
+    .obs-row{display:grid;grid-template-columns:58px 68px minmax(0,1fr);gap:8px;padding:6px 6px 8px;border-radius:7px;font-size:12px;line-height:1.4}
+    .obs-row:nth-child(odd){background:rgba(255,255,255,.02)}
+    .obs-t{color:var(--dim);font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px}
+    .obs-k{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:#d8b26a}
+    .obs-k.bad{color:#c25550}
+    .obs-n{color:#cfd2d8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .obs-b{grid-column:1 / -1;color:var(--dim);font-size:11px;padding-left:66px;margin-top:-1px}
+    .obs-empty{color:var(--dim);font-size:12px;padding:10px;line-height:1.6}</style>
 </head>
 <body>
 <div class="app">
@@ -137,7 +156,8 @@
       <div><b>造化鼎</b><small>ZAOHUA CAULDRON</small></div>
     </div>
     <nav id="nav">
-      <a data-v="overview" class="on"><span class="dot"></span>概览</a>
+      <a data-v="obs"><span class="dot"></span>观象台</a>
+      <a data-v="overview"><span class="dot"></span>概览</a>
       <a data-v="health"><span class="dot"></span>技能体检</a>
       <a data-v="fuse"><span class="dot"></span>融合台</a>
       <a data-v="packs"><span class="dot"></span>包管理</a>
@@ -165,6 +185,27 @@
     </div>
 
     <!-- 概览 -->
+
+    <section class="view" id="v-obs">
+      <div class="obs-wrap">
+        <div class="obs-stage">
+          <canvas id="obs-canvas"></canvas>
+          <div class="obs-legend">
+            <span class="obs-lg"><i class="sw gold"></i>audit / verify · 沿口涟漪</span>
+            <span class="obs-lg"><i class="sw teal"></i>pack / install / deploy · 落进腹中</span>
+            <span class="obs-lg"><i class="sw gold"></i>eval · 两束对冲</span>
+            <span class="obs-meta" id="obs-meta">正在连桥…</span>
+          </div>
+        </div>
+        <aside class="obs-side">
+          <h3>活动流 <span class="hstat">按时间倒序，真实事件</span></h3>
+          <div class="obs-feed" id="obs-feed"></div>
+          <div class="note">
+            呼吸节奏跟活动量走：静时约 6.5 秒一轮，忙时压到 3.3 秒。沿口 16 个回纹刻度对应 16 个技能，被点到的那一格会亮一下。
+          </div>
+        </aside>
+      </div>
+    </section>
     <section class="view on" id="v-overview">
       <div class="kpis">
         <div class="kpi"><div class="n">15</div><div class="l">受管技能</div><div class="h">film-* · 01–09 + 桥</div></div>
@@ -516,6 +557,7 @@
     fuse:["融合台","把乾坤鼎的层，合进宿主的阶段技能。"],
     packs:["包管理","装了什么、版本、来源、能不能回滚。"],
     eval:["评估对比","老技能 vs 新技能，同一任务集两臂。"],
+    obs:["观象台","乾坤鼎的活动，画成会呼吸的鼎。一阵涟漪就是一次体检。"],
     evidence:["证据链","每个包都能追到来源哈希与审计结论。"]
   };
   function go(key){
@@ -536,7 +578,7 @@
     const b = e.target.closest('[data-go]');
     if (b) location.href = b.dataset.go;
   });
-  go((location.hash || '#overview').slice(1));
+  go((((location.hash || '#overview').slice(1)).split('&')[0]) || 'overview');
 </script>
 <script>
 /* ---------- 造化鼎：首屏 + 真数据 ---------- */
@@ -1079,5 +1121,6 @@
   }
 })();
 </script>
+  <script src="obs.js"></script>
 </body>
 </html>
