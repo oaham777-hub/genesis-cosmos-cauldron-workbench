@@ -81,8 +81,10 @@
     }).join('');
     box.innerHTML = '<h3>' + r.skill + ' · 外来件明细</h3><div class="sub">每个文件头都有一条来源戳：戳在，就说明它从哪来、第几批进来的。可更新=拉新版；已分叉=先看差异，再决定保留本地还是强行覆盖</div>' +
       '<table><thead><tr><th>文件</th><th>层</th><th>来源</th><th>状态</th><th>当前 sha</th><th>处置</th></tr></thead><tbody>' + rows + '</tbody></table>' +
-      '<div id="dz-diff" class="dz-diff"></div>';
+      '';
     curSel = r;
+    const firstTrouble = r.entries.find(function (e) { return e.state === 'update' || e.state === 'branch'; });
+    if (firstTrouble) setTimeout(function () { doDiff(r.skill, firstTrouble.path); }, 80);
     box.querySelectorAll('button[data-act]').forEach(function (btn) {
       btn.addEventListener('click', function () {
         const act = btn.getAttribute('data-act');
@@ -108,8 +110,11 @@
   }
 
   function renderDiff(d) {
-    const box = $('dz-diff');
+    const box = $('dz-diffbox');
     if (!box) return;
+    box.style.display = 'block';
+    const card = $('dz-diffcard');
+    if (card) card.style.display = 'block';
     const head = '来源' + (d.srcChanged ? '已变' : '未变') + ' · 本地' + (d.localChanged ? '已改' : '未改') + ' · +' + d.added + ' / -' + d.removed;
     const lines = (d.diff || []).map(function (l) {
       return '<div class="dz-dl ' + (l.t === '+' ? 'add' : 'del') + '">' + l.t + ' ' + String(l.s).replace(/</g, '&lt;') + '</div>';
@@ -117,9 +122,15 @@
     box.innerHTML = '<div class="sub">' + head + '</div>' + (lines || '<div class="sub">两边内容一样（只有戳不同）</div>');
   }
 
+  function showDiffCard(on) {
+    const card = $('dz-diffcard');
+    if (card) card.style.display = on ? 'block' : 'none';
+  }
+
   async function doDiff(skill, path) {
-    const box = $('dz-diff');
-    if (box) box.innerHTML = '<div class="sub">正在取差异…</div>';
+    showDiffCard(true);
+    const box = $('dz-diffbox');
+    if (box) box.innerHTML = '<div class="sub">正在取差异：' + skill + ' / ' + path + '</div>';
     try {
       const r = await fetch(B + '/distill-diff?' + qs('skill=' + encodeURIComponent(skill) + '&to=' + encodeURIComponent(path)));
       renderDiff(await r.json());
@@ -128,7 +139,7 @@
 
   async function doPull(skill, path, force) {
     if (!confirm('拉新版会用来源的当前内容覆盖这一个文件，并记一条新 epoch。继续？')) return;
-    const box = $('dz-diff');
+    const box = $('dz-diffbox');
     if (box) box.innerHTML = '<div class="sub">正在拉取…</div>';
     try {
       const u = B + '/distill-pull?' + qs('skill=' + encodeURIComponent(skill) + '&to=' + encodeURIComponent(path)) + '&confirm=yes' + (force ? '&force=yes' : '');
@@ -142,7 +153,7 @@
 
   async function doKeep(skill, path) {
     if (!confirm('把当前内容登记为“我们的版本”，之后来源再变会重新提示可更新。继续？')) return;
-    const box = $('dz-diff');
+    const box = $('dz-diffbox');
     try {
       const res = await fetch(B + '/distill-keep?' + qs('skill=' + encodeURIComponent(skill) + '&to=' + encodeURIComponent(path)) + '&confirm=yes');
       const j = await res.json();
