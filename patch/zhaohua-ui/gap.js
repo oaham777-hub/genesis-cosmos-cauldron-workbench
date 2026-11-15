@@ -15,7 +15,11 @@
     try {
       const d = await fetch(B + '/sources').then((r) => r.json());
       SRC = d.sources || [];
-      sel.innerHTML = SRC.map((s) => '<option value="' + s.srcId + '">' + s.srcId.replace('qkd:skills/', '').replace('/references/', '::') + ' · ' + Math.round(s.bytes / 1024) + 'KB</option>').join('');
+      const label = (s) => s.srcId.replace('qkd:skills/', '').replace('/references/', '::') + ' · ' + Math.round(s.bytes / 1024) + 'KB' + (s.kind === 'ledger' ? ' · 台账' : '');
+      const opt = (s) => '<option value="' + s.srcId + '">' + label(s) + '</option>';
+      const method = SRC.filter((s) => s.kind !== 'ledger');
+      const ledger = SRC.filter((s) => s.kind === 'ledger');
+      sel.innerHTML = method.map(opt).join('') + (ledger.length ? '<optgroup label="台账类（逐字副本/台账，默认不投）">' + ledger.map(opt).join('') + '</optgroup>' : '');
     } catch (e) {
       sel.innerHTML = '<option value="">桥没连上</option>';
     }
@@ -31,7 +35,7 @@
       const p = await fetch(B + '/gap?target=' + encodeURIComponent(target) + '&from=' + encodeURIComponent(from)).then((r) => r.json());
       if (!p.ok) { box.innerHTML = '<div class="sub">对比失败：' + (p.error || '') + '</div>'; return; }
       const rows = p.sections.map((s) =>
-        '<tr><td><input type="checkbox" class="gp-ck" value="' + s.no + '"' + (s.present ? ' disabled' : ' checked') + '></td>' +
+        '<tr><td><input type="checkbox" class="gp-ck" value="' + s.no + '"' + (s.present ? ' disabled' : (s.chars >= 120 ? ' checked' : '')) + '></td>' +
         '<td>' + s.no + '</td><td>' + s.title + '</td><td class="mono">' + s.chars + '</td><td>' + chips(s) + '</td></tr>').join('');
       box.innerHTML = '<div class="gp-head">覆盖率 <b>' + Math.round(p.coverage * 100) + '%</b> · 缺 <b>' + p.missingCount + '</b> 节 / 共 ' + p.total + ' 节 · 来料 <b>' + (p.multi ? p.from.length + ' 份' : '1 份') + '</b>' + (p.multi ? '（' + Object.keys(p.bySrc).map(function (k) { return String(k).replace('qkd:skills/', '').replace('/references/', '::') + ' 缺 ' + p.bySrc[k].missing + '/' + p.bySrc[k].total; }).join('；') + '）' : '') + '</div>' +
         '<table class="dz-map"><thead><tr><th></th><th>#</th><th>来源</th><th>节</th><th>字数</th><th>状态</th></tr></thead><tbody>' + rows + '</tbody></table>' +

@@ -307,6 +307,17 @@ function cmdKeep(skill, to) {
   console.log(JSON.stringify({ ok: true, kept: true, landedSha: row.landedSha, note: '已把当前内容登记为“我们的版本”，来源再变会重新提示可更新。' }, null, 2));
 }
 // ---------- 来料清单 ----------
+// 来料分级：method 方法 / ledger 台账 / spec 规范 / example 样例
+const LEDGER_RE = /^(absorbed|index|merge-map|thickening-log|decision-registry|system-decisions|anomaly-report|external-adoption|STATE-CARD|RESUME|PROJECT-STATE|instruction-files|sources|imports-codex)\b/i;
+const SPEC_RE = /^(framework|prompt-framework|h3-profile|framework-audit|cinematography|color-logic|lighting|staging)\b/i;
+function kindOfFile(name) {
+  const n = String(name || '').replace(/\.[^.]+$/, '');
+  if (LEDGER_RE.test(n)) return 'ledger';
+  if (SPEC_RE.test(n)) return 'spec';
+  if (/example|template|样例|示例/i.test(n)) return 'example';
+  return 'method';
+}
+
 function cmdSources() {
   const rows = loadLedger();
   const stamped = new Set(rows.map(r => r.srcId));
@@ -327,7 +338,7 @@ function cmdSources() {
       if (!st.isFile()) continue;
       const srcId = 'qkd:skills/' + layer + '/references/' + f;
       out.push({
-        srcId, layer, name: f, bytes: st.size, sha: sha(abs),
+        srcId, layer, name: f, bytes: st.size, sha: sha(abs), kind: kindOfFile(f),
         stamped: stamped.has(srcId), targets: targetOf.get(srcId) || [],
       });
     }

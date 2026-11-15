@@ -18,7 +18,12 @@ const sha = (p) => createHash('sha256').update(readFileSync(p)).digest('hex');
 const readJsonl = (p) => (existsSync(p) ? readFileSync(p, 'utf8').split(/\r?\n/).filter(Boolean).map(l => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean) : []);
 const appendJsonl = (p, row) => { mkdirSync(dirname(p), { recursive: true }); const prev = existsSync(p) ? readFileSync(p, 'utf8') : ''; writeFileSync(p, prev + JSON.stringify(row) + '\n', 'utf8'); };
 const nextEpoch = () => { const rows = readJsonl(EPOCHS); return rows.reduce((m, r) => Math.max(m, r.epoch || 0), 0) + 1; };
-const srcPath = (id) => join(SRC_ROOT, String(id).replace(/^qkd:/, '').replace(/\//g, '\\'));
+const EXT_SOURCES = join(ROOT, 'patch', 'sources');
+const srcPath = (id) => {
+  const s = String(id);
+  if (s.startsWith('src:')) return join(EXT_SOURCES, s.slice(4).replace(/\//g, '\\'));
+  return join(SRC_ROOT, s.replace(/^qkd:/, '').replace(/\//g, '\\'));
+};
 const argv = process.argv.slice(2);
 const cmd = argv[0];
 const val = (n) => { const i = argv.indexOf(n); return i >= 0 ? argv[i + 1] : null; };

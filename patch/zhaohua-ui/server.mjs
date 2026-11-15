@@ -147,6 +147,7 @@ function deployedList() {
   return out;
 }
 const BANS = 'D:\\造化乾坤鼎-工作台\\patch\\tools\\bans.mjs';
+const INGEST = 'D:\\造化乾坤鼎-工作台\\patch\\tools\\ingest.mjs';
 const DISTILL = 'D:\\造化乾坤鼎-工作台\\patch\\tools\\distill.mjs';
 const GAP = 'D:\\造化乾坤鼎-工作台\\patch\\tools\\gap.mjs';
 async function runTool(script, args) {
@@ -388,6 +389,21 @@ const server = Bun.serve({
         return json({ ok: false, needsConfirm: true, hint: '会在 SKILL.md 末尾加一节「本层参考资料（投放接线）」，把没被正文引用的 references 列进去。' });
       }
       return json(await runDistill(sk ? ['wire', '--skill', sk] : ['wire']));
+    }    if (url.pathname === '/ingest-scan') {
+      const p = url.searchParams.get('path') || '';
+      if (!p) return reply({ ok: false, error: '缺少 path' }, 400);
+      const r = Bun.spawnSync([process.execPath, INGEST, 'scan', '--path', p], { stdout: 'pipe', stderr: 'pipe', env: { ...process.env, NO_COLOR: '1' } });
+      const txt = new TextDecoder().decode(r.stdout);
+      try { return reply(JSON.parse(txt)); } catch { return reply({ ok: false, error: txt.slice(0, 400) }, 500); }
+    }
+    if (url.pathname === '/ingest-do') {
+      const p = url.searchParams.get('path') || '';
+      const name = url.searchParams.get('name') || '';
+      if (url.searchParams.get('confirm') !== 'yes') return reply({ ok: false, needsConfirm: true, hint: '会复制进 patch\\sources\\<包名>\\ 并登记账本；带 confirm=yes 再调' });
+      if (!p || !name) return reply({ ok: false, error: '缺少 path 或 name' }, 400);
+      const r = Bun.spawnSync([process.execPath, INGEST, 'ingest', '--path', p, '--name', name, '--confirm'], { stdout: 'pipe', stderr: 'pipe', env: { ...process.env, NO_COLOR: '1' } });
+      const txt = new TextDecoder().decode(r.stdout);
+      try { return reply(JSON.parse(txt)); } catch { return reply({ ok: false, error: txt.slice(0, 400) }, 500); }
     }    if (url.pathname === '/sources') return json(await runDistill(['sources']));
     if (url.pathname === '/distill-plan') {
       return json(await runDistill(['plan', '--src', url.searchParams.get('src') || '', '--skill', url.searchParams.get('skill') || '', '--to', url.searchParams.get('to') || '']));

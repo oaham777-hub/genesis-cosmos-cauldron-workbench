@@ -191,7 +191,14 @@
     .gp-plan th{color:var(--dim);font-weight:500;text-align:left;padding:6px 8px;border-bottom:1px solid #23282e}
     .gp-plan td{padding:6px 8px;border-bottom:1px solid #1b2026;color:#cfc6b6}
     .gp-plan .ok{color:#8ecf9f}.gp-plan .warn{color:#d8b26a}
-  </style>
+      #ig-card .dz-form{display:grid;grid-template-columns:1.6fr .8fr auto;gap:10px;margin:12px 0}
+    .gp-k{display:inline-block;padding:1px 7px;border-radius:20px;font-size:11px;letter-spacing:.04em}
+    .gp-k-method{background:rgba(127,207,163,.16);color:#9fe0bd}
+    .gp-k-ledger{background:rgba(194,85,80,.16);color:#e08e88}
+    .gp-k-spec{background:rgba(216,178,106,.16);color:#e0c48a}
+    .gp-k-example{background:rgba(160,160,160,.14);color:#bdbdbd}
+    .gp-k-code{background:rgba(110,160,220,.16);color:#a6c8ec}
+    .gp-plan-box{margin-top:6px}</style>
 </head>
 <body>
 <div class="app">
@@ -425,6 +432,16 @@
         </div>
       </div>
 
+      <div class="card" id="ig-card">
+        <h3>外部投放（放进来的东西，先判它是哪一层）</h3>
+        <div class="sub">文件夹 / zip / 单个 md 都行。扫描只看内容不写盘；判层是确定性关键词打分（不是模型），每条都给出依据词；确认后才复制进 patch\sources。</div>
+        <div class="dz-form">
+          <input id="ig-path" class="gp-in" placeholder="D:\下载\某个技能包 或 某个文件.md">
+          <input id="ig-name" class="gp-in" placeholder="包名（会作为 src:包名/文件 的来料 id）">
+          <button id="ig-scan" class="dz-mini dz-strong" data-ig="scan">扫描并判层</button>
+        </div>
+        <div id="ig-list" class="gp-plan-box"></div>
+      </div>
       <h2 class="sec">融合预览</h2>
       <div class="grid2">
         <div class="card">
@@ -1264,5 +1281,6 @@
   
   <script src="distill.js?v=20261115e"></script>
   <script src="gap.js?v=1"></script>
+  <script src="ingest-ui.js"></script>
 </body>
 </html>
