@@ -310,6 +310,23 @@
     .fz-gaptable th:nth-child(4),.fz-gaptable td:nth-child(4){white-space:nowrap;width:56px;text-align:right}
     .fz-gaptable th:nth-child(5),.fz-gaptable td:nth-child(5){white-space:nowrap;width:46px}
     .fz-gaptable th:nth-child(1),.fz-gaptable td:nth-child(1){width:26px}
+    
+    /* ===== 融合台 v3：中间星核观象台，四周原有卡片（功能不变，只重排）===== */
+    .fl-grid{display:grid;grid-template-columns:300px minmax(0,1fr) 330px;grid-template-rows:auto auto auto auto;gap:14px;align-items:start}
+    .fl-grid > *{min-width:0}
+    .fl-top{grid-column:1 / -1;grid-row:1}
+    .fl-left{grid-column:1;grid-row:2 / span 2;display:flex;flex-direction:column;gap:14px;min-width:0}
+    .fl-obs{grid-column:2;grid-row:2 / span 2;min-width:0}
+    .fl-right{grid-column:3;grid-row:2}
+    .fl-guard{grid-column:3;grid-row:3}
+    .fl-prev{grid-column:1 / span 2;grid-row:4}
+    .fl-ingest{grid-column:3;grid-row:4}
+    .fl-obs-h{display:flex;align-items:baseline;gap:10px;padding:0 2px 8px}
+    .fl-obs-t{font-size:13px;color:#e6d3a6;letter-spacing:.06em}
+    .fl-obs-n{font-size:11px;color:#6c7684}
+    .fl-obs-a{margin-left:auto;font-size:11px;color:#8b94a3;text-decoration:none;cursor:pointer}
+    .fl-obs-a:hover{color:#e6d3a6}
+    .fl-obs iframe{width:100%;height:520px;border:1px solid #1d2229;border-radius:12px;background:#07090c;display:block}
 </style>
 </head>
 <body>
@@ -485,113 +502,118 @@
 
     <!-- 融合台 -->
     <!-- FUSE_V2 -->
-<section class="view" id="v-fuse">
+<!-- FUSE_V3 --><!-- FUSE_V3 --><section class="view" id="v-fuse">
+      
+      <div id="fl-grid" style="display:grid;grid-template-columns:300px minmax(0,1fr) 330px;gap:14px;align-items:start">
+        <div id="zh-fuse-card" style="grid-column:1 / -1;grid-row:1"></div>
 
-      <!-- 小观象台：一条会呼吸的横条 -->
-      <div class="fz-strip">
-        <canvas id="fz-canvas"></canvas>
-        <div class="fz-hud">
-          <div class="fz-hud-l">
-            <span class="fz-dot" id="fz-dot"></span>
-            <span id="fz-live">连桥中…</span>
-            <span class="fz-sep">·</span>
-            <span id="fz-seq">seq 0</span>
-          </div>
-          <div class="fz-hud-r" id="fz-hud-r">
-            <span class="fz-mini">16 技能</span>
-            <span class="fz-mini" id="fz-mini-in">已接入 0</span>
-            <span class="fz-mini" id="fz-mini-src">来料 0</span>
-            <button class="fz-open" id="fz-open">打开观象台 →</button>
+      <div style="min-width:0;grid-column:2;grid-row:2 / span 2">
+        <div style="display:flex;align-items:baseline;gap:10px;padding:0 2px 8px">
+          <span style="font-size:13px;color:#e6d3a6;letter-spacing:.06em">观象台 · 星核</span>
+          <span style="font-size:11px;color:#6c7684">环带宽度由真实数据生成 · 一次体检一圈涟漪</span>
+          <a href="#obs" style="margin-left:auto;font-size:11px;color:#8b94a3;text-decoration:none">打开完整观象台 →</a>
+        </div>
+        <iframe src="/zhaohua/obs-neural.html" loading="lazy" style="width:100%;height:520px;border:1px solid #1d2229;border-radius:12px;background:#07090c;display:block"></iframe>
+      </div>
+        <div style="grid-column:1;grid-row:2 / span 2;display:flex;flex-direction:column;gap:14px;min-width:0">
+<div class="card">
+          <h3>来料</h3>
+          <div class="sub">乾坤鼎 rendered/skills · 9 层 · 0.2 MB</div>
+          <div class="src">
+            <div>04-shotlist<span>L4 镜表</span></div>
+            <div>06-prompt<span>L6 十二维</span></div>
+            <div>05-acting<span>L5 情绪谱</span></div>
+            <div>03-assets<span>L3 一致性锁</span></div>
+            <div>02-script<span>L2 台词机检</span></div>
+            <div>08-knowledge<span>L8 检索</span></div>
           </div>
         </div>
-      </div>
-
-      <!-- 技能带：点一下就是"目标技能" -->
-      <div class="fz-chips" id="fz-chips"><span class="fz-hint">正在读技能…</span></div>
-
-      <div class="fz-grid">
-        <!-- 左：来源 -->
-        <aside class="fz-col">
-          <div class="fz-col-h"><h4>来源</h4><span class="fz-count" id="fz-src-count">—</span></div>
-          <input class="fz-q" id="fz-q" placeholder="按层或文件名过滤，例如 06-prompt / h3" />
-          <div class="fz-list" id="fz-sources"><div class="fz-empty">正在读来料…</div></div>
-          <details class="fz-add">
-            <summary>从本机添加</summary>
-            <div class="fz-add-body">
-              <input id="fz-path" placeholder="D:\某目录 或 单个文件 / .zip 路径" />
-              <div class="fz-row">
-                <input id="fz-pkg" placeholder="包名（留空取文件夹名）" />
-                <button class="btn" id="fz-scan">扫描并判层</button>
-              </div>
-              <div class="fz-up">
-                <label class="fz-fake">上传文件夹<input type="file" id="fz-up-dir" webkitdirectory multiple hidden /></label>
-                <label class="fz-fake">上传文件<input type="file" id="fz-up-files" multiple hidden /></label>
-                <label class="fz-fake">上传 zip<input type="file" id="fz-up-zip" accept=".zip" hidden /></label>
-              </div>
-              <div class="fz-scanout" id="fz-scanout"></div>
-            </div>
-          </details>
-        </aside>
-
-        <!-- 中：动作 -->
-        <main class="fz-col fz-mid">
-          <div class="fz-tabs" id="fz-tabs">
-            <button data-tab="merge" class="on">合并两个技能</button>
-            <button data-tab="gap">只补缺</button>
-            <button data-tab="adopt">收编沙盒</button>
+<div class="card">
+          <h3>宿主</h3>
+          <div class="sub">Toonflow 09 CINEDANCE</div>
+          <div class="src">
+            <div class="pick">film-cinedance<span>09 提示词</span></div>
+            <div>film-acting<span>08 表演</span></div>
+            <div>film-lira-assets<span>07 资产</span></div>
+            <div>film-expert-bridge<span>工艺分支</span></div>
           </div>
-
-          <div class="fz-pane on" id="fz-pane-merge">
-            <div class="fz-note">把两份技能的正文合并成一份新技能；<b>create</b> 是确定性合并（秒级、可复现），<b>fuse-skill</b> 交给模型重写（约 1 分钟、计费、可能丢禁令）。产物落在沙盒，不动现有技能。</div>
-            <div class="fz-form">
-              <label>基准技能<select id="fz-a"></select></label>
-              <label>并入技能<select id="fz-b"></select></label>
-              <label>方式<select id="fz-mode"><option value="merge">merge（并成一份）</option><option value="absorb">absorb（吸收）</option><option value="compose">compose（组合）</option></select></label>
-              <label>新技能名<input id="fz-name" placeholder="kebab-case，留空自动取" /></label>
-            </div>
-            <div class="fz-actions">
-              <button class="btn gold" id="fz-create">合并 create（不调模型）</button>
-              <button class="btn" id="fz-fuse">语义融合 fuse-skill（调模型）</button>
-            </div>
-            <div class="fz-outbox" id="fz-merge-out"></div>
+          <div class="note">产物落 data\skills\film-cinedance，升级不丢。</div>
+        </div>
+<div class="card">
+          <h3>配方</h3>
+          <div class="sub">create --mode merge</div>
+          <dl class="kv" style="margin-top:6px">
+            <dt>基准</dt><dd>film-cinedance@0.1.42</dd>
+            <dt>追加</dt><dd>06-prompt（十二维）</dd>
+            <dt>追加</dt><dd>04-shotlist（镜表）</dd>
+            <dt>守卫</dt><dd>禁令继承 P01</dd>
+            <dt>禁词表</dt><dd>seedance-only.txt</dd>
+            <dt>字节预算</dt><dd>6,000 / 20 条</dd>
+          </dl>
+          <div class="row" style="margin-top:12px">
+            <button class="btn gold">开始融合</button>
+            <button class="btn ghost">只看差异</button>
           </div>
-
-          <div class="fz-pane" id="fz-pane-gap">
-            <div class="fz-note">只把目标技能里<b>还没有</b>的节补进去，不揉在一起。左边勾来料（可多份），点对比，再按节投放；投放后自动接线。</div>
-            <div class="fz-form">
-              <label>目标技能<select id="fz-target"></select></label>
-              <label>落到文件名<input id="fz-as" placeholder="留空 = references/原文件名" /></label>
-            </div>
-            <div class="fz-actions">
-              <button class="btn" id="fz-compare">对比所选来料</button>
-              <button class="btn gold" id="fz-land" disabled>投放勾选的节</button>
-              <span class="fz-pick" id="fz-pick-info">未选来料</span>
-            </div>
-            <div class="fz-gapbar" id="fz-gapbar"></div>
-            <div class="fz-gaptable" id="fz-gaptable"></div>
+        </div>
+        </div>
+        <div style="grid-column:3;grid-row:2;min-width:0"><div class="card" id="gp-card">
+        <h3>只补缺（来料 → 目标技能）</h3>
+        <div class="sub">不揉一起，只把目标里没有的节补进去。已有指纹命中的节会标「已有」，默认不勾。</div>
+        <div class="gp-form">
+          <label>来料<select id="gp-src" multiple size="6"></select></label>
+          <label>目标技能<select id="gp-target">
+            <option>film-cinedance</option><option>film-shotlist</option><option>film-acting</option>
+            <option>film-lira-assets</option><option>film-screenplay</option><option>film-synopsis</option>
+            <option>film-characters</option><option>film-worldbuilding</option><option>film-treatment</option>
+            <option>film-stress-test</option><option>ai-film-router</option><option>canvas</option>
+            <option>workflow</option><option>v118workflow</option><option>film-knowledge-bridge</option>
+          </select></label>
+          <button class="dz-mini dz-strong" id="gp-do">对比</button>
+        </div>
+        <div id="gp-plan" class="gp-plan"><div class="sub">选好来料与目标，点「对比」。这里会列出缺哪几节。</div></div>
+      </div></div>
+        <div style="grid-column:3;grid-row:3;min-width:0"><div class="card">
+          <h3>守卫检查</h3>
+          <div class="sub">融合前必须全绿</div>
+          <table>
+            <tbody>
+              <tr><td>禁令继承（来料「禁止/不得」）</td><td style="text-align:right"><span class="tag t-ok">11/11</span></td></tr>
+              <tr><td>假引用清理</td><td style="text-align:right"><span class="tag t-ok">3 处</span></td></tr>
+              <tr><td>真引用带入</td><td style="text-align:right"><span class="tag t-ok">5 个</span></td></tr>
+              <tr><td>字节预算</td><td style="text-align:right"><span class="tag t-warn">V01 预警</span></td></tr>
+              <tr><td>与已装包重叠率</td><td style="text-align:right"><span class="tag t-info">0 %</span></td></tr>
+            </tbody>
+          </table>
+          <div class="note">超预算报 V01 而不是硬删规则正文——要么拆 references，要么提高预算。</div>
+        </div></div>
+        <div style="grid-column:3;grid-row:4;min-width:0"><div class="card" id="ig-card">
+        <h3>外部投放（放进来的东西，先判它是哪一层）</h3>
+        <div class="sub">文件夹 / zip / 单个 md 都行。扫描只看内容不写盘；判层是确定性关键词打分（不是模型），每条都给出依据词；确认后才复制进 patch\sources。</div>
+        <div class="dz-form">
+          <input id="ig-path" class="gp-in" placeholder="D:\下载\某个技能包 或 某个文件.md">
+          <input id="ig-name" class="gp-in" placeholder="包名（会作为 src:包名/文件 的来料 id）">
+          <button id="ig-scan" class="dz-mini dz-strong" data-ig="scan">扫描并判层</button>
+        </div>
+        <div class="dz-form ig-up">
+          <label class="dz-mini ig-pick">上传文件夹<input type="file" id="ig-dir" webkitdirectory directory multiple hidden></label>
+          <label class="dz-mini ig-pick">上传文件<input type="file" id="ig-files" multiple hidden></label>
+          <label class="dz-mini ig-pick">上传 zip<input type="file" id="ig-zip" accept=".zip" hidden></label>
+          <span class="sub">选中的东西会先传到本机桥（127.0.0.1:8791），再复制进 patch\sources\&lt;包名&gt;\；不联网、不出本机。</span>
+        </div>
+        <div id="ig-list" class="gp-plan-box"></div>
+      </div></div>
+        <div style="grid-column:1 / span 2;grid-row:4;min-width:0"><div class="card">
+          <h3>新增章节：提示词编译十二维</h3>
+          <div class="sub">来自 06-prompt · 132 行 → 压缩到 4,100 字节</div>
+          <div class="src">
+            <div>① 景别与焦段<span>+ dir</span></div>
+            <div>② 机位与高度<span>+ dir</span></div>
+            <div>③ 构图动机<span>+ dir</span></div>
+            <div>④ 主体动作<span>保留原文</span></div>
+            <div>⑤ 运镜方式<span>保留原文</span></div>
+            <div>⑥–⑫ 光影 / 色彩 / 质感 / 节奏 …<span>7 条</span></div>
           </div>
-
-          <div class="fz-pane" id="fz-pane-adopt">
-            <div class="fz-note">把沙盒里的融合产物<b>收编</b>进某个技能：写进 patch\skills（唯一真相），自动接线、记账本；先过禁令核对，丢得多会被拦。</div>
-            <div class="fz-form">
-              <label>沙盒产物<select id="fz-sandbox"></select></label>
-              <label>收编到<select id="fz-adopt-to"></select></label>
-            </div>
-            <div class="fz-actions">
-              <button class="btn gold" id="fz-adopt">收编进鼎</button>
-              <button class="btn" id="fz-sandbox-refresh">刷新沙盒列表</button>
-            </div>
-            <div class="fz-outbox" id="fz-adopt-out"></div>
-          </div>
-        </main>
-
-        <!-- 右：结果 -->
-        <aside class="fz-col">
-          <div class="fz-col-h"><h4>本次结果</h4><span class="fz-count" id="fz-out-count">—</span></div>
-          <div class="fz-outbox tall" id="fz-out"><div class="fz-empty">还没有动作。左挑来源、中选动作，结果会落在这一栏。</div></div>
-          <div class="fz-col-h"><h4>最近动作 · 证据</h4></div>
-          <div class="fz-outbox" id="fz-ev"><div class="fz-empty">跑一次 create / fuse / 补缺，这里会写：产物路径、epoch、禁令保留率、接线条数。</div></div>
-        </aside>
+        </div></div>
       </div>
     </section>
 
@@ -1220,7 +1242,7 @@
 
   /* ---------- 融合台 ---------- */
   var fuseView = document.getElementById('v-fuse');
-  if (fuseView && !document.getElementById('fz-strip')) { // 融合台 v2 已在，旧卡不再注入
+  if (fuseView) {
     var fbox = card('开始融合', '合并 create＝确定性合并（不调模型、秒级、可复现）；语义融合 fuse-skill＝交给模型重写（约 1 分钟、计费）。产物落 patch\\staging\\fused\\，不覆盖任何现有技能。');
     fbox.id = 'zh-fuse-card';
     var frow = el('div'); frow.style.cssText = 'display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:14px 0 6px';
@@ -1345,6 +1367,7 @@
   <script src="eval-ui.js"></script>
   <script src="packs-ui.js"></script>
   <script src="distill.js?v=20261115e"></script>
-    <script src="fuse-ui.js?v=2"></script>
-</body>
+      <script src="gap.js?v=2"></script>
+  <script src="ingest-ui.js?v=2"></script>
+  </body>
 </html>

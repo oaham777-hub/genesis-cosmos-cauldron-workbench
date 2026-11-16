@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>观象台 · 星核</title>
+<style>
+  html,body{margin:0;height:100%;background:#07090c;color:#cfd6e2;font:13px/1.6 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif;overflow:hidden}
+  #wrap{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+  canvas#core{width:100%;height:100%;display:block}
+  canvas#fx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+  .hud{position:absolute;pointer-events:none}
+  .hud.tl{left:16px;top:12px}
+  .hud.tr{right:16px;top:12px;text-align:right}
+  .hud.bl{left:16px;bottom:12px}
+  .hud.br{right:16px;bottom:12px;text-align:right}
+  .t{font-size:12px;letter-spacing:.14em;color:#8b94a3}
+  .n{font-size:11px;color:#6c7684;margin-top:2px}
+  .bands{margin-top:8px;display:flex;gap:12px;flex-wrap:wrap}
+  .band{display:flex;align-items:center;gap:5px;font-size:11px;color:#9aa3b1}
+  .band i{width:8px;height:8px;border-radius:50%;display:block}
+  .band b{color:#e6d3a6;font-weight:600}
+  .live{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:#8b94a3}
+  .live i{width:6px;height:6px;border-radius:50%;background:#3d4450}
+  .live.ok i{background:#6fbf94;box-shadow:0 0 8px rgba(111,191,148,.6)}
+  .sep{color:#333a45;margin:0 6px}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="core"></canvas>
+  <canvas id="fx"></canvas>
+  <div class="hud tl">
+    <div class="t">ZAOHUA CAULDRON · 观象台</div>
+    <div class="n" id="sub">星核：环带宽度由真实数据生成</div>
+    <div class="bands" id="bands"></div>
+  </div>
+  <div class="hud tr">
+    <div class="live" id="live"><i></i><span>连桥中…</span></div>
+    <div class="n" id="stat">—</div>
+  </div>
+  <div class="hud bl"><div class="n" id="hint">一次体检 → 一圈涟漪；一次打包 → 一点落尘</div></div>
+  <div class="hud br"><div class="n" id="seq">seq 0</div></div>
+</div>
+
+<script type="module">
+import { createCore } from './neural/v41.js';
+
+const BRIDGE = 'http://127.0.0.1:8791';
+const W = 920, H = 700;
+const cv = document.getElementById('core');
+const fx = document.getElementById('fx');
+const dpr = Math.min(window.devicePixelRatio || 1, 1.6);
+
+cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+fx.width = Math.round(W * dpr); fx.height = Math.round(H * dpr);
+const ctx = cv.getContext('2d');
+const fxc = fx.getContext('2d');
+
+let scene = null;
+let data = { skills: 16, files: 0, layers: 0, sandbox: 0, withForeign: 0, totalSources: 0 };
+
+function bands() {
+  // 四条环带的宽度 = 真实数量（形由数据生成）
+  return [
+    { id: 'works', label: '有外来件技能', n: Math.max(1, data.withForeign), color: '#e6c68a', density: .62, rip: 17 },
+    { id: 'knowledge', label: '已接入文件', n: Math.max(1, data.files), color: '#f2dcaa', density: .95, rip: 23, sub: [[.30, .030, .80], [.64, .026, .62]] },
+    { id: 'ideas', label: '有来料的层', n: Math.max(1, data.layers), color: '#ffd79a', density: .46, rip: 13 },
+    { id: 'drafts', label: '沙盒产物', n: Math.max(1, data.sandbox), color: '#e2d6a6', density: .34, rip: 9 },
+  ];
+}
+function rebuild() {
+  try {
+    scene = createCore({ w: W, h: H, dpr, params: {}, bands: bands(), outerN: Math.max(1, data.skills) });
+  } catch (e) {
+    console.error('[星核] 初始化失败', e);
+    scene = null;
+  }
+}
+
+let t0 = performance.now();
+let frozen = new URLSearchParams(location.search).get('t');
+function loop(now) {
+  requestAnimationFrame(loop);
+  const t = frozen !== null ? Number(frozen) : (now - t0) / 1000;
+  if (scene) { try { scene.render(ctx, t); } catch (e) { /* 单帧失败不停机 */ } }
+}
+
+/* ---------------- 事件涟漪（叠一层，不动星核） ---------------- */
+const ripples = [];
+function pushRipple(ok) { ripples.push({ t0: performance.now(), ok }); }
+function drawFx() {
+  fxc.setTransform(dpr, 0, 0, dpr, 0, 0);
+  fxc.clearRect(0, 0, W, H);
+  const now = performance.now();
+  for (let i = ripples.length - 1; i >= 0; i--) {
+    const r = ripples[i];
+    const age = (now - r.t0) / 1600;
+    if (age > 1) { ripples.splice(i, 1); continue; }
+    const rad = 90 + age * 300;
+    fxc.beginPath();
+    fxc.arc(W / 2, H / 2, rad, 0, Math.PI * 2);
+    fxc.strokeStyle = r.ok ? `rgba(127,207,163,${.35 * (1 - age)})` : `rgba(214,120,110,${.35 * (1 - age)})`;
+    fxc.lineWidth = 1.2;
+    fxc.stroke();
+  }
+  requestAnimationFrame(drawFx);
+}
+
+/* ---------------- 真实数据 ---------------- */
+async function j(u) { try { const r = await fetch(u); return await r.json(); } catch (e) { return null; } }
+
+async function loadData() {
+  const [dist, src, fused, truth] = await Promise.all([
+    j(BRIDGE + '/distill'), j(BRIDGE + '/sources'), j(BRIDGE + '/fused'), j(BRIDGE + '/skills-truth'),
+  ]);
+  const skills = (dist && dist.skills) || [];
+  data.skills = skills.length || (truth && truth.skills ? truth.skills.length : 16);
+  data.files = skills.reduce((a, s) => a + (s.in || 0), 0);
+  data.withForeign = skills.filter((s) => (s.in || 0) > 0).length;
+  const sources = (src && src.sources) || [];
+  data.totalSources = sources.length || 0;
+  data.layers = new Set(sources.map((s) => s.layer)).size || 9;
+  data.sandbox = ((fused && fused.dirs) || []).filter((d) => d.hasSkill).length;
+  rebuild();
+  paintHud();
+}
+
+function paintHud() {
+  const st = document.getElementById('stat');
+  if (st) st.textContent = `${data.skills} 技能 · 来料 ${data.totalSources} · 已接入 ${data.files}`;
+  const host = document.getElementById('bands');
+  if (host) {
+    host.innerHTML = bands().map((b) =>
+      `<span class="band"><i style="background:${b.color}"></i>${b.label} <b>${b.n}</b></span>`
+    ).join('');
+  }
+}
+
+/* ---------------- 桥 / 事件流 ---------------- */
+async function health() {
+  const d = await j(BRIDGE + '/health');
+  const el = document.getElementById('live');
+  if (el) {
+    el.classList.toggle('ok', !!(d && d.ok));
+    el.querySelector('span').textContent = d && d.ok ? '桥已连接' : '桥未连接';
+  }
+}
+
+let seq = 0;
+function connectEvents() {
+  try {
+    const es = new EventSource(BRIDGE + '/events');
+    es.addEventListener('message', (m) => {
+      let d = null;
+      try { d = JSON.parse(m.data); } catch (e) { return; }
+      const ok = d.ok !== false && d.status !== 'fail';
+      pushRipple(ok);
+      seq = d.seq || (seq + 1);
+      const el = document.getElementById('seq');
+      if (el) el.textContent = 'seq ' + seq;
+    });
+  } catch (e) { /* 不支持 */ }
+}
+
+rebuild();
+requestAnimationFrame(loop);
+requestAnimationFrame(drawFx);
+health();
+connectEvents();
+loadData();
+setInterval(health, 20000);
+setInterval(loadData, 60000);
+</script>
+</body>
+</html>
