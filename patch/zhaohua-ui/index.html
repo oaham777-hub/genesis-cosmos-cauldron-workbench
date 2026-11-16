@@ -836,7 +836,7 @@
       paint(data);
       status.textContent = `桥已连接 · ${data.durationMs} ms`;
     } catch (err) {
-      status.textContent = '桥未连接（先启动 server.mjs）';
+      status.textContent = '桥未连接 · 看门狗 2 分钟内自愈（或跑 patch\start-app.ps1）';
       status.className = 'bad';
       const sub = document.querySelector('#v-health .card .sub');
       if (sub) sub.textContent = '实时数据不可用：造化鼎桥未启动。下面是上一次的静态结果。';
