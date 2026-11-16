@@ -202,7 +202,115 @@
     .ig-pick{display:inline-flex;align-items:center;justify-content:center;cursor:pointer;border:1px solid rgba(255,255,255,.14);border-radius:8px;padding:7px 12px}
     .ig-pick:hover{border-color:rgba(216,178,106,.6)}
     .ig-drop{border:1px dashed rgba(255,255,255,.18);border-radius:10px;padding:14px;text-align:center;margin-top:8px}
-    .ig-drop.on{border-color:rgba(216,178,106,.7)}</style>
+    .ig-drop.on{border-color:rgba(216,178,106,.7)}/* FUSE_V2_CSS */
+    /* ---------- 融合台 v2 ---------- */
+    .fz-strip{position:relative;margin:0 0 14px;border:1px solid #1d222a;border-radius:14px;overflow:hidden;
+      background:radial-gradient(120% 160% at 12% -20%,rgba(216,178,106,.10),transparent 55%),#0f1216;height:104px}
+    #fz-canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+    .fz-hud{position:absolute;inset:0;display:flex;align-items:flex-start;justify-content:space-between;padding:10px 14px;pointer-events:none}
+    .fz-hud-l,.fz-hud-r{display:flex;align-items:center;gap:8px;font-size:11.5px;color:#8b94a3;pointer-events:auto}
+    .fz-hud-r{gap:10px}
+    .fz-dot{width:7px;height:7px;border-radius:50%;background:#7b4b3a;box-shadow:0 0 0 0 rgba(216,178,106,0)}
+    .fz-dot.ok{background:#6fbf94}
+    .fz-dot.pulse{animation:fzpulse .42s ease-out}
+    @keyframes fzpulse{0%{box-shadow:0 0 0 0 rgba(216,178,106,.55)}100%{box-shadow:0 0 0 12px rgba(216,178,106,0)}}
+    .fz-sep{color:#39404b}
+    .fz-mini{font-size:11px;color:#8b94a3;border:1px solid #1d222a;border-radius:999px;padding:2px 8px;background:#0c0f13}
+    .fz-open{font-size:11px;color:#d8b26a;background:none;border:1px solid #3a3324;border-radius:999px;padding:3px 10px;cursor:pointer}
+    .fz-open:hover{background:#191510}
+
+    .fz-chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}
+    .fz-chip{display:inline-flex;align-items:center;gap:7px;border:1px solid #1d222a;background:#12151a;color:#aab2bf;
+      border-radius:9px;padding:5px 9px;font-size:11.5px;cursor:pointer;transition:.12s}
+    .fz-chip:hover{border-color:#3a4038;color:#dfe4ec}
+    .fz-chip.on{border-color:#6b5326;background:#191408;color:#f0e2c4;box-shadow:0 0 0 1px rgba(216,178,106,.12) inset}
+    .fz-chip-n{font-family:ui-monospace,Consolas,monospace;max-width:168px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .fz-chip-bar{width:34px;height:3px;border-radius:2px;background:#20252d;overflow:hidden}
+    .fz-chip-bar i{display:block;height:100%;background:linear-gradient(90deg,#8d6f34,#d8b26a)}
+    .fz-chip b{color:#d8b26a;font-weight:600}
+    .fz-chip i{color:#5c6472;font-style:normal}
+
+    .fz-grid{display:grid;grid-template-columns:266px minmax(0,1fr) 300px;gap:14px;align-items:start}
+    @media (max-width:1180px){.fz-grid{grid-template-columns:1fr}}
+    .fz-col{border:1px solid #1d222a;border-radius:14px;background:#12151a;padding:12px}
+    .fz-col-h{display:flex;align-items:center;justify-content:space-between;margin:0 0 8px}
+    .fz-col-h h4{margin:0;font-size:12.5px;letter-spacing:.04em;color:#cfd6e2;font-weight:600}
+    .fz-count{font-size:11px;color:#7d8697}
+    .fz-q{width:100%;box-sizing:border-box;background:#0c0f13;border:1px solid #1d222a;border-radius:8px;color:#cfd6e2;
+      font-size:12px;padding:7px 9px;margin:0 0 8px;outline:none}
+    .fz-q:focus{border-color:#4a3d22}
+    .fz-list{max-height:420px;overflow:auto;padding-right:2px}
+    .fz-layer{display:flex;justify-content:space-between;font-size:10.5px;color:#6c7684;letter-spacing:.06em;
+      padding:7px 2px 3px;border-bottom:1px dashed #1a1f26;margin-bottom:3px}
+    .fz-src{display:flex;align-items:center;gap:7px;padding:4px 5px;border-radius:7px;cursor:pointer;font-size:11.5px;color:#a8b0bd}
+    .fz-src:hover{background:#171b21}
+    .fz-src.on{background:#191408;color:#efe2c6}
+    .fz-src input{accent-color:#d8b26a;margin:0}
+    .fz-src-n{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .fz-src-m{color:#6c7684;font-size:10.5px;white-space:nowrap}
+    .fz-src-m em{color:#8d6f34;font-style:normal}
+
+    .fz-add{margin-top:10px;border-top:1px dashed #1a1f26;padding-top:8px}
+    .fz-add summary{cursor:pointer;font-size:11.5px;color:#8b94a3}
+    .fz-add-body{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+    .fz-add-body input{background:#0c0f13;border:1px solid #1d222a;border-radius:7px;color:#cfd6e2;font-size:11.5px;padding:6px 8px;outline:none}
+    .fz-row{display:flex;gap:6px}
+    .fz-row input{flex:1}
+    .fz-up{display:flex;gap:6px;flex-wrap:wrap}
+    .fz-fake{font-size:11px;color:#9aa3b1;border:1px dashed #2a3038;border-radius:7px;padding:4px 8px;cursor:pointer}
+    .fz-fake:hover{border-color:#4a3d22;color:#d8b26a}
+    .fz-scanout{margin-top:8px;font-size:11px;color:#8b94a3}
+    .fz-mini-table{width:100%;border-collapse:collapse;margin-top:6px;font-size:10.5px}
+    .fz-mini-table th{color:#6c7684;font-weight:500;text-align:left;border-bottom:1px solid #1a1f26;padding:3px 4px}
+    .fz-mini-table td{border-bottom:1px solid #151a20;padding:3px 4px;color:#a8b0bd}
+    .fz-mini-table td.mono{font-family:ui-monospace,Consolas,monospace;color:#c3cad6}
+
+    .fz-tabs{display:flex;gap:6px;margin:0 0 10px;border-bottom:1px solid #1a1f26;padding-bottom:8px}
+    .fz-tabs button{background:none;border:1px solid transparent;color:#8b94a3;font-size:12px;padding:5px 10px;border-radius:8px;cursor:pointer}
+    .fz-tabs button:hover{color:#dfe4ec}
+    .fz-tabs button.on{color:#f0e2c4;background:#191408;border-color:#3d3421}
+    .fz-pane{display:none}
+    .fz-pane.on{display:block}
+    .fz-note{font-size:11.5px;color:#8b94a3;line-height:1.7;margin:0 0 10px}
+    .fz-note b{color:#c9b58a;font-weight:600}
+    .fz-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 10px;margin:0 0 10px}
+    .fz-form label{display:flex;flex-direction:column;gap:4px;font-size:11px;color:#7d8697}
+    .fz-form select,.fz-form input{background:#0c0f13;border:1px solid #1d222a;border-radius:8px;color:#cfd6e2;font-size:12px;padding:7px 8px;outline:none}
+    .fz-form select:focus,.fz-form input:focus{border-color:#4a3d22}
+    .fz-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 10px}
+    .fz-pick{font-size:11px;color:#7d8697}
+    .fz-outbox{border:1px solid #1a1f26;border-radius:10px;background:#0e1115;padding:10px;font-size:11.5px;color:#a8b0bd;min-height:52px}
+    .fz-outbox.tall{min-height:180px;max-height:340px;overflow:auto}
+    .fz-kv{display:flex;justify-content:space-between;gap:10px;padding:3px 0;border-bottom:1px dotted #171c23}
+    .fz-kv span{color:#6c7684}
+    .fz-kv b{color:#cfd6e2;font-weight:500;text-align:right;word-break:break-all}
+    .fz-ok{color:#8fd8b0}
+    .fz-warn{color:#e2c07a}
+    .fz-bad{color:#e08a8a}
+    .fz-warn-t{color:#e2c07a!important}
+    .fz-ok-t{color:#8fd8b0!important}
+    .fz-tip{margin-top:8px;font-size:11px;color:#7d8697;line-height:1.6}
+    .fz-load{color:#8b94a3}
+    .fz-empty{color:#5f6875;font-size:11.5px;line-height:1.7}
+    .fz-hint{color:#5f6875;font-size:11.5px}
+    .fz-gapbar{margin:6px 0;font-size:11.5px;color:#a8b0bd}
+    .fz-pill{display:inline-block;border:1px solid #1d222a;border-radius:999px;padding:1px 7px;margin-right:5px;font-size:10.5px;color:#8b94a3}
+    .fz-gaptable{max-height:380px;overflow:auto;border:1px solid #1a1f26;border-radius:10px}
+    .fz-gaptable table{width:100%;border-collapse:collapse;font-size:11px}
+    .fz-gaptable th{position:sticky;top:0;background:#12151a;color:#6c7684;font-weight:500;text-align:left;padding:5px 7px;border-bottom:1px solid #1d222a}
+    .fz-gaptable td{padding:4px 7px;border-bottom:1px solid #151a20;color:#a8b0bd}
+    .fz-gaptable td.mono{font-family:ui-monospace,Consolas,monospace;color:#c3cad6}
+    .fz-gaptable td.num{text-align:right;color:#7d8697}
+    .fz-gaptable tr.fz-has td{color:#5f6875}
+    .fz-gaptable input{accent-color:#d8b26a}
+    .fz-bans{margin:6px 0;padding:8px 10px;border:1px solid #3a2a26;border-radius:9px;background:#17100f;color:#d8a0a0;font-size:11px;line-height:1.7}
+    .fz-tl-row{display:flex;gap:8px;align-items:baseline;padding:4px 0;border-bottom:1px dotted #171c23;font-size:11px}
+    .fz-tl-row b{color:#d8b26a;font-weight:600;white-space:nowrap}
+    .fz-tl-row span{color:#8b94a3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .fz-gaptable th:nth-child(4),.fz-gaptable td:nth-child(4){white-space:nowrap;width:56px;text-align:right}
+    .fz-gaptable th:nth-child(5),.fz-gaptable td:nth-child(5){white-space:nowrap;width:46px}
+    .fz-gaptable th:nth-child(1),.fz-gaptable td:nth-child(1){width:26px}
+</style>
 </head>
 <body>
 <div class="app">
@@ -376,110 +484,114 @@
     </section>
 
     <!-- 融合台 -->
-    <section class="view" id="v-fuse">
-      <div class="card" id="gp-card">
-        <h3>只补缺（来料 → 目标技能）</h3>
-        <div class="sub">不揉一起，只把目标里没有的节补进去。已有指纹命中的节会标「已有」，默认不勾。</div>
-        <div class="gp-form">
-          <label>来料<select id="gp-src" multiple size="6"></select></label>
-          <label>目标技能<select id="gp-target">
-            <option>film-cinedance</option><option>film-shotlist</option><option>film-acting</option>
-            <option>film-lira-assets</option><option>film-screenplay</option><option>film-synopsis</option>
-            <option>film-characters</option><option>film-worldbuilding</option><option>film-treatment</option>
-            <option>film-stress-test</option><option>ai-film-router</option><option>canvas</option>
-            <option>workflow</option><option>v118workflow</option><option>film-knowledge-bridge</option>
-          </select></label>
-          <button class="dz-mini dz-strong" id="gp-do">对比</button>
-        </div>
-        <div id="gp-plan" class="gp-plan"><div class="sub">选好来料与目标，点「对比」。这里会列出缺哪几节。</div></div>
-      </div>
+    <!-- FUSE_V2 -->
+<section class="view" id="v-fuse">
 
-      <div class="grid3">
-        <div class="card">
-          <h3>来料</h3>
-          <div class="sub">乾坤鼎 rendered/skills · 9 层 · 0.2 MB</div>
-          <div class="src">
-            <div>04-shotlist<span>L4 镜表</span></div>
-            <div>06-prompt<span>L6 十二维</span></div>
-            <div>05-acting<span>L5 情绪谱</span></div>
-            <div>03-assets<span>L3 一致性锁</span></div>
-            <div>02-script<span>L2 台词机检</span></div>
-            <div>08-knowledge<span>L8 检索</span></div>
+      <!-- 小观象台：一条会呼吸的横条 -->
+      <div class="fz-strip">
+        <canvas id="fz-canvas"></canvas>
+        <div class="fz-hud">
+          <div class="fz-hud-l">
+            <span class="fz-dot" id="fz-dot"></span>
+            <span id="fz-live">连桥中…</span>
+            <span class="fz-sep">·</span>
+            <span id="fz-seq">seq 0</span>
           </div>
-        </div>
-        <div class="card">
-          <h3>宿主</h3>
-          <div class="sub">Toonflow 09 CINEDANCE</div>
-          <div class="src">
-            <div class="pick">film-cinedance<span>09 提示词</span></div>
-            <div>film-acting<span>08 表演</span></div>
-            <div>film-lira-assets<span>07 资产</span></div>
-            <div>film-expert-bridge<span>工艺分支</span></div>
-          </div>
-          <div class="note">产物落 data\skills\film-cinedance，升级不丢。</div>
-        </div>
-        <div class="card">
-          <h3>配方</h3>
-          <div class="sub">create --mode merge</div>
-          <dl class="kv" style="margin-top:6px">
-            <dt>基准</dt><dd>film-cinedance@0.1.42</dd>
-            <dt>追加</dt><dd>06-prompt（十二维）</dd>
-            <dt>追加</dt><dd>04-shotlist（镜表）</dd>
-            <dt>守卫</dt><dd>禁令继承 P01</dd>
-            <dt>禁词表</dt><dd>seedance-only.txt</dd>
-            <dt>字节预算</dt><dd>6,000 / 20 条</dd>
-          </dl>
-          <div class="row" style="margin-top:12px">
-            <button class="btn gold">开始融合</button>
-            <button class="btn ghost">只看差异</button>
+          <div class="fz-hud-r" id="fz-hud-r">
+            <span class="fz-mini">16 技能</span>
+            <span class="fz-mini" id="fz-mini-in">已接入 0</span>
+            <span class="fz-mini" id="fz-mini-src">来料 0</span>
+            <button class="fz-open" id="fz-open">打开观象台 →</button>
           </div>
         </div>
       </div>
 
-      <div class="card" id="ig-card">
-        <h3>外部投放（放进来的东西，先判它是哪一层）</h3>
-        <div class="sub">文件夹 / zip / 单个 md 都行。扫描只看内容不写盘；判层是确定性关键词打分（不是模型），每条都给出依据词；确认后才复制进 patch\sources。</div>
-        <div class="dz-form">
-          <input id="ig-path" class="gp-in" placeholder="D:\下载\某个技能包 或 某个文件.md">
-          <input id="ig-name" class="gp-in" placeholder="包名（会作为 src:包名/文件 的来料 id）">
-          <button id="ig-scan" class="dz-mini dz-strong" data-ig="scan">扫描并判层</button>
-        </div>
-        <div class="dz-form ig-up">
-          <label class="dz-mini ig-pick">上传文件夹<input type="file" id="ig-dir" webkitdirectory directory multiple hidden></label>
-          <label class="dz-mini ig-pick">上传文件<input type="file" id="ig-files" multiple hidden></label>
-          <label class="dz-mini ig-pick">上传 zip<input type="file" id="ig-zip" accept=".zip" hidden></label>
-          <span class="sub">选中的东西会先传到本机桥（127.0.0.1:8791），再复制进 patch\sources\&lt;包名&gt;\；不联网、不出本机。</span>
-        </div>
-        <div id="ig-list" class="gp-plan-box"></div>
-      </div>
-      <h2 class="sec">融合预览</h2>
-      <div class="grid2">
-        <div class="card">
-          <h3>新增章节：提示词编译十二维</h3>
-          <div class="sub">来自 06-prompt · 132 行 → 压缩到 4,100 字节</div>
-          <div class="src">
-            <div>① 景别与焦段<span>+ dir</span></div>
-            <div>② 机位与高度<span>+ dir</span></div>
-            <div>③ 构图动机<span>+ dir</span></div>
-            <div>④ 主体动作<span>保留原文</span></div>
-            <div>⑤ 运镜方式<span>保留原文</span></div>
-            <div>⑥–⑫ 光影 / 色彩 / 质感 / 节奏 …<span>7 条</span></div>
+      <!-- 技能带：点一下就是"目标技能" -->
+      <div class="fz-chips" id="fz-chips"><span class="fz-hint">正在读技能…</span></div>
+
+      <div class="fz-grid">
+        <!-- 左：来源 -->
+        <aside class="fz-col">
+          <div class="fz-col-h"><h4>来源</h4><span class="fz-count" id="fz-src-count">—</span></div>
+          <input class="fz-q" id="fz-q" placeholder="按层或文件名过滤，例如 06-prompt / h3" />
+          <div class="fz-list" id="fz-sources"><div class="fz-empty">正在读来料…</div></div>
+          <details class="fz-add">
+            <summary>从本机添加</summary>
+            <div class="fz-add-body">
+              <input id="fz-path" placeholder="D:\某目录 或 单个文件 / .zip 路径" />
+              <div class="fz-row">
+                <input id="fz-pkg" placeholder="包名（留空取文件夹名）" />
+                <button class="btn" id="fz-scan">扫描并判层</button>
+              </div>
+              <div class="fz-up">
+                <label class="fz-fake">上传文件夹<input type="file" id="fz-up-dir" webkitdirectory multiple hidden /></label>
+                <label class="fz-fake">上传文件<input type="file" id="fz-up-files" multiple hidden /></label>
+                <label class="fz-fake">上传 zip<input type="file" id="fz-up-zip" accept=".zip" hidden /></label>
+              </div>
+              <div class="fz-scanout" id="fz-scanout"></div>
+            </div>
+          </details>
+        </aside>
+
+        <!-- 中：动作 -->
+        <main class="fz-col fz-mid">
+          <div class="fz-tabs" id="fz-tabs">
+            <button data-tab="merge" class="on">合并两个技能</button>
+            <button data-tab="gap">只补缺</button>
+            <button data-tab="adopt">收编沙盒</button>
           </div>
-        </div>
-        <div class="card">
-          <h3>守卫检查</h3>
-          <div class="sub">融合前必须全绿</div>
-          <table>
-            <tbody>
-              <tr><td>禁令继承（来料「禁止/不得」）</td><td style="text-align:right"><span class="tag t-ok">11/11</span></td></tr>
-              <tr><td>假引用清理</td><td style="text-align:right"><span class="tag t-ok">3 处</span></td></tr>
-              <tr><td>真引用带入</td><td style="text-align:right"><span class="tag t-ok">5 个</span></td></tr>
-              <tr><td>字节预算</td><td style="text-align:right"><span class="tag t-warn">V01 预警</span></td></tr>
-              <tr><td>与已装包重叠率</td><td style="text-align:right"><span class="tag t-info">0 %</span></td></tr>
-            </tbody>
-          </table>
-          <div class="note">超预算报 V01 而不是硬删规则正文——要么拆 references，要么提高预算。</div>
-        </div>
+
+          <div class="fz-pane on" id="fz-pane-merge">
+            <div class="fz-note">把两份技能的正文合并成一份新技能；<b>create</b> 是确定性合并（秒级、可复现），<b>fuse-skill</b> 交给模型重写（约 1 分钟、计费、可能丢禁令）。产物落在沙盒，不动现有技能。</div>
+            <div class="fz-form">
+              <label>基准技能<select id="fz-a"></select></label>
+              <label>并入技能<select id="fz-b"></select></label>
+              <label>方式<select id="fz-mode"><option value="merge">merge（并成一份）</option><option value="absorb">absorb（吸收）</option><option value="compose">compose（组合）</option></select></label>
+              <label>新技能名<input id="fz-name" placeholder="kebab-case，留空自动取" /></label>
+            </div>
+            <div class="fz-actions">
+              <button class="btn gold" id="fz-create">合并 create（不调模型）</button>
+              <button class="btn" id="fz-fuse">语义融合 fuse-skill（调模型）</button>
+            </div>
+            <div class="fz-outbox" id="fz-merge-out"></div>
+          </div>
+
+          <div class="fz-pane" id="fz-pane-gap">
+            <div class="fz-note">只把目标技能里<b>还没有</b>的节补进去，不揉在一起。左边勾来料（可多份），点对比，再按节投放；投放后自动接线。</div>
+            <div class="fz-form">
+              <label>目标技能<select id="fz-target"></select></label>
+              <label>落到文件名<input id="fz-as" placeholder="留空 = references/原文件名" /></label>
+            </div>
+            <div class="fz-actions">
+              <button class="btn" id="fz-compare">对比所选来料</button>
+              <button class="btn gold" id="fz-land" disabled>投放勾选的节</button>
+              <span class="fz-pick" id="fz-pick-info">未选来料</span>
+            </div>
+            <div class="fz-gapbar" id="fz-gapbar"></div>
+            <div class="fz-gaptable" id="fz-gaptable"></div>
+          </div>
+
+          <div class="fz-pane" id="fz-pane-adopt">
+            <div class="fz-note">把沙盒里的融合产物<b>收编</b>进某个技能：写进 patch\skills（唯一真相），自动接线、记账本；先过禁令核对，丢得多会被拦。</div>
+            <div class="fz-form">
+              <label>沙盒产物<select id="fz-sandbox"></select></label>
+              <label>收编到<select id="fz-adopt-to"></select></label>
+            </div>
+            <div class="fz-actions">
+              <button class="btn gold" id="fz-adopt">收编进鼎</button>
+              <button class="btn" id="fz-sandbox-refresh">刷新沙盒列表</button>
+            </div>
+            <div class="fz-outbox" id="fz-adopt-out"></div>
+          </div>
+        </main>
+
+        <!-- 右：结果 -->
+        <aside class="fz-col">
+          <div class="fz-col-h"><h4>本次结果</h4><span class="fz-count" id="fz-out-count">—</span></div>
+          <div class="fz-outbox tall" id="fz-out"><div class="fz-empty">还没有动作。左挑来源、中选动作，结果会落在这一栏。</div></div>
+          <div class="fz-col-h"><h4>最近动作 · 证据</h4></div>
+          <div class="fz-outbox" id="fz-ev"><div class="fz-empty">跑一次 create / fuse / 补缺，这里会写：产物路径、epoch、禁令保留率、接线条数。</div></div>
+        </aside>
       </div>
     </section>
 
@@ -1108,7 +1220,7 @@
 
   /* ---------- 融合台 ---------- */
   var fuseView = document.getElementById('v-fuse');
-  if (fuseView) {
+  if (fuseView && !document.getElementById('fz-strip')) { // 融合台 v2 已在，旧卡不再注入
     var fbox = card('开始融合', '合并 create＝确定性合并（不调模型、秒级、可复现）；语义融合 fuse-skill＝交给模型重写（约 1 分钟、计费）。产物落 patch\\staging\\fused\\，不覆盖任何现有技能。');
     fbox.id = 'zh-fuse-card';
     var frow = el('div'); frow.style.cssText = 'display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:14px 0 6px';
@@ -1233,7 +1345,6 @@
   <script src="eval-ui.js"></script>
   <script src="packs-ui.js"></script>
   <script src="distill.js?v=20261115e"></script>
-  <script src="gap.js?v=1"></script>
-  <script src="ingest-ui.js"></script>
+    <script src="fuse-ui.js?v=2"></script>
 </body>
 </html>
