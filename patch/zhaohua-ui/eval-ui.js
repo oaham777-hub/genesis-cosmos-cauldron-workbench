@@ -118,6 +118,117 @@
     }
   }
 
+  /* ---------- 一键跑：预设配置按钮组 ---------- */
+  function mk(tag, cls, txt) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (txt !== undefined) e.textContent = txt;
+    return e;
+  }
+
+  function cardShell() {
+    const host = $('ev-quick');
+    if (host) return host;
+    const view = $('v-eval');
+    if (!view) return null;
+    const c = mk('div', 'card');
+    const h = mk('h3', null, '一键跑（按配置）');
+    c.appendChild(h);
+    c.appendChild(mk('div', 'sub', '点一个就跑：真调模型、按 token 计费。跑完自动刷新下方证据。'));
+    const row = mk('div', 'ev-quick');
+    row.id = 'ev-quick';
+    c.appendChild(row);
+    const out = mk('div', 'ev-runout');
+    out.id = 'ev-runout';
+    c.appendChild(out);
+    const anchor = $('zh-eval-card');
+    if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(c, anchor); else view.appendChild(c);
+    return row;
+  }
+
+  let RUNNING = false;
+
+  async function quickInit() {
+    const row = cardShell();
+    if (!row) return;
+    row.innerHTML = '<div class="sub">正在读 patch\\eval 下的配置…</div>';
+    let cfgList = [];
+    try {
+      const r = await fetch(B + '/eval-configs').then((x) => x.json());
+      cfgList = (r.configs || []).map((x) => x.name);
+    } catch (e) {
+      row.innerHTML = '<div class="sub">桥没连上：' + esc(e.message) + '</div>';
+      return;
+    }
+    if (!cfgList.length) { row.innerHTML = '<div class="sub">patch\\eval 下没有 .json 配置</div>'; return; }
+    const infos = [];
+    for (const name of cfgList) {
+      try {
+        const d = await fetch(B + '/eval-config?name=' + encodeURIComponent(name)).then((x) => x.json());
+        if (d && d.ok) infos.push(d);
+      } catch (e) { /* 单个读不到就跳过 */ }
+    }
+    row.innerHTML = '';
+    infos.forEach((info) => {
+      const b = mk('button', 'btn qk');
+      b.dataset.cfg = info.name;
+      b.appendChild(mk('span', 'qk-n', info.name));
+      b.appendChild(mk('span', 'qk-m', info.tasks.length + ' 任务 × ' + info.arms.length + ' 臂 · ' + info.assertions + ' 断言'));
+      b.addEventListener('click', () => runQuick(info));
+      row.appendChild(b);
+    });
+    if (!infos.length) row.innerHTML = '<div class="sub">配置都读不出来（看 /eval-config 是否正常）</div>';
+    const pick = new URLSearchParams(location.search).get('pick');
+    if (pick) { const b = row.querySelector('button[data-cfg="' + pick + '"]'); if (b) setTimeout(function () { b.click(); }, 400); }
+  }
+
+  async function runQuick(info) {
+    if (RUNNING) return;
+    const head = info.name + '\n任务 ' + info.tasks.length + ' 个 × 臂 ' + info.arms.length + ' 个，断言 ' + info.assertions + ' 条\n模型 ' + (info.model || '–') + '，max_tokens ' + (info.max_tokens || '–') + '\n\n会调用模型并计费，开始？';
+    const AUTO = /autoran|autorun=1/.test(location.search);
+    if (!AUTO && !confirm(head)) return;
+    RUNNING = true;
+    document.querySelectorAll('#ev-quick .qk').forEach((x) => { x.disabled = true; x.classList.add('busy'); });
+    const out = $('ev-runout');
+    const t0 = Date.now();
+    const paint = () => {
+      if (!out) return;
+      out.innerHTML = '<div class="sub">跑中：' + esc(info.name) + ' · 已 ' + Math.round((Date.now() - t0) / 1000) + 's（可以切页，别关窗口）</div>';
+    };
+    paint();
+    const tick = setInterval(paint, 1000);
+    try {
+      const r = await fetch(B + '/eval?config=' + encodeURIComponent(info.name)).then((x) => x.json());
+      clearInterval(tick);
+      const secs = ((r.durationMs || (Date.now() - t0)) / 1000).toFixed(1);
+      if (!r.ok) {
+        if (out) out.innerHTML = '<div class="bad">失败（' + esc(r.exitCode) + ' · ' + secs + 's）：' + esc((r.text || r.error || '').slice(-600)) + '</div>';
+        return;
+      }
+      const rows = (r.summary || []).map((s) => {
+        return '<tr><td class="mono">' + esc(s.arm) + '</td><td>' + esc(s.hit) + ' / ' + esc(s.total) + '</td><td>' + esc(s.rate) + '%</td><td>' + esc(s.truncated) + '</td><td>' + esc(s.chars) + '</td></tr>';
+      }).join('');
+      const tk = r.tokens || {};
+      if (out) {
+        out.innerHTML =
+          '<div class="ok-line">跑完：' + esc(info.name) + ' · ' + secs + 's · 输入 ' + esc(tk.input) + ' / 输出 ' + esc(tk.output) + ' tokens</div>' +
+          '<table><thead><tr><th>臂</th><th>命中</th><th>命中率</th><th>截断</th><th>字符</th></tr></thead><tbody>' + rows + '</tbody></table>';
+      }
+      window.ZH_EVAL_RELOAD();
+    } catch (e) {
+      clearInterval(tick);
+      if (out) out.innerHTML = '<div class="bad">出错：' + esc(e.message) + '</div>';
+    } finally {
+      RUNNING = false;
+      document.querySelectorAll('#ev-quick .qk').forEach((x) => { x.disabled = false; x.classList.remove('busy'); });
+    }
+  }
+
+  document.addEventListener('click', function (e) {
+    const a = e.target && e.target.closest && e.target.closest('#nav a[data-v]');
+    if (a && a.getAttribute('data-v') === 'eval') setTimeout(quickInit, 120);
+  });
+  if ((location.hash || '').indexOf('eval') >= 0) setTimeout(quickInit, 300);
   /* 切到评估页时才拉，避免每次启动都读文件 */
   document.addEventListener('click', function (e) {
     const a = e.target && e.target.closest && e.target.closest('#nav a[data-v]');

@@ -688,7 +688,28 @@ const server = Bun.serve({
           });
         return reply({ dir: EVAL_DIR, configs });
       }
-      if (url.pathname === '/eval') {
+      if (url.pathname === '/eval-config') {
+        const name = url.searchParams.get('name') || '';
+        if (!/^[A-Za-z0-9._-]+\.json$/.test(name)) return reply({ error: '配置名不合法' }, 400);
+        const f = `${EVAL_DIR}\\${name}`;
+        if (!existsSync(f)) return reply({ error: '没有这份配置：' + f }, 404);
+        try {
+          const cfg = JSON.parse(readFileSync(f, 'utf8'));
+          return reply({
+            ok: true,
+            name,
+            schema: cfg.schema || '',
+            model: cfg.model || '',
+            max_tokens: cfg.max_tokens || 0,
+            tasks: (cfg.tasks || []).map((x) => x.id),
+            arms: (cfg.arms || []).map((x) => x.id),
+            assertions: (cfg.assertions || []).length,
+            bytes: statSync(f).size,
+          });
+        } catch (e) {
+          return reply({ error: '配置读不了：' + e.message }, 500);
+        }
+      }      if (url.pathname === '/eval') {
         const name = url.searchParams.get('config') || '';
         const dry = url.searchParams.get('dry') === '1';
         if (!/^[A-Za-z0-9._-]+\.json$/.test(name)) return reply({ error: '配置名不合法' }, 400);
@@ -719,6 +740,17 @@ const server = Bun.serve({
           }
         };
         const evidenceFile = pickLatest(outDir);
+        // 让评估页能看见：把新证据并入 patch\eval\runs（最近证据只扫这个目录）
+        try {
+          if (evidenceFile) {
+            const runsDir = join(EVAL_DIR, 'runs');
+            mkdirSync(runsDir, { recursive: true });
+            const dest = join(runsDir, evidenceFile.split('\\').pop());
+            if (!existsSync(dest)) copyFileSync(evidenceFile, dest);
+          }
+        } catch (e) {
+          /* 收口失败不影响本次结果返回 */
+        }
         let evidence = null;
         if (evidenceFile) {
           try {
