@@ -327,6 +327,10 @@
     .fl-obs-a{margin-left:auto;font-size:11px;color:#8b94a3;text-decoration:none;cursor:pointer}
     .fl-obs-a:hover{color:#e6d3a6}
     .fl-obs iframe{width:100%;height:520px;border:1px solid #1d2229;border-radius:12px;background:#07090c;display:block}
+
+    #fl-ingest h3{display:none}
+    #fl-obs .fl-chip{background:#12161c;border:1px solid #232a33;color:#8b94a3;font-size:11px;padding:4px 9px;border-radius:999px;cursor:pointer}
+    #fl-obs .fl-chip.on{background:rgba(216,178,106,.14);border-color:#5a4a2c;color:#e6d3a6}
 </style>
 </head>
 <body>
@@ -505,15 +509,46 @@
 <!-- FUSE_V3 --><!-- FUSE_V3 --><section class="view" id="v-fuse">
       
       <div id="fl-grid" style="display:grid;grid-template-columns:300px minmax(0,1fr) 330px;gap:14px;align-items:start">
-        <div id="zh-fuse-card" style="grid-column:1 / -1;grid-row:1"></div>
-
-      <div style="min-width:0;grid-column:2;grid-row:2 / span 2">
-        <div style="display:flex;align-items:baseline;gap:10px;padding:0 2px 8px">
-          <span style="font-size:13px;color:#e6d3a6;letter-spacing:.06em">观象台 · 星核</span>
-          <span style="font-size:11px;color:#6c7684">环带宽度由真实数据生成 · 一次体检一圈涟漪</span>
-          <a href="#obs" style="margin-left:auto;font-size:11px;color:#8b94a3;text-decoration:none">打开完整观象台 →</a>
+        <div style="grid-column:1 / -1;grid-row:1;min-width:0;display:flex;flex-direction:column;gap:12px">
+          <div id="zh-fuse-card"></div>
+          <div id="fl-ingest" style="min-width:0">
+            <div style="display:flex;align-items:baseline;gap:10px;padding:0 2px 8px">
+              <span style="font-size:13px;color:#e6d3a6;letter-spacing:.06em">外部件直接进鼎</span>
+              <span style="font-size:11px;color:#6c7684">不必先过乾坤鼎：判层 → 投放资料 / 装成技能 / 并进现有技能</span>
+            </div>
+            <div class="card" id="ig-card">
+        <h3>外部投放（放进来的东西，先判它是哪一层）</h3>
+        <div class="sub">文件夹 / zip / 单个 md 都行。扫描只看内容不写盘；判层是确定性关键词打分（不是模型），每条都给出依据词；确认后才复制进 patch\sources。</div>
+        <div class="dz-form">
+          <input id="ig-path" class="gp-in" placeholder="D:\下载\某个技能包 或 某个文件.md">
+          <input id="ig-name" class="gp-in" placeholder="包名（会作为 src:包名/文件 的来料 id）">
+          <button id="ig-scan" class="dz-mini dz-strong" data-ig="scan">扫描并判层</button>
         </div>
-        <iframe src="/zhaohua/obs-neural.html" loading="lazy" style="width:100%;height:520px;border:1px solid #1d2229;border-radius:12px;background:#07090c;display:block"></iframe>
+        <div class="dz-form ig-up">
+          <label class="dz-mini ig-pick">上传文件夹<input type="file" id="ig-dir" webkitdirectory directory multiple hidden></label>
+          <label class="dz-mini ig-pick">上传文件<input type="file" id="ig-files" multiple hidden></label>
+          <label class="dz-mini ig-pick">上传 zip<input type="file" id="ig-zip" accept=".zip" hidden></label>
+          <span class="sub">选中的东西会先传到本机桥（127.0.0.1:8791），再复制进 patch\sources\&lt;包名&gt;\；不联网、不出本机。</span>
+        </div>
+        <div id="ig-list" class="gp-plan-box"></div>
+      </div>
+          </div>
+        </div>
+
+      <div id="fl-obs" style="min-width:0;grid-column:2;grid-row:2 / span 2">
+        <div style="display:flex;align-items:baseline;gap:10px;padding:0 2px 8px">
+          <span style="font-size:13px;color:#e6d3a6;letter-spacing:.06em">观象台</span>
+          <span style="font-size:11px;color:#6c7684" id="fl-obs-note">投喂项目复刻 · 战术大屏</span>
+          <span style="margin-left:auto;display:flex;gap:6px">
+            <button type="button" data-obs="display" class="fl-chip on">战术大屏 <span style="opacity:.55;font-size:10px">示例数据</span></button>
+            <button type="button" data-obs="core" class="fl-chip">星核 <span style="opacity:.55;font-size:10px">真实数据</span></button>
+            <a href="/zhaohua/obs-display.html" target="_blank" style="font-size:11px;color:#8b94a3;text-decoration:none;padding:4px 6px">全屏打开 ↗</a>
+          </span>
+        </div>
+        <div id="fl-obs-box" style="position:relative;overflow:hidden;border:1px solid #1d2229;border-radius:12px;background:#07090c;height:560px">
+          <iframe id="fl-obs-frame" src="/zhaohua/obs-display.html" loading="lazy"
+            style="position:absolute;left:0;top:0;width:100%;height:100%;border:0;transform:none;transform-origin:0 0"></iframe>
+        </div>
       </div>
         <div style="grid-column:1;grid-row:2 / span 2;display:flex;flex-direction:column;gap:14px;min-width:0">
 <div class="card">
@@ -602,7 +637,7 @@
         </div>
         <div id="ig-list" class="gp-plan-box"></div>
       </div></div>
-        <div style="grid-column:1 / span 2;grid-row:4;min-width:0"><div class="card">
+        <div style="grid-column:1 / -1;grid-row:4;min-width:0"><div class="card">
           <h3>新增章节：提示词编译十二维</h3>
           <div class="sub">来自 06-prompt · 132 行 → 压缩到 4,100 字节</div>
           <div class="src">
@@ -1369,5 +1404,23 @@
   <script src="distill.js?v=20261115e"></script>
       <script src="gap.js?v=2"></script>
   <script src="ingest-ui.js?v=2"></script>
-  </body>
+    <script id="fl-obs-switch">
+  (function(){
+    var box=document.getElementById('fl-obs-box'), f=document.getElementById('fl-obs-frame'), note=document.getElementById('fl-obs-note');
+    var btns=document.querySelectorAll('#fl-obs [data-obs]');
+    function use(kind){
+      btns.forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-obs')===kind); });
+      if(kind==='core'){
+        f.style.transform='none'; f.style.width='100%'; f.style.height='100%';
+        f.src='/zhaohua/obs-neural.html'; note.textContent='自绘 · 星核（v41 渲染器）';
+      } else {
+        f.style.transform='scale(.562)'; f.style.transformOrigin='0 0';
+        f.style.width='178%'; f.style.height='178%';
+        f.src='/zhaohua/obs-display.html'; note.textContent='投喂项目复刻 · 战术大屏（其数据由项目自带模拟器生成，未接真实数据）';
+      }
+    }
+    btns.forEach(function(b){ b.addEventListener('click', function(){ use(b.getAttribute('data-obs')); }); });
+  })();
+  </script>
+</body>
 </html>
