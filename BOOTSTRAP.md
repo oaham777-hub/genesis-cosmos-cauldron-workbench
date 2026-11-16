@@ -109,7 +109,7 @@ cd D:\造化乾坤鼎-工作台\patch
 # 改了技能 → 同步到运行时 → 体检
 .\apply.ps1 -Target ..\_work\stable -Skills
 .\apply.ps1 -Target ..\_work\stable -Check
-node '..\造化鼎\core\bin\zhaohua.mjs' audit ..\patch\skills
+node 'D:\造化鼎\core\bin\zhaohua.mjs' audit .\skills
 
 # 改了启动层 → 重建外链脚本 → 再注入
 node .\tools\build-overlay.mjs
