@@ -511,16 +511,15 @@
       <div id="fl-grid" style="display:grid;grid-template-columns:300px minmax(0,1fr) 330px;gap:14px;align-items:start">
         <div id="zh-fuse-card" style="grid-column:1 / -1;grid-row:1"></div>
 
-      <div id="fl-obs" style="min-width:0;grid-column:2;grid-row:2 / span 2">
+      <div id="fl-obs" style="min-width:0;grid-column:2;grid-row:2 / span 2;display:flex;flex-direction:column">
         <div style="display:flex;align-items:baseline;gap:10px;padding:0 2px 8px">
           <span style="font-size:13px;color:#e6d3a6;letter-spacing:.06em">观象台</span>
-          <span style="font-size:11px;color:#6c7684">自绘 · 真数据 · 无第三方大屏</span>
-          <span id="fl-obs-seq" style="margin-left:auto;font-size:11px;color:#6c7684">seq 0</span>
+          <span style="font-size:11px;color:#6c7684">视界熔炉（forge）· 投喂项目主题改造</span>
+          <button id="fl-obs-off" type="button" style="margin-left:auto;font-size:11px;color:#8b94a3;background:none;border:0;cursor:pointer">卸载</button>
+          <a href="/zhaohua/obs-forge.html?theme=forge" target="_blank" style="font-size:11px;color:#8b94a3;text-decoration:none">全屏 ↗</a>
         </div>
-        <div id="fl-obs-canvas-wrap" style="position:relative;height:620px;border:1px solid #1d2229;border-radius:12px;background:radial-gradient(120% 90% at 50% 42%,#0d1117 0%,#080a0d 72%);overflow:hidden">
-          <canvas id="fl-obs-canvas" style="display:block"></canvas>
-          <div id="fl-obs-hud" style="position:absolute;left:16px;top:12px;font-size:12px;color:#cfd6e2"></div>
-          <div id="fl-obs-ticker" style="position:absolute;left:16px;bottom:12px;font-size:11px;line-height:1.8"></div>
+        <div id="fl-obs-box" style="position:relative;height:620px;border:1px solid #1d2229;border-radius:12px;overflow:hidden;background:#07090c">
+          <div id="fl-obs-hint" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#6c7684;font-size:12px">观象台载入中…</div>
         </div>
       </div>
         <div style="grid-column:1;grid-row:2 / span 2;display:flex;flex-direction:column;gap:14px;min-width:0">
@@ -1378,5 +1377,31 @@
       <script src="gap.js?v=2"></script>
   <script src="ingest-ui.js?v=2"></script>
             <script src="fuse-obs.js?v=7"></script>
+
+<script>
+(function(){
+  var box = document.getElementById('fl-obs-box');
+  var hint = document.getElementById('fl-obs-hint');
+  var off = document.getElementById('fl-obs-off');
+  if (!box) return;
+  var frame = null;
+  function load(){
+    if (frame) return;
+    frame = document.createElement('iframe');
+    frame.src = '/zhaohua/obs-forge.html?theme=forge';
+    frame.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;border:0;display:block';
+    box.appendChild(frame);
+    if (hint) hint.style.display = 'none';
+  }
+  function unload(){
+    if (frame) { frame.remove(); frame = null; }
+    if (hint) { hint.textContent = '已卸载（点这里重新载入）'; hint.style.display = 'flex'; hint.style.cursor = 'pointer'; }
+  }
+  if (off) off.addEventListener('click', function(e){ e.stopPropagation(); unload(); });
+  if (hint) hint.addEventListener('click', load);
+  setTimeout(load, 700);
+  window.addEventListener('beforeunload', unload);
+})();
+</script>
 </body>
 </html>

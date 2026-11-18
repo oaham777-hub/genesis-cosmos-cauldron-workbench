@@ -1,0 +1,41 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<title>造化鼎 · 观象台主题挑选</title>
+<style>
+  html,body{margin:0;height:100%;background:#07090c;color:#cfd6df;font:13px/1.6 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif}
+  #bar{display:flex;flex-wrap:wrap;gap:8px;padding:10px 14px;border-bottom:1px solid #1b2027;align-items:center}
+  #bar b{color:#e6d3a6;font-weight:600;letter-spacing:.06em;margin-right:6px}
+  #bar span.h{color:#6c7684;font-size:12px;margin-left:auto}
+  .t{padding:5px 10px;border:1px solid #242b34;border-radius:999px;color:#9aa4b2;text-decoration:none;white-space:nowrap}
+  .t:hover{color:#e8eef6;border-color:#3a4450}
+  .t.on{color:#1a1408;background:#d8b26a;border-color:#d8b26a}
+  #wrap{position:absolute;inset:46px 0 0 0}
+  iframe{width:100%;height:100%;border:0;display:block;background:#000}
+</style></head><body>
+<div id="bar">
+  <b>观象台 · 挑主题</b>
+  <a class="t" data-k="hq" href="?theme=hq">1. hq · 战术大屏（粉）</a>
+      <a class="t" data-k="forge" href="?theme=forge">2. forge · 视界熔炉</a>
+      <a class="t" data-k="factory" href="?theme=factory">3. factory · 工厂</a>
+      <a class="t" data-k="works" href="?theme=works">4. works · 织造</a>
+      <a class="t" data-k="nebula" href="?theme=nebula">5. nebula · 星云</a>
+      <a class="t" data-k="ion" href="?theme=ion">6. ion · 离子</a>
+      <a class="t" data-k="park" href="?theme=park">7. park · 园区</a>
+      <a class="t" data-k="spider" href="?theme=spider">8. spider · 蛛网</a>
+      <a class="t" data-k="neural" href="?theme=neural">9. neural · 神经星环</a>
+      <a class="t" data-k="ops" href="?theme=ops">10. ops · 调度中心（纸白）</a>
+  <span class="h">点一个看看；选好了告诉我编号（或名字），我把它抽成我们的观象台</span>
+</div>
+<div id="wrap"><iframe id="fr" src="obs-display.html?theme=hq"></iframe></div>
+<script>
+  var cur = new URLSearchParams(location.search).get('theme') || 'hq';
+  function mark(){ document.querySelectorAll('.t').forEach(function(a){ a.classList.toggle('on', a.dataset.k === cur); }); }
+  document.querySelectorAll('.t').forEach(function(a){
+    a.addEventListener('click', function(e){
+      e.preventDefault(); cur = a.dataset.k; mark();
+      document.getElementById('fr').src = 'obs-display.html?theme=' + cur;
+      history.replaceState(null,'','?theme='+cur);
+    });
+  });
+  mark();
+</script>
+</body></html>
