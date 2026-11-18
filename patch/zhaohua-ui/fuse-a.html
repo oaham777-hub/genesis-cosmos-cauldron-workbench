@@ -1,0 +1,1470 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>造化鼎 · 设计稿</title>
+<style>
+  :root{
+    --bg:#0b0d10; --panel:#13161b; --panel-2:#171b21; --line:#242a33;
+    --text:#e9ecf1; --muted:#8b93a1; --dim:#5d6572;
+    --gold:#d8b26a; --gold-dim:#8a7238;
+    --ok:#5fbf8a; --warn:#e0a84e; --bad:#e06a5f; --info:#6aa8d8;
+    --mono:"Cascadia Mono",Consolas,"JetBrains Mono",monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font:14px/1.6 "Microsoft YaHei UI","PingFang SC",system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .app{display:grid;grid-template-columns:210px 1fr;min-height:100vh}
+
+  /* 左栏 */
+  .rail{background:linear-gradient(180deg,#0e1115,#0b0d10);border-right:1px solid var(--line);
+    padding:22px 14px;display:flex;flex-direction:column;gap:22px}
+  .brand{display:flex;align-items:center;gap:10px;padding:0 6px}
+  .mark{width:30px;height:30px;border-radius:8px;border:1px solid var(--gold-dim);
+    display:grid;place-items:center;color:var(--gold);font-size:15px;font-weight:700;
+    background:radial-gradient(circle at 30% 20%,rgba(216,178,106,.18),transparent 70%)}
+  .brand b{font-size:15px;letter-spacing:.06em}
+  .brand small{display:block;color:var(--dim);font-size:11px;letter-spacing:.16em}
+  nav{display:flex;flex-direction:column;gap:2px}
+  nav a{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:8px;color:var(--muted);
+    text-decoration:none;font-size:13px;cursor:pointer}
+  nav a .dot{width:5px;height:5px;border-radius:50%;background:var(--dim)}
+  nav a:hover{background:#151a20;color:var(--text)}
+  nav a.on{background:#1a2029;color:var(--text)}
+  nav a.on .dot{background:var(--gold)}
+  .rail .foot{margin-top:auto;padding:0 8px;color:var(--dim);font-size:11px;line-height:1.8}
+  .rail .foot code{color:var(--gold-dim)}
+
+  /* 主区 */
+  main{padding:26px 34px 60px;max-width:none;width:100%;box-sizing:border-box}
+  .head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;
+    border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:22px}
+  .head h1{margin:0;font-size:19px;font-weight:600;letter-spacing:.02em}
+  .head p{margin:4px 0 0;color:var(--muted);font-size:12px}
+  .sel{display:flex;gap:6px}
+  .sel button{background:#151a20;border:1px solid var(--line);color:var(--muted);font-size:12px;
+    padding:6px 11px;border-radius:7px;cursor:pointer}
+  .sel button.on{color:var(--text);border-color:var(--gold-dim);background:#1b2029}
+
+  .view{display:none}
+  .view.on{display:block}
+  h2.sec{font-size:13px;color:var(--muted);font-weight:600;letter-spacing:.1em;
+    text-transform:uppercase;margin:26px 0 12px}
+  h2.sec:first-child{margin-top:0}
+
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .kpi .n{font-size:26px;font-weight:600;letter-spacing:.02em}
+  .kpi .l{color:var(--muted);font-size:12px;margin-top:2px}
+  .kpi .h{font-size:11px;color:var(--dim);margin-top:8px;font-family:var(--mono)}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px}
+  .card + .card{margin-top:12px}
+  .card h3{margin:0 0 4px;font-size:14px;font-weight:600}
+  .card .sub{color:var(--muted);font-size:12px;margin-bottom:14px}
+
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;color:var(--dim);font-weight:500;font-size:11px;letter-spacing:.08em;
+    text-transform:uppercase;padding:0 8px 8px;border-bottom:1px solid var(--line)}
+  td{padding:9px 8px;border-bottom:1px solid #1a1f26;vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  tbody tr:hover{background:#171c23}
+  .nm{font-family:var(--mono);font-size:12.5px;color:#d7dde6}
+  .stage{display:inline-block;min-width:28px;text-align:center;font-family:var(--mono);font-size:11px;
+    color:var(--gold);border:1px solid var(--gold-dim);border-radius:5px;padding:1px 5px;margin-right:8px}
+
+  .tag{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:1px 6px;border-radius:5px;
+    border:1px solid;margin-right:4px}
+  .t-bad{color:var(--bad);border-color:#5a2b28;background:#2a1614}
+  .t-warn{color:var(--warn);border-color:#5a4520;background:#241d10}
+  .t-ok{color:var(--ok);border-color:#234a37;background:#122019}
+  .t-info{color:var(--info);border-color:#243c4f;background:#111a24}
+
+  .bar{height:4px;border-radius:3px;background:#1d232b;overflow:hidden;min-width:70px}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--gold-dim),var(--gold))}
+
+  .grid2{display:grid;grid-template-columns:1.15fr .85fr;gap:12px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+  .kv{display:grid;grid-template-columns:110px 1fr;gap:6px 12px;font-size:12.5px}
+  .kv dt{color:var(--dim)}
+  .kv dd{margin:0;font-family:var(--mono);font-size:12px;color:#ccd3dd;word-break:break-all}
+
+  .src{display:flex;flex-direction:column;gap:6px}
+  .src div{border:1px solid var(--line);background:var(--panel-2);border-radius:9px;
+    padding:8px 10px;font-size:12.5px;display:flex;justify-content:space-between;gap:8px}
+  .src div span{color:var(--dim);font-family:var(--mono);font-size:11px}
+  .src div.pick{border-color:var(--gold-dim);background:#1c1a13}
+
+  .btn{display:inline-block;border:1px solid var(--line);background:#161b22;color:var(--text);
+    border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer}
+  .btn.gold{border-color:var(--gold-dim);color:var(--gold);background:#1b1811}
+  .btn.ghost{background:transparent;color:var(--muted)}
+
+  .arms{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .arm{border:1px solid var(--line);border-radius:10px;padding:12px}
+  .arm.a{border-color:#2a3140}
+  .arm.b{border-color:var(--gold-dim)}
+  .arm .t{font-size:12px;color:var(--muted)}
+  .arm .v{font-size:24px;font-weight:600;margin:4px 0}
+  .arm .d{font-size:11.5px;color:var(--dim)}
+  .chart{display:flex;align-items:flex-end;gap:14px;height:120px;margin-top:14px}
+  .chart .col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:4px;align-items:center}
+  .chart .col b{font-family:var(--mono);font-size:11px;color:var(--muted)}
+  .chart .bar2{width:100%;display:flex;gap:3px;align-items:flex-end;height:80px}
+  .chart .bar2 i{flex:1;border-radius:3px 3px 0 0}
+
+  .tl{position:relative;padding-left:18px}
+  .tl:before{content:"";position:absolute;left:4px;top:6px;bottom:6px;width:1px;background:var(--line)}
+  .tl .ev{position:relative;padding:8px 0}
+  .tl .ev:before{content:"";position:absolute;left:-17px;top:14px;width:7px;height:7px;border-radius:50%;
+    background:var(--gold);box-shadow:0 0 0 3px #1a1a14}
+  .tl .ev .t{font-size:12.5px}
+  .tl .ev .m{font-size:11px;color:var(--dim);font-family:var(--mono)}
+
+  code.hash{font-family:var(--mono);font-size:11px;color:var(--muted)}
+  .note{border-left:2px solid var(--gold-dim);padding:8px 12px;color:var(--muted);
+    font-size:12px;background:#12141a;border-radius:0 8px 8px 0;margin-top:12px}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    /* ---- 观象台 ---- */
+    .obs-wrap{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:18px;align-items:stretch}
+    .obs-stage{position:relative;border:1px solid var(--line);border-radius:12px;background:radial-gradient(62% 62% at 42% 54%,#0e1117 0%,#0a0c10 68%,#07090c 100%);height:640px;overflow:hidden}
+    #obs-canvas{display:block;width:100%;height:100%}
+    .obs-legend{position:absolute;left:16px;right:16px;bottom:12px;display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',ui-monospace,monospace}
+    .obs-lg{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+    .obs-lg .sw{width:7px;height:7px;border-radius:50%;background:rgba(216,178,106,.8)}
+    .obs-lg .sw.teal{background:rgba(127,207,163,.8)}
+    .obs-meta{margin-left:auto;color:var(--dim)}
+    .obs-meta.live{color:#7fcfa3}
+    .obs-side{display:flex;flex-direction:column;gap:12px;min-width:0}
+    .obs-feed{flex:1;overflow:auto;max-height:520px;border:1px solid var(--line);border-radius:12px;padding:8px;background:#0b0d11}
+    .obs-row{display:grid;grid-template-columns:58px 68px minmax(0,1fr);gap:8px;padding:6px 6px 8px;border-radius:7px;font-size:12px;line-height:1.4}
+    .obs-row:nth-child(odd){background:rgba(255,255,255,.02)}
+    .obs-t{color:var(--dim);font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px}
+    .obs-k{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:#d8b26a}
+    .obs-k.bad{color:#c25550}
+    .obs-n{color:#cfd2d8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .obs-b{grid-column:1 / -1;color:var(--dim);font-size:11px;padding-left:66px;margin-top:-1px}
+    .obs-empty{color:var(--dim);font-size:12px;padding:10px;line-height:1.6}    /* 蒸馏地图 */
+    .dz-kpi{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-bottom:18px}
+    .dz-kpi .kpi{background:#12161c;border:1px solid #232a33;border-radius:12px;padding:12px 14px}
+    .dz-kpi .kpi b{display:block;font-size:26px;color:#d8b26a;line-height:1.1}
+    .dz-kpi .kpi span{display:block;font-size:12px;color:#8d97a5;margin-top:4px}
+    .dz-kpi .kpi em{display:block;font-size:11px;color:#5f6a78;font-style:normal;margin-top:2px}
+    table.dz-map td.dz-cell{font-variant-numeric:tabular-nums;font-weight:600}
+    #dz-detail table td.mono, table.dz-map td.mono{font-family:Consolas,monospace;font-size:11px}
+    #dz-sankey{width:100%;height:auto;display:block}
+    #dz-sankey text.dzL{fill:#d8b26a;font-size:11px}
+    #dz-sankey text.dzR{fill:#9aa7b8;font-size:11px;text-anchor:start}
+    .dz-ep{border-left:2px solid #2c3542;padding:0 0 14px 14px;position:relative}
+    .dz-ep:before{content:"";position:absolute;left:-5px;top:4px;width:8px;height:8px;border-radius:50%;background:#d8b26a}
+    .dz-ep-h{display:flex;gap:10px;align-items:baseline}
+    .dz-ep-h span{font-size:12px;color:#8d97a5}
+      .dz-secs{max-height:260px;overflow:auto;border:1px solid #232a33;border-radius:10px;margin-top:10px}
+    .dz-sec{display:flex;gap:10px;align-items:center;padding:6px 10px;border-bottom:1px solid #1b222b;font-size:12px;cursor:pointer}
+    .dz-sec:hover{background:#151b22}
+    .dz-sec span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .dz-sec em{font-style:normal;color:#5f6a78}
+    .dz-form{display:grid;grid-template-columns:1fr 1fr 1fr auto auto auto;gap:10px;align-items:end;margin-top:6px}
+    .dz-form label{display:block;font-size:11px;color:#8d97a5;margin-bottom:4px}
+    .dz-form select,.dz-form input{width:100%;background:#0f141a;border:1px solid #2a323d;color:#dfe6ef;border-radius:8px;padding:7px 9px;font-size:12px}
+    .dz-drillbar{margin:14px 0 10px;font-size:12px;color:#9aa3ad}
+    .dz-drillbar label{display:inline-flex;gap:8px;align-items:center;cursor:pointer}
+    .dz-drillbar input{accent-color:#d8b26a}
+    .dz-act{white-space:nowrap}
+    .dz-mini{margin:0 4px 0 0;padding:3px 9px;font-size:12px;border-radius:6px;border:1px solid #2b333d;background:#12171d;color:#c8d0d8;cursor:pointer}
+    .dz-mini:hover{border-color:#d8b26a;color:#f0d9a8}
+    .dz-mini.dz-strong{border-color:#3f5a42;color:#a9d6b3}
+    .dz-mini.dz-warn{border-color:#5a4230;color:#e0b28a}
+    .dz-diff{margin-top:12px;border-top:1px solid #1f262e;padding-top:10px;font-family:ui-monospace,Consolas,monospace;font-size:12px;max-height:260px;overflow:auto}
+    .dz-dl{white-space:pre-wrap;line-height:1.5}
+    .dz-dl.add{color:#8fd0a3}
+    .dz-dl.del{color:#d08f8f}    .gp-form{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin:10px 0 4px}
+    .gp-form label{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--dim)}
+    .gp-form select{min-width:220px;background:#0f1318;color:#ded4c2;border:1px solid #2a2f36;border-radius:8px;padding:7px 9px;font-size:12px}
+    .gp-plan{margin-top:8px}
+    .gp-head{font-size:12px;color:#c9bfae;margin:6px 0 8px}
+    .gp-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}
+    .gp-in{flex:1;min-width:220px;background:#0f1318;color:#ded4c2;border:1px solid #2a2f36;border-radius:8px;padding:7px 9px;font-size:12px}
+    .gp-plan table{width:100%;border-collapse:collapse;font-size:12px}
+    .gp-plan th{color:var(--dim);font-weight:500;text-align:left;padding:6px 8px;border-bottom:1px solid #23282e}
+    .gp-plan td{padding:6px 8px;border-bottom:1px solid #1b2026;color:#cfc6b6}
+    .gp-plan .ok{color:#8ecf9f}.gp-plan .warn{color:#d8b26a}
+      #ig-card .dz-form{display:grid;grid-template-columns:1.6fr .8fr auto;gap:10px;margin:12px 0}
+    .gp-k{display:inline-block;padding:1px 7px;border-radius:20px;font-size:11px;letter-spacing:.04em}
+    .gp-k-method{background:rgba(127,207,163,.16);color:#9fe0bd}
+    .gp-k-ledger{background:rgba(194,85,80,.16);color:#e08e88}
+    .gp-k-spec{background:rgba(216,178,106,.16);color:#e0c48a}
+    .gp-k-example{background:rgba(160,160,160,.14);color:#bdbdbd}
+    .gp-k-code{background:rgba(110,160,220,.16);color:#a6c8ec}
+    .gp-plan-box{margin-top:6px}    .ig-up{grid-template-columns:auto auto auto 1fr;align-items:center}
+    .ig-pick{display:inline-flex;align-items:center;justify-content:center;cursor:pointer;border:1px solid rgba(255,255,255,.14);border-radius:8px;padding:7px 12px}
+    .ig-pick:hover{border-color:rgba(216,178,106,.6)}
+    .ig-drop{border:1px dashed rgba(255,255,255,.18);border-radius:10px;padding:14px;text-align:center;margin-top:8px}
+    .ig-drop.on{border-color:rgba(216,178,106,.7)}/* FUSE_V2_CSS */
+    /* ---------- 融合台 v2 ---------- */
+    .fz-strip{position:relative;margin:0 0 14px;border:1px solid #1d222a;border-radius:14px;overflow:hidden;
+      background:radial-gradient(120% 160% at 12% -20%,rgba(216,178,106,.10),transparent 55%),#0f1216;height:104px}
+    #fz-canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+    .fz-hud{position:absolute;inset:0;display:flex;align-items:flex-start;justify-content:space-between;padding:10px 14px;pointer-events:none}
+    .fz-hud-l,.fz-hud-r{display:flex;align-items:center;gap:8px;font-size:11.5px;color:#8b94a3;pointer-events:auto}
+    .fz-hud-r{gap:10px}
+    .fz-dot{width:7px;height:7px;border-radius:50%;background:#7b4b3a;box-shadow:0 0 0 0 rgba(216,178,106,0)}
+    .fz-dot.ok{background:#6fbf94}
+    .fz-dot.pulse{animation:fzpulse .42s ease-out}
+    @keyframes fzpulse{0%{box-shadow:0 0 0 0 rgba(216,178,106,.55)}100%{box-shadow:0 0 0 12px rgba(216,178,106,0)}}
+    .fz-sep{color:#39404b}
+    .fz-mini{font-size:11px;color:#8b94a3;border:1px solid #1d222a;border-radius:999px;padding:2px 8px;background:#0c0f13}
+    .fz-open{font-size:11px;color:#d8b26a;background:none;border:1px solid #3a3324;border-radius:999px;padding:3px 10px;cursor:pointer}
+    .fz-open:hover{background:#191510}
+
+    .fz-chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}
+    .fz-chip{display:inline-flex;align-items:center;gap:7px;border:1px solid #1d222a;background:#12151a;color:#aab2bf;
+      border-radius:9px;padding:5px 9px;font-size:11.5px;cursor:pointer;transition:.12s}
+    .fz-chip:hover{border-color:#3a4038;color:#dfe4ec}
+    .fz-chip.on{border-color:#6b5326;background:#191408;color:#f0e2c4;box-shadow:0 0 0 1px rgba(216,178,106,.12) inset}
+    .fz-chip-n{font-family:ui-monospace,Consolas,monospace;max-width:168px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .fz-chip-bar{width:34px;height:3px;border-radius:2px;background:#20252d;overflow:hidden}
+    .fz-chip-bar i{display:block;height:100%;background:linear-gradient(90deg,#8d6f34,#d8b26a)}
+    .fz-chip b{color:#d8b26a;font-weight:600}
+    .fz-chip i{color:#5c6472;font-style:normal}
+
+    .fz-grid{display:grid;grid-template-columns:266px minmax(0,1fr) 300px;gap:14px;align-items:start}
+    @media (max-width:1180px){.fz-grid{grid-template-columns:1fr}}
+    .fz-col{border:1px solid #1d222a;border-radius:14px;background:#12151a;padding:12px}
+    .fz-col-h{display:flex;align-items:center;justify-content:space-between;margin:0 0 8px}
+    .fz-col-h h4{margin:0;font-size:12.5px;letter-spacing:.04em;color:#cfd6e2;font-weight:600}
+    .fz-count{font-size:11px;color:#7d8697}
+    .fz-q{width:100%;box-sizing:border-box;background:#0c0f13;border:1px solid #1d222a;border-radius:8px;color:#cfd6e2;
+      font-size:12px;padding:7px 9px;margin:0 0 8px;outline:none}
+    .fz-q:focus{border-color:#4a3d22}
+    .fz-list{max-height:420px;overflow:auto;padding-right:2px}
+    .fz-layer{display:flex;justify-content:space-between;font-size:10.5px;color:#6c7684;letter-spacing:.06em;
+      padding:7px 2px 3px;border-bottom:1px dashed #1a1f26;margin-bottom:3px}
+    .fz-src{display:flex;align-items:center;gap:7px;padding:4px 5px;border-radius:7px;cursor:pointer;font-size:11.5px;color:#a8b0bd}
+    .fz-src:hover{background:#171b21}
+    .fz-src.on{background:#191408;color:#efe2c6}
+    .fz-src input{accent-color:#d8b26a;margin:0}
+    .fz-src-n{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .fz-src-m{color:#6c7684;font-size:10.5px;white-space:nowrap}
+    .fz-src-m em{color:#8d6f34;font-style:normal}
+
+    .fz-add{margin-top:10px;border-top:1px dashed #1a1f26;padding-top:8px}
+    .fz-add summary{cursor:pointer;font-size:11.5px;color:#8b94a3}
+    .fz-add-body{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+    .fz-add-body input{background:#0c0f13;border:1px solid #1d222a;border-radius:7px;color:#cfd6e2;font-size:11.5px;padding:6px 8px;outline:none}
+    .fz-row{display:flex;gap:6px}
+    .fz-row input{flex:1}
+    .fz-up{display:flex;gap:6px;flex-wrap:wrap}
+    .fz-fake{font-size:11px;color:#9aa3b1;border:1px dashed #2a3038;border-radius:7px;padding:4px 8px;cursor:pointer}
+    .fz-fake:hover{border-color:#4a3d22;color:#d8b26a}
+    .fz-scanout{margin-top:8px;font-size:11px;color:#8b94a3}
+    .fz-mini-table{width:100%;border-collapse:collapse;margin-top:6px;font-size:10.5px}
+    .fz-mini-table th{color:#6c7684;font-weight:500;text-align:left;border-bottom:1px solid #1a1f26;padding:3px 4px}
+    .fz-mini-table td{border-bottom:1px solid #151a20;padding:3px 4px;color:#a8b0bd}
+    .fz-mini-table td.mono{font-family:ui-monospace,Consolas,monospace;color:#c3cad6}
+
+    .fz-tabs{display:flex;gap:6px;margin:0 0 10px;border-bottom:1px solid #1a1f26;padding-bottom:8px}
+    .fz-tabs button{background:none;border:1px solid transparent;color:#8b94a3;font-size:12px;padding:5px 10px;border-radius:8px;cursor:pointer}
+    .fz-tabs button:hover{color:#dfe4ec}
+    .fz-tabs button.on{color:#f0e2c4;background:#191408;border-color:#3d3421}
+    .fz-pane{display:none}
+    .fz-pane.on{display:block}
+    .fz-note{font-size:11.5px;color:#8b94a3;line-height:1.7;margin:0 0 10px}
+    .fz-note b{color:#c9b58a;font-weight:600}
+    .fz-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 10px;margin:0 0 10px}
+    .fz-form label{display:flex;flex-direction:column;gap:4px;font-size:11px;color:#7d8697}
+    .fz-form select,.fz-form input{background:#0c0f13;border:1px solid #1d222a;border-radius:8px;color:#cfd6e2;font-size:12px;padding:7px 8px;outline:none}
+    .fz-form select:focus,.fz-form input:focus{border-color:#4a3d22}
+    .fz-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 10px}
+    .fz-pick{font-size:11px;color:#7d8697}
+    .fz-outbox{border:1px solid #1a1f26;border-radius:10px;background:#0e1115;padding:10px;font-size:11.5px;color:#a8b0bd;min-height:52px}
+    .fz-outbox.tall{min-height:180px;max-height:340px;overflow:auto}
+    .fz-kv{display:flex;justify-content:space-between;gap:10px;padding:3px 0;border-bottom:1px dotted #171c23}
+    .fz-kv span{color:#6c7684}
+    .fz-kv b{color:#cfd6e2;font-weight:500;text-align:right;word-break:break-all}
+    .fz-ok{color:#8fd8b0}
+    .fz-warn{color:#e2c07a}
+    .fz-bad{color:#e08a8a}
+    .fz-warn-t{color:#e2c07a!important}
+    .fz-ok-t{color:#8fd8b0!important}
+    .fz-tip{margin-top:8px;font-size:11px;color:#7d8697;line-height:1.6}
+    .fz-load{color:#8b94a3}
+    .fz-empty{color:#5f6875;font-size:11.5px;line-height:1.7}
+    .fz-hint{color:#5f6875;font-size:11.5px}
+    .fz-gapbar{margin:6px 0;font-size:11.5px;color:#a8b0bd}
+    .fz-pill{display:inline-block;border:1px solid #1d222a;border-radius:999px;padding:1px 7px;margin-right:5px;font-size:10.5px;color:#8b94a3}
+    .fz-gaptable{max-height:380px;overflow:auto;border:1px solid #1a1f26;border-radius:10px}
+    .fz-gaptable table{width:100%;border-collapse:collapse;font-size:11px}
+    .fz-gaptable th{position:sticky;top:0;background:#12151a;color:#6c7684;font-weight:500;text-align:left;padding:5px 7px;border-bottom:1px solid #1d222a}
+    .fz-gaptable td{padding:4px 7px;border-bottom:1px solid #151a20;color:#a8b0bd}
+    .fz-gaptable td.mono{font-family:ui-monospace,Consolas,monospace;color:#c3cad6}
+    .fz-gaptable td.num{text-align:right;color:#7d8697}
+    .fz-gaptable tr.fz-has td{color:#5f6875}
+    .fz-gaptable input{accent-color:#d8b26a}
+    .fz-bans{margin:6px 0;padding:8px 10px;border:1px solid #3a2a26;border-radius:9px;background:#17100f;color:#d8a0a0;font-size:11px;line-height:1.7}
+    .fz-tl-row{display:flex;gap:8px;align-items:baseline;padding:4px 0;border-bottom:1px dotted #171c23;font-size:11px}
+    .fz-tl-row b{color:#d8b26a;font-weight:600;white-space:nowrap}
+    .fz-tl-row span{color:#8b94a3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .fz-gaptable th:nth-child(4),.fz-gaptable td:nth-child(4){white-space:nowrap;width:56px;text-align:right}
+    .fz-gaptable th:nth-child(5),.fz-gaptable td:nth-child(5){white-space:nowrap;width:46px}
+    .fz-gaptable th:nth-child(1),.fz-gaptable td:nth-child(1){width:26px}
+    
+    /* ===== 融合台 v3：中间观象台，四周原有卡片（功能不变，只重排）===== */
+    .fl-grid{display:grid;grid-template-columns:268px minmax(0,1fr) 304px;grid-template-rows:auto auto auto auto;gap:14px;align-items:start}
+    .fl-grid > *{min-width:0}
+    .fl-top{grid-column:1 / -1;grid-row:1}
+    .fl-left{grid-column:1;grid-row:2 / span 2;display:flex;flex-direction:column;gap:14px;min-width:0}
+    .fl-obs{grid-column:2;grid-row:2 / span 2;min-width:0}
+    .fl-right{grid-column:3;grid-row:2}
+    .fl-guard{grid-column:3;grid-row:3}
+    .fl-prev{grid-column:1 / span 2;grid-row:4}
+    .fl-ingest{grid-column:3;grid-row:4}
+    .fl-obs-h{display:flex;align-items:baseline;gap:10px;padding:0 2px 8px}
+    .fl-obs-t{font-size:13px;color:#e6d3a6;letter-spacing:.06em}
+    .fl-obs-n{font-size:11px;color:#6c7684}
+    .fl-obs-a{margin-left:auto;font-size:11px;color:#8b94a3;text-decoration:none;cursor:pointer}
+    .fl-obs-a:hover{color:#e6d3a6}
+    .fl-obs iframe{width:100%;height:520px;border:1px solid #1d2229;border-radius:12px;background:#07090c;display:block}
+
+    #fl-ingest h3{display:none}
+    #fl-obs .fl-chip{background:#12161c;border:1px solid #232a33;color:#8b94a3;font-size:11px;padding:4px 9px;border-radius:999px;cursor:pointer}
+    #fl-obs .fl-chip.on{background:rgba(216,178,106,.14);border-color:#5a4a2c;color:#e6d3a6}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="rail">
+    <div class="brand">
+      <div class="mark">鼎</div>
+      <div><b>造化鼎</b><small>ZAOHUA CAULDRON</small></div>
+    </div>
+    <nav id="nav">
+      <a data-v="obs"><span class="dot"></span>观象台</a>
+      <a data-v="overview"><span class="dot"></span>概览</a>
+      <a data-v="health"><span class="dot"></span>技能体检</a>
+      <a data-v="fuse"><span class="dot"></span>融合台</a>
+      <a data-v="distill"><span class="dot"></span>蒸馏地图</a>
+      <a data-v="packs"><span class="dot"></span>包管理</a>
+      <a data-v="eval"><span class="dot"></span>评估对比</a>
+      <a data-v="evidence"><span class="dot"></span>证据链</a>
+    </nav>
+    <div class="foot">
+      CLI <code>0.7.48</code><br />
+      受管产品 3 个<br />
+      数据目录 <code>D:\造化鼎</code>
+    </div>
+  </aside>
+
+  <main>
+    <div class="head">
+      <div>
+        <h1 id="title">概览</h1>
+        <p id="desc">技能的质量与来料，一屏看完。</p>
+      </div>
+      <div class="sel">
+        <button type="button" data-go="/" title="回到乾坤鼎">乾坤鼎</button>
+        <button type="button" class="on" title="当前所在">造化鼎</button>
+        <button type="button" data-go="/" title="回到乾坤鼎">工作台</button>
+      </div>
+    </div>
+
+    <!-- 概览 -->
+
+    <section class="view" id="v-obs">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;font-size:12px;color:var(--dim)">
+        <span>观象台 · 乾坤鼎的技能活动，画成会呼吸的卦象</span>
+        <span style="margin-left:auto;font-family:'JetBrains Mono',ui-monospace,monospace">桥 <b id="obs-bridge" style="color:#7fcfa3">8791</b></span>
+      </div>
+      <div style="position:relative;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#05070a">
+        <iframe id="obs-frame" src="/zhaohua/obs-console.html?relay=http://127.0.0.1:8791"
+                style="display:block;width:100%;height:calc(100vh - 210px);min-height:640px;border:0;background:#05070a"></iframe>
+      </div>
+    </section>
+    <section class="view on" id="v-overview">
+      <div class="kpis">
+        <div class="kpi"><div class="n">15</div><div class="l">受管技能</div><div class="h">film-* · 01–09 + 桥</div></div>
+        <div class="kpi"><div class="n" style="color:var(--bad)">0</div><div class="l">审计全通过</div><div class="h">R01–R10 全部有失败项</div></div>
+        <div class="kpi"><div class="n" style="color:var(--warn)">47</div><div class="l">待修条目</div><div class="h">其中 30 属约定冲突</div></div>
+        <div class="kpi"><div class="n">0</div><div class="l">已装技能包</div><div class="h">packs/registry.jsonl 空</div></div>
+      </div>
+
+      <h2 class="sec">下一步该做什么</h2>
+      <div class="grid3">
+        <div class="card">
+          <h3>先修约定，再修内容</h3>
+          <div class="sub">R06 / R10 是跨技能共享 references 造成的</div>
+          <div class="row"><span class="tag t-bad">R06 15/15</span><span class="tag t-bad">R10 12/15</span></div>
+          <div class="note">给审计加「多根引用解析」后，这 27 条会从失败降为提示，剩下的才是真缺陷。</div>
+        </div>
+        <div class="card">
+          <h3>九个 27 条真缺陷</h3>
+          <div class="sub">缺触发词、缺负边界、无决策树</div>
+          <div class="row"><span class="tag t-warn">R02 12</span><span class="tag t-warn">R03 15</span><span class="tag t-warn">R09 10</span></div>
+          <div class="note">这三类可机械修，但改的是别人写的技能——落 data\skills 不受升级影响。</div>
+        </div>
+        <div class="card">
+          <h3>再补内容缺口</h3>
+          <div class="sub">镜表 · 提示词十二维 · 情绪谱</div>
+          <div class="row"><span class="tag t-info">L4</span><span class="tag t-info">L6</span><span class="tag t-info">L5</span></div>
+          <div class="note">来料在乾坤鼎 rendered/skills，0.2 MB，融合后进 09 与 08。</div>
+        </div>
+      </div>
+
+      <h2 class="sec">流水线</h2>
+      <div class="card">
+        <table>
+          <thead><tr><th style="width:56px">步</th><th>动作</th><th>产物</th><th style="width:130px">状态</th></tr></thead>
+          <tbody>
+            <tr><td><span class="stage">01</span></td><td>inspect 体检</td><td>能力契约 / 评审就绪度</td><td><span class="tag t-ok">已完成</span></td></tr>
+            <tr><td><span class="stage">02</span></td><td>audit R01–R10</td><td>失败项清单 + 退出码</td><td><span class="tag t-ok">已完成</span></td></tr>
+            <tr><td><span class="stage">03</span></td><td>init 补 agent.json</td><td>能力声明骨架</td><td><span class="tag t-warn">待办</span></td></tr>
+            <tr><td><span class="stage">04</span></td><td>fuse / create 融合</td><td>合并后的 SKILL.md</td><td><span class="tag t-warn">需模型 key</span></td></tr>
+            <tr><td><span class="stage">05</span></td><td>pack 打包</td><td>EVIDENCE.md + 引用副本</td><td><span class="tag t-info">不调模型</span></td></tr>
+            <tr><td><span class="stage">06</span></td><td>pack-install 安装</td><td>packs/&lt;名&gt;/&lt;版本&gt;/</td><td><span class="tag t-info">未开始</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 技能体检 -->
+    <section class="view" id="v-health">
+      <div class="grid2">
+        <div class="card">
+          <h3>15 个技能的审计结果</h3>
+          <div class="sub">R01–R10 作者规则 · 全部技能均有失败项</div>
+          <table>
+            <thead><tr><th>技能</th><th>阶段</th><th>失败规则</th><th style="width:88px">通过率</th></tr></thead>
+            <tbody>
+              <tr><td class="nm">ai-film-router</td><td><span class="stage">00</span></td>
+                <td><span class="tag t-bad">R02</span><span class="tag t-bad">R03</span><span class="tag t-bad">R06</span><span class="tag t-bad">R08</span><span class="tag t-bad">R09</span></td>
+                <td><div class="bar"><i style="width:50%"></i></div></td></tr>
+              <tr><td class="nm">film-synopsis</td><td><span class="stage">01</span></td>
+                <td><span class="tag t-bad">R03</span><span class="tag t-bad">R06</span><span class="tag t-warn">R10</span></td>
+                <td><div class="bar"><i style="width:70%"></i></div></td></tr>
+              <tr><td class="nm">film-characters</td><td><span class="stage">02</span></td>
+                <td><span class="tag t-bad">R03</span><span class="tag t-bad">R06</span></td>
+                <td><div class="bar"><i style="width:80%"></i></div></td></tr>
+              <tr><td class="nm">film-worldbuilding</td><td><span class="stage">03</span></td>
+                <td><span class="tag t-bad">R02</span><span class="tag t-bad">R03</span><span class="tag t-bad">R06</span><span class="tag t-warn">R10</span></td>
+                <td><div class="bar"><i style="width:60%"></i></div></td></tr>
+              <tr><td class="nm">film-treatment</td><td><span class="stage">04</span></td>
+                <td><span class="tag t-bad">R03</span><span class="tag t-bad">R06</span><span class="tag t-warn">R09</span></td>
+                <td><div class="bar"><i style="width:70%"></i></div></td></tr>
+              <tr><td class="nm">film-screenplay</td><td><span class="stage">05</span></td>
+                <td><span class="tag t-bad">R02</span><span class="tag t-bad">R03</span><span class="tag t-bad">R06</span><span class="tag t-warn">R10</span></td>
+                <td><div class="bar"><i style="width:60%"></i></div></td></tr>
+              <tr><td class="nm">film-stress-test</td><td><span class="stage">06</span></td>
+                <td><span class="tag t-bad">R03</span><span class="tag t-bad">R06</span></td>
+                <td><div class="bar"><i style="width:80%"></i></div></td></tr>
+              <tr><td class="nm">film-lira-assets</td><td><span class="stage">07</span></td>
+                <td><span class="tag t-bad">R03</span><span class="tag t-bad">R06</span><span class="tag t-warn">R09</span><span class="tag t-warn">R10</span></td>
+                <td><div class="bar"><i style="width:60%"></i></div></td></tr>
+              <tr><td class="nm">film-acting</td><td><span class="stage">08</span></td>
+                <td><span class="tag t-bad">R02</span><span class="tag t-bad">R03</span><span class="tag t-bad">R06</span></td>
+                <td><div class="bar"><i style="width:70%"></i></div></td></tr>
+              <tr><td class="nm">film-cinedance</td><td><span class="stage">09</span></td>
+                <td><span class="tag t-bad">R02</span><span class="tag t-bad">R03</span><span class="tag t-bad">R06</span><span class="tag t-warn">R09</span><span class="tag t-warn">R10</span></td>
+                <td><div class="bar"><i style="width:50%"></i></div></td></tr>
+              <tr><td class="nm">film-expert-bridge</td><td><span class="stage">桥</span></td>
+                <td><span class="tag t-bad">R03</span><span class="tag t-bad">R06</span><span class="tag t-warn">R09</span></td>
+                <td><div class="bar"><i style="width:70%"></i></div></td></tr>
+              <tr><td class="nm">film-knowledge-bridge</td><td><span class="stage">桥</span></td>
+                <td><span class="tag t-bad">R02</span><span class="tag t-bad">R03</span><span class="tag t-warn">R06</span></td>
+                <td><div class="bar"><i style="width:70%"></i></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div>
+          <div class="card">
+            <h3>film-cinedance · inspect</h3>
+            <div class="sub">实跑输出（只读）</div>
+            <dl class="kv">
+              <dt>内容哈希</dt><dd>sha256:d7572ef9e277e032ce934f46be968eef98f73c485a462cf8b77474bb41c820c0</dd>
+              <dt>文件</dt><dd>12 个 / 143,161 B</dd>
+              <dt>Agent ID</dt><dd>skill.film-cinedance.d7572ef9e277e032</dd>
+              <dt>完整度</dt><dd>partial</dd>
+              <dt>可信状态</dt><dd>untrusted</dd>
+              <dt>评审就绪</dt><dd style="color:var(--bad)">✗ 未就绪</dd>
+            </dl>
+            <div class="note">缺少 agent.json 的能力契约：capabilities / tools / dependencies / evaluation 都未声明，所以只能被描述，不能参与重叠与互补判断。</div>
+          </div>
+          <div class="card">
+            <h3>R06 的真实成因</h3>
+            <div class="sub">不是缺文件，是跨技能共享</div>
+            <div class="src" style="margin-top:8px">
+              <div>references/cooperationModes.md<span>→ ai-film-router/</span></div>
+              <div>references/modules/shot_grammar.md<span>→ film-expert-bridge/</span></div>
+            </div>
+            <div class="note">审计要求每个技能自足，而它本来是跨技能共享 references 的设计。加一层多根解析，27 条误报就消失了。</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 融合台 -->
+    <!-- FUSE_V2 -->
+<!-- FUSE_V3 --><!-- FUSE_V3 --><!-- FUSE_V3 --><!-- FUSE_V3 --><section class="view" id="v-fuse">
+      
+      <div id="fl-grid" style="display:grid;grid-template-columns:300px minmax(0,1fr) 330px;gap:14px;align-items:start">
+        <div id="zh-fuse-card" style="grid-column:1 / -1;grid-row:1"></div>
+
+      <div id="fl-obs" style="min-width:0;grid-column:2;grid-row:2 / span 2;display:flex;flex-direction:column">
+        <div style="display:flex;align-items:baseline;gap:10px;padding:0 2px 8px">
+          <span style="font-size:13px;color:#e6d3a6;letter-spacing:.06em">观象台</span>
+          <span style="font-size:11px;color:#6c7684">视界熔炉（forge）· 投喂项目主题改造</span>
+          <span id="fl-obs-size" style="display:inline-flex;gap:6px;margin-left:8px">
+            <button type="button" data-h="560" style="font-size:11px;color:#8b94a3;background:none;border:1px solid #242b34;border-radius:999px;padding:1px 8px;cursor:pointer">紧凑</button>
+            <button type="button" data-h="660" style="font-size:11px;color:#8b94a3;background:none;border:1px solid #242b34;border-radius:999px;padding:1px 8px;cursor:pointer">标准</button>
+            <button type="button" data-h="780" style="font-size:11px;color:#8b94a3;background:none;border:1px solid #242b34;border-radius:999px;padding:1px 8px;cursor:pointer">加高</button>
+          </span>
+          <button id="fl-obs-off" type="button" style="margin-left:auto;font-size:11px;color:#8b94a3;background:none;border:0;cursor:pointer">卸载</button>
+          <a href="/zhaohua/obs-forge.html?theme=forge" target="_blank" style="font-size:11px;color:#8b94a3;text-decoration:none">全屏 ↗</a>
+        </div>
+        <div id="fl-obs-box" style="position:relative;height:660px;transition:height .18s ease;border:1px solid #1d2229;border-radius:12px;overflow:hidden;background:#07090c">
+          
+      <div id="fl-obs-hud" style="position:absolute;inset:0;pointer-events:none;z-index:5">
+        <div style="position:absolute;left:0;right:0;top:0;height:64px;background:linear-gradient(#07090c 78%,rgba(7,9,12,0))"></div>
+        <div style="position:absolute;left:14px;top:12px;pointer-events:auto">
+          <div style="font-size:11px;letter-spacing:.22em;color:#7f8a99">ZAOHUA CAULDRON</div>
+          <div style="font-size:15px;color:#e8dcc2;letter-spacing:.04em;margin-top:2px">观象台 · 技能熔炉</div>
+        </div>
+        <div style="position:absolute;right:14px;top:14px;font-size:11px;color:#6c7684">
+          <span id="fl-hud-live" style="color:#8fe3b9">● 桥已连接</span>
+        </div>
+        <div style="position:absolute;left:0;right:0;bottom:0;height:34px;background:linear-gradient(rgba(7,9,12,0),#07090c 55%)"></div>
+        <div id="fl-hud-tick" style="position:absolute;left:14px;right:14px;bottom:9px;font-size:11px;color:#8b94a3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+        <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center">
+          <div id="fl-hud-pct" style="font-size:34px;line-height:1;color:#f0e2c2;text-shadow:0 0 18px rgba(216,178,106,.35)">16/16</div>
+          <div style="font-size:10px;letter-spacing:.18em;color:#8b7f66;margin-top:6px">体检通过</div>
+        </div>
+      </div>
+          <div id="fl-obs-hint" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#6c7684;font-size:12px">观象台载入中…</div>
+        </div>
+      </div>
+        <div style="grid-column:1;grid-row:2 / span 2;display:flex;flex-direction:column;gap:14px;min-width:0">
+<div class="card">
+          <h3>来料</h3>
+          <div class="sub">乾坤鼎 rendered/skills · 9 层 · 0.2 MB</div>
+          <div class="src">
+            <div>04-shotlist<span>L4 镜表</span></div>
+            <div>06-prompt<span>L6 十二维</span></div>
+            <div>05-acting<span>L5 情绪谱</span></div>
+            <div>03-assets<span>L3 一致性锁</span></div>
+            <div>02-script<span>L2 台词机检</span></div>
+            <div>08-knowledge<span>L8 检索</span></div>
+          </div>
+        </div>
+<div class="card">
+          <h3>宿主</h3>
+          <div class="sub">Toonflow 09 CINEDANCE</div>
+          <div class="src">
+            <div class="pick">film-cinedance<span>09 提示词</span></div>
+            <div>film-acting<span>08 表演</span></div>
+            <div>film-lira-assets<span>07 资产</span></div>
+            <div>film-expert-bridge<span>工艺分支</span></div>
+          </div>
+          <div class="note">产物落 data\skills\film-cinedance，升级不丢。</div>
+        </div>
+<div class="card">
+          <h3>配方</h3>
+          <div class="sub">create --mode merge</div>
+          <dl class="kv" style="margin-top:6px">
+            <dt>基准</dt><dd>film-cinedance@0.1.42</dd>
+            <dt>追加</dt><dd>06-prompt（十二维）</dd>
+            <dt>追加</dt><dd>04-shotlist（镜表）</dd>
+            <dt>守卫</dt><dd>禁令继承 P01</dd>
+            <dt>禁词表</dt><dd>seedance-only.txt</dd>
+            <dt>字节预算</dt><dd>6,000 / 20 条</dd>
+          </dl>
+          <div class="row" style="margin-top:12px">
+            <button class="btn gold">开始融合</button>
+            <button class="btn ghost">只看差异</button>
+          </div>
+        </div>
+        </div>
+        <div style="grid-column:3;grid-row:2;min-width:0"><div class="card" id="gp-card">
+        <h3>只补缺（来料 → 目标技能）</h3>
+        <div class="sub">不揉一起，只把目标里没有的节补进去。已有指纹命中的节会标「已有」，默认不勾。</div>
+        <div class="gp-form">
+          <label>来料<select id="gp-src" multiple size="6"></select></label>
+          <label>目标技能<select id="gp-target">
+            <option>film-cinedance</option><option>film-shotlist</option><option>film-acting</option>
+            <option>film-lira-assets</option><option>film-screenplay</option><option>film-synopsis</option>
+            <option>film-characters</option><option>film-worldbuilding</option><option>film-treatment</option>
+            <option>film-stress-test</option><option>ai-film-router</option><option>canvas</option>
+            <option>workflow</option><option>v118workflow</option><option>film-knowledge-bridge</option>
+          </select></label>
+          <button class="dz-mini dz-strong" id="gp-do">对比</button>
+        </div>
+        <div id="gp-plan" class="gp-plan"><div class="sub">选好来料与目标，点「对比」。这里会列出缺哪几节。</div></div>
+      </div></div>
+        <div style="grid-column:3;grid-row:3;min-width:0"><div class="card">
+          <h3>守卫检查</h3>
+          <div class="sub">融合前必须全绿</div>
+          <table>
+            <tbody>
+              <tr><td>禁令继承（来料「禁止/不得」）</td><td style="text-align:right"><span class="tag t-ok">11/11</span></td></tr>
+              <tr><td>假引用清理</td><td style="text-align:right"><span class="tag t-ok">3 处</span></td></tr>
+              <tr><td>真引用带入</td><td style="text-align:right"><span class="tag t-ok">5 个</span></td></tr>
+              <tr><td>字节预算</td><td style="text-align:right"><span class="tag t-warn">V01 预警</span></td></tr>
+              <tr><td>与已装包重叠率</td><td style="text-align:right"><span class="tag t-info">0 %</span></td></tr>
+            </tbody>
+          </table>
+          <div class="note">超预算报 V01 而不是硬删规则正文——要么拆 references，要么提高预算。</div>
+        </div></div>
+        <div style="grid-column:3;grid-row:4;min-width:0"><div class="card" id="ig-card">
+        <h3>外部投放（放进来的东西，先判它是哪一层）</h3>
+        <div class="sub">文件夹 / zip / 单个 md 都行。扫描只看内容不写盘；判层是确定性关键词打分（不是模型），每条都给出依据词；确认后才复制进 patch\sources。</div>
+        <div class="dz-form">
+          <input id="ig-path" class="gp-in" placeholder="D:\下载\某个技能包 或 某个文件.md">
+          <input id="ig-name" class="gp-in" placeholder="包名（会作为 src:包名/文件 的来料 id）">
+          <button id="ig-scan" class="dz-mini dz-strong" data-ig="scan">扫描并判层</button>
+        </div>
+        <div class="dz-form ig-up">
+          <label class="dz-mini ig-pick">上传文件夹<input type="file" id="ig-dir" webkitdirectory directory multiple hidden></label>
+          <label class="dz-mini ig-pick">上传文件<input type="file" id="ig-files" multiple hidden></label>
+          <label class="dz-mini ig-pick">上传 zip<input type="file" id="ig-zip" accept=".zip" hidden></label>
+          <span class="sub">选中的东西会先传到本机桥（127.0.0.1:8791），再复制进 patch\sources\&lt;包名&gt;\；不联网、不出本机。</span>
+        </div>
+        <div id="ig-list" class="gp-plan-box"></div>
+      </div></div>
+        <div style="grid-column:1 / span 2;grid-row:4;min-width:0"><div class="card">
+          <h3>新增章节：提示词编译十二维</h3>
+          <div class="sub">来自 06-prompt · 132 行 → 压缩到 4,100 字节</div>
+          <div class="src">
+            <div>① 景别与焦段<span>+ dir</span></div>
+            <div>② 机位与高度<span>+ dir</span></div>
+            <div>③ 构图动机<span>+ dir</span></div>
+            <div>④ 主体动作<span>保留原文</span></div>
+            <div>⑤ 运镜方式<span>保留原文</span></div>
+            <div>⑥–⑫ 光影 / 色彩 / 质感 / 节奏 …<span>7 条</span></div>
+          </div>
+        </div></div>
+      </div>
+    </section>
+
+    <!-- 蒸馏地图 -->
+    <section class="view" id="v-distill">
+      <div class="dz-drillbar">
+        <label><input type="checkbox" id="dz-drill"> 演练模式（把上游当成改过一版，用 patch\sources\_sim 模拟，不动乾坤鼎真文件）</label>
+      </div>
+      <div class="dz-kpi" id="dz-kpi"></div>
+
+      <h2 class="sec">蒸馏地图 · 技能 × 三层</h2>
+      <div class="card">
+        <h3>融入度</h3>
+        <div class="sub">格子是「外来件 / 该层总文件」，颜色越亮融得越多；行尾是状态。点一行看明细。<br><b>正文层恒为 0 是策略不是欠账</b>——规则一律放 references（实测：把规则写进正文，契约达标率没有提升，只让输出变长更贵）。</div>
+        <table class="dz-map">
+          <thead><tr><th>技能</th><th>正文层</th><th>资料层</th><th>能力层</th><th>状态</th></tr></thead>
+          <tbody id="dz-rows"><tr><td colspan="5" class="sub">正在读取…</td></tr></tbody>
+        </table>
+      </div>
+
+      <div class="card" id="dz-detail">
+        <h3>点一行看明细</h3>
+        <div class="sub">这里会列出该技能里每个外来文件：来源、层、状态、sha。</div>
+      </div>
+      <div class="card">
+        <h3>来料 → 投放（真写盘，走账本）</h3>
+        <div class="sub" id="dz-src-info">正在读取来料…</div>
+        <div class="dz-form">
+          <div><label>来料</label><select id="dz-src"></select></div>
+          <div><label>投到哪个技能</label><select id="dz-skill">
+            <option value="film-acting">film-acting</option><option value="film-cinedance">film-cinedance</option>
+            <option value="film-shotlist">film-shotlist</option><option value="film-screenplay">film-screenplay</option>
+            <option value="film-treatment">film-treatment</option><option value="film-lira-assets">film-lira-assets</option>
+            <option value="film-synopsis">film-synopsis</option><option value="film-characters">film-characters</option>
+            <option value="film-worldbuilding">film-worldbuilding</option><option value="film-stress-test">film-stress-test</option>
+            <option value="film-expert-bridge">film-expert-bridge</option><option value="film-knowledge-bridge">film-knowledge-bridge</option>
+            <option value="ai-film-router">ai-film-router</option><option value="canvas">canvas</option>
+            <option value="workflow">workflow</option><option value="v118workflow">v118workflow</option>
+          </select></div>
+          <div><label>目标文件名</label><input id="dz-to" placeholder="留空=references/原文件名"></div>
+          <div><button class="btn" id="dz-plan">拆件</button></div>
+          <div><button class="btn" id="dz-land">投放</button></div>
+          <div><button class="btn" id="dz-wire">补接线</button></div>
+        </div>
+        <div id="dz-secs"></div>
+        <div id="dz-land-out" style="margin-top:8px"></div>
+        <div class="sub" style="margin-top:8px">投放 = 写 patch\skills\&lt;技能&gt;\ 一个文件 + 文件头来源戳 + 记一条账（epoch 自动 +1）。不勾节=整份投。</div>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <h3>来源流向</h3>
+          <div class="sub">左边是来料，右边是技能，线宽=文件数。</div>
+          <svg id="dz-sankey" viewBox="0 0 640 260"></svg>
+        </div>
+        <div class="card">
+          <h3>版本时间线</h3>
+          <div class="sub">每次融合是一个 epoch，可回退。</div>
+          <div id="dz-line"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 包管理 -->
+    <section class="view" id="v-packs">
+      <div class="card">
+        <h3>打一个包</h3>
+        <div class="sub">pack 不调模型：合成 → 渲染 SKILL.md → 带入 references → 审计 → 写 EVIDENCE.md</div>
+        <div class="zh-pk-row">
+          <select id="zh-pk-skill"></select>
+          <button class="btn" id="zh-pk-go">开始打包</button>
+          <span class="zh-pk-msg" id="zh-pk-msg"></span>
+        </div>
+        <div class="zh-pk-steps">
+          <button class="btn ghost" id="zh-pk-install" disabled>② 安装到产品目录</button>
+          <button class="btn ghost" id="zh-pk-deploy" disabled>③ 部署进乾坤鼎</button>
+          <span class="zh-pk-msg" id="zh-pk-msg2"></span>
+        </div>        <div class="note">产物落 <code>patch\staging\packs\&lt;技能&gt;\</code>；重打会把旧包移到 <code>.history\</code>。审计没过会照实标出，不假装通过。</div>
+      </div>
+
+      <div class="card">
+        <h3>已产出的包</h3>
+        <div class="sub">来源哈希、带入了哪些引用、审计结论——都在 EVIDENCE.md 里</div>
+        <table>
+          <thead><tr><th>包</th><th>产出时间</th><th>证据开头</th></tr></thead>
+          <tbody id="zh-pk-list"><tr><td colspan="3" class="sub">正在读取…</td></tr></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h3>已安装包</h3>
+        <div class="sub">引擎侧的落点：<code>packs\&lt;名&gt;\&lt;版本&gt;\</code>，每次动作记 registry.jsonl。下表读的是 <code>/packs-installed</code> 真实目录。</div>
+        <table>
+          <thead><tr><th>包</th><th>版本</th><th>来源目录</th><th>许可</th><th>来源 sha</th><th>引用/能力</th></tr></thead>
+          <tbody id="zh-pi"><tr><td colspan="6" class="sub">正在读取…</td></tr></tbody>
+        </table>
+        <div class="note" id="zh-pi-note">重叠率超过 80% 会拒装，并报「和谁重、重多少」——同一个能力装两遍是技能库烂掉的最快方式。</div>
+      </div>
+
+      <div class="card">
+        <h3>已经装进乾坤鼎的技能</h3>
+        <div class="sub">data\skills\&lt;技能&gt;\ · 带 skill.pack.json 的，就是从包里装进来的</div>
+        <table>
+          <thead><tr><th>技能</th><th>版本</th><th>部署时间</th><th>SKILL.md 哈希</th></tr></thead>
+          <tbody id="zh-dp-list"><tr><td colspan="4" class="sub">正在读取…</td></tr></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h3>已装技能（唯一真相 patch\skills）</h3>
+        <div class="sub">每一行就是一份真技能。卸掉会先从 patch\skills 与运行区一起移除，并备份到 patch\_backup\skills。</div>
+        <div class="dz-drillbar" style="margin:10px 0">
+          <span class="sub">卸错了从这里恢复：</span>
+          <select id="zh-bak" class="dz-mini" style="min-width:340px"><option value="">读取备份…</option></select>
+          <button class="dz-mini" id="zh-bak-go">恢复这份</button>
+        </div>
+        <table>
+          <thead><tr><th>技能</th><th>SKILL.md</th><th>打包过</th><th>运行区</th><th>文件</th><th></th></tr></thead>
+          <tbody id="zh-truth"><tr><td colspan="6" class="sub">正在读取…</td></tr></tbody>
+        </table>
+      </div>
+
+      <h2 class="sec">本机动作记录</h2>
+      <div class="card">
+        <div class="tl" id="zh-pk-log">
+          <div class="ev"><div class="t">还没有动作。上面点「开始打包」，这里会记下每一次的结果。</div><div class="m">—</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 评估对比 -->
+    <section class="view" id="v-eval">
+      <div class="grid2">
+        <div class="card">
+          <h3>最近一次真实证据</h3>
+          <div class="sub" id="ev-meta">正在读取最近一份证据…</div>
+          <div class="arms" id="ev-arms"></div>
+          <div class="chart" id="ev-chart"></div>
+          <div class="note" id="ev-note"></div>
+        </div>
+        <div class="card">
+          <h3>逐条断言命中</h3>
+          <div class="sub" id="ev-assert-sub">按「任务 × 断言」比对两臂，✓ 表示该臂命中</div>
+          <table>
+            <thead><tr><th>任务 / 断言</th><th style="text-align:center" id="ev-th-a">A</th><th style="text-align:center" id="ev-th-b">B</th></tr></thead>
+            <tbody id="ev-asserts"><tr><td colspan="3" class="sub">正在读取…</td></tr></tbody>
+          </table>
+          <div class="note">以上全部来自 <code>/eval-run</code> 返回的 zhaohua-eval/v1 证据文件，没跑过就是空的——不再放示意数字。</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 证据链 -->
+    <section class="view" id="v-evidence">
+      <div class="card">
+        <h3 id="zh-ev-title">EVIDENCE.md</h3>
+        <div class="sub" id="zh-ev-sub">由 pack 生成，全程不调用模型 · 读的是已装包里真实的那一份</div>
+        <div id="zh-ev-body"><div class="sub">正在读取…</div></div>
+        <div class="note">想换一份就看包管理页装了什么；每装一个包，这里就多一份证据。</div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+  const meta = {
+    overview:["概览","技能的质量与来料，一屏看完。"],
+    health:["技能体检","inspect 与 audit 的实跑结果，按阶段排。"],
+    fuse:["融合台","把乾坤鼎的层，合进宿主的阶段技能。"],
+    packs:["包管理","装了什么、版本、来源、能不能回滚。"],
+    eval:["评估对比","老技能 vs 新技能，同一任务集两臂。"],
+    distill:["蒸馏地图","东西从哪来，融到哪一层，融了多少——一眼看完。"],
+    obs:["观象台","乾坤鼎的活动，画成会呼吸的鼎。一阵涟漪就是一次体检。"],
+    evidence:["证据链","每个包都能追到来源哈希与审计结论。"]
+  };
+  function go(key){
+    const a = document.querySelector(`#nav a[data-v="${key}"]`);
+    if (!a) return;
+    document.querySelectorAll('#nav a').forEach(x => x.classList.toggle('on', x === a));
+    document.querySelectorAll('.view').forEach(v => v.classList.toggle('on', v.id === 'v-' + key));
+    const m = meta[key];
+    document.getElementById('title').textContent = m[0];
+    document.getElementById('desc').textContent = m[1];
+  }
+  document.getElementById('nav').addEventListener('click', (e) => {
+    const a = e.target.closest('a[data-v]');
+    if (a) { go(a.dataset.v); history.replaceState(null, '', '#' + a.dataset.v); }
+  });
+  // 头顶三个入口：乾坤鼎 / 造化鼎 / 工作台 —— 前两个都回到乾坤鼎首页
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-go]');
+    if (b) location.href = b.dataset.go;
+  });
+  go((((location.hash || '#overview').slice(1)).split('&')[0]) || 'overview');
+</script>
+<script>
+/* ---------- 造化鼎：首屏 + 真数据 ---------- */
+(function () {
+  const BRIDGE = 'http://127.0.0.1:8791';
+
+  // 首屏（进入造化鼎先看到它，和乾坤鼎的欢迎页对称）
+  const welcome = document.createElement('div');
+  welcome.id = 'zh-welcome';
+  welcome.innerHTML = [
+    '<div class="zw-top">',
+    '  <div class="zw-brand"><div class="zw-mark">鼎</div>',
+    '    <div class="zw-names"><b>造化鼎</b><span>技能的尺子，就在这里</span></div></div>',
+    '  <div class="zw-topbtn">纯本地运行</div>',
+    '</div>',
+    '<div class="zw-body">',
+    '  <div class="zw-left">',
+    '    <div class="zw-eyebrow">一套尺子，量所有技能</div>',
+    '    <h1>技能写得好不好<br>先量一遍</h1>',
+    '    <p class="zw-desc">体检、融合、打包、回滚、评估——十五条技能的问题清单，一次跑完，每条都能追到证据。</p>',
+    '    <div class="zw-tags"><span>技能体检</span><span>融合优化</span><span>打包回滚</span><span>评估对比</span></div>',
+    '    <button type="button" class="zw-go">→ 进入造化鼎</button>',
+    '    <div class="zw-note">纯本地运行，技能不出本机。桥接 CLI 0.7.48，连不上时仍可看静态结果。',
+    '      <br><button type="button" class="zw-back">← 返回乾坤鼎</button></div>',
+    '  </div>',
+    '  <div class="zw-right">',
+    '    <div class="zw-visual">',
+    '      <div class="zw-vis-head"><span>audit 报告</span><span class="zw-vis-k">R01–R10</span></div>',
+    '      <div class="zw-vis-rows">',
+    '        <div><i></i>ai-film-router<span class="p">全过</span></div>',
+    '        <div><i></i>film-cinedance<span class="w">R10</span></div>',
+    '        <div><i></i>canvas<span class="p">全过</span></div>',
+    '        <div><i></i>workflow<span class="w">R05</span></div>',
+    '      </div>',
+    '      <div class="zw-vis-foot">15 技能 · 失败 12 · 58 ms</div>',
+    '      <div class="zw-vis-title">把技能的问题<br>一次说清</div>',
+    '    </div>',
+    '  </div>',
+    '</div>',
+    '<div class="zw-bottom"><span>CLI 0.7.48</span><span>受管产品 3 个</span></div>',
+  ].join('');
+  document.documentElement.appendChild(welcome);
+
+  const status = document.createElement('span');
+  status.id = 'zh-live';
+  status.textContent = '连接中…';
+  var selBox = document.querySelector('.head .sel');
+  if (selBox) selBox.appendChild(status);
+
+  const style = document.createElement('style');
+  style.textContent = `
+    #zh-welcome{position:fixed;inset:0;z-index:2147483000;display:flex;flex-direction:column;
+      padding:26px 40px 20px;box-sizing:border-box;
+      background:radial-gradient(1100px 720px at 72% 46%, #16202b 0%, #0a0e13 68%);}
+    #zh-welcome .zw-top{display:flex;justify-content:space-between;align-items:center}
+    #zh-welcome .zw-brand{display:flex;align-items:center;gap:12px}
+    #zh-welcome .zw-mark{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+      font-size:20px;font-weight:700;color:#14181d;background:linear-gradient(135deg,#e6cd93,#b58f45)}
+    #zh-welcome .zw-names{display:flex;flex-direction:column;line-height:1.35}
+    #zh-welcome .zw-names b{color:#f0ece2;font-size:17px;letter-spacing:.03em}
+    #zh-welcome .zw-names span{color:#7f8b99;font-size:12px}
+    #zh-welcome .zw-topbtn{border:1px solid #2a3340;color:#9aa7b6;font-size:12px;padding:8px 14px;border-radius:10px;background:rgba(255,255,255,.02)}
+    #zh-welcome .zw-body{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center;
+      max-width:1180px;width:100%;margin:0 auto}
+    #zh-welcome .zw-left{max-width:470px}
+    #zh-welcome .zw-eyebrow{color:#8b98a8;font-size:12px;letter-spacing:.14em;margin-bottom:16px}
+    #zh-welcome h1{font-size:46px;line-height:1.28;color:#f4f1ea;margin:0 0 18px;letter-spacing:.01em}
+    #zh-welcome .zw-desc{color:#9aa7b6;font-size:14px;line-height:1.95;margin:0 0 22px}
+    #zh-welcome .zw-tags{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:26px}
+    #zh-welcome .zw-tags span{font-size:12px;color:#c9b489;border:1px solid #3a3427;background:#171410;padding:6px 11px;border-radius:8px}
+    #zh-welcome .zw-go{width:340px;padding:16px 0;border:0;border-radius:12px;background:#f3efe6;color:#14181d;
+      font-size:15px;font-weight:600;cursor:pointer}
+    #zh-welcome .zw-go:hover{background:#fff}
+    #zh-welcome .zw-note{margin-top:14px;font-size:12px;color:#6f7d8c;line-height:1.8}
+    #zh-welcome .zw-back{margin-top:8px;padding:0;border:0;background:transparent;color:#8b98a8;font-size:12px;cursor:pointer}
+    #zh-welcome .zw-back:hover{color:#d8b26a}
+    #zh-welcome .zw-right{display:flex;justify-content:flex-end}
+    #zh-welcome .zw-visual{width:100%;max-width:520px;aspect-ratio:4/3;border-radius:18px;padding:22px 24px;box-sizing:border-box;
+      display:flex;flex-direction:column;border:1px solid #1e2833;overflow:hidden;
+      background:linear-gradient(160deg,#121a23 0%,#0d131a 60%,#141c25 100%);box-shadow:0 24px 60px rgba(0,0,0,.45)}
+    #zh-welcome .zw-vis-head{display:flex;justify-content:space-between;color:#8b98a8;font-size:12px;letter-spacing:.08em;margin-bottom:16px}
+    #zh-welcome .zw-vis-k{color:#6b5d3d}
+    #zh-welcome .zw-vis-rows{display:flex;flex-direction:column;gap:9px;flex:1}
+    #zh-welcome .zw-vis-rows div{display:flex;align-items:center;gap:9px;font-size:13px;color:#c3ccd6;
+      border-bottom:1px dashed #1c2530;padding-bottom:8px}
+    #zh-welcome .zw-vis-rows i{width:6px;height:6px;border-radius:50%;background:#3d4753}
+    #zh-welcome .zw-vis-rows .p{color:#5fbf7f;margin-left:auto;font-size:12px}
+    #zh-welcome .zw-vis-rows .w{color:#d8b26a;margin-left:auto;font-size:12px}
+    #zh-welcome .zw-vis-foot{color:#6f7d8c;font-size:12px;margin-top:14px}
+    #zh-welcome .zw-vis-title{margin-top:10px;color:#f0ece2;font-size:26px;line-height:1.35;letter-spacing:.02em}
+    #zh-welcome .zw-bottom{display:flex;gap:10px}
+    #zh-welcome .zw-bottom span{font-size:12px;color:#6f7d8c;border:1px solid #222b35;border-radius:9px;
+      padding:6px 12px;background:rgba(255,255,255,.02)}
+    #zh-live{margin-left:10px;font-size:12px;color:#6f7d8c;align-self:center}
+    #zh-live.ok{color:#5fbf7f}
+    #zh-live.bad{color:#e07a5f}
+    .zh-banner{margin:0 0 14px;padding:10px 14px;border:1px solid #2b3440;border-radius:10px;
+      font-size:13px;color:#9aa7b6;background:#12171d}
+    .zh-banner b{color:#e8e2d5}
+    .zh-pk-row{display:flex;gap:10px;align-items:center;margin:14px 0 12px;flex-wrap:wrap}
+    .zh-pk-row select{background:#0f141a;border:1px solid #2b3440;color:#dfe6ee;border-radius:9px;padding:9px 12px;font-size:13px;min-width:220px}
+    .zh-pk-msg{font-size:12px;color:#8b98a8}
+    .zh-pk-steps{display:flex;gap:10px;align-items:center;margin:0 0 12px;flex-wrap:wrap}
+    .zh-pk-steps .btn[disabled]{opacity:.45;cursor:not-allowed}
+  `;
+  document.head.appendChild(style);
+
+  const closeWelcome = () => { welcome.style.display = 'none'; };
+  welcome.querySelector('.zw-go').onclick = closeWelcome;
+  welcome.querySelector('.zw-back').onclick = () => { location.href = '/'; };
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && welcome.style.display !== 'none') location.href = '/'; });
+  if (location.hash) welcome.style.display = 'none';
+
+  // 表格重绘
+  function paint(data) {
+    const tbody = document.querySelector('#v-health tbody');
+    const rows = [...data.skills].sort((a, b) => (a.stage || 'zz').localeCompare(b.stage || 'zz'));
+    tbody.innerHTML = rows.map((s) => {
+      const fails = s.rules.filter((r) => r.status === 'fail');
+      const tags = fails.length
+        ? fails.map((r) => `<span class="tag ${r.id === 'R10' ? 't-warn' : 't-bad'}" title="${r.message.replace(/"/g, '&quot;')}">${r.id}</span>`).join('')
+        : '<span class="tag t-ok">全过</span>';
+      const pct = Math.round(((11 - fails.length) / 11) * 100);
+      return `<tr><td class="nm">${s.name}</td><td><span class="stage">${s.stage || '桥'}</span></td>`
+        + `<td>${tags}</td><td><div class="bar"><i style="width:${pct}%"></i></div></td></tr>`;
+    }).join('');
+
+    const h3 = document.querySelector('#v-health .card h3');
+    if (h3) h3.textContent = `${data.total} 个技能的审计结果`;
+    const sub = document.querySelector('#v-health .card .sub');
+    if (sub) sub.textContent = `R01–R10 作者规则 · 失败 ${data.failed} 个 · 规则失败 ${data.rulesTotal} 条 · 用时 ${data.durationMs} ms`;
+
+    const kpis = document.querySelectorAll('#v-overview .kpi .n');
+    if (kpis.length >= 3) {
+      kpis[0].textContent = data.total;
+      kpis[1].textContent = data.passed;
+      kpis[2].textContent = data.rulesTotal;
+    }
+    const ov = document.querySelector('#v-overview');
+    let banner = document.getElementById('zh-ov-banner');
+    if (!banner) {
+      banner = document.createElement('div');
+      banner.id = 'zh-ov-banner';
+      banner.className = 'zh-banner';
+      ov.insertBefore(banner, ov.firstChild);
+    }
+    const tallyText = Object.entries(data.tally).map(function (kv) { return kv[0] + '=' + kv[1]; }).join(' · ');
+    banner.innerHTML = '实时：<b>' + data.total + '</b> 个技能，<b>' + data.failed + '</b> 个有失败项，'
+      + '规则失败合计 <b>' + data.rulesTotal + '</b> 条（' + tallyText + '），'
+      + 'audit 用时 <b>' + data.durationMs + ' ms</b>。';
+  }
+
+  async function load() {
+    try {
+      const h = await fetch(BRIDGE + '/health').then((r) => r.json());
+      if (!h.ok) throw new Error('bridge not ok');
+      status.textContent = '桥已连接';
+      status.className = 'ok';
+      const data = await fetch(BRIDGE + '/audit').then((r) => r.json());
+      paint(data);
+      status.textContent = `桥已连接 · ${data.durationMs} ms`;
+    } catch (err) {
+      status.textContent = '桥未连接 · 看门狗 2 分钟内自愈（或跑 patch\start-app.ps1）';
+      status.className = 'bad';
+      const sub = document.querySelector('#v-health .card .sub');
+      if (sub) sub.textContent = '实时数据不可用：造化鼎桥未启动。下面是上一次的静态结果。';
+    }
+  }
+  load();
+  document.querySelector('#nav a[data-v="health"]').addEventListener('click', () => setTimeout(load, 60));
+})();
+</script>
+<script>
+/* ---------- 包管理：真打包 ---------- */
+(function () {
+  const BRIDGE = 'http://127.0.0.1:8791';
+  const sel = document.getElementById('zh-pk-skill');
+  const go = document.getElementById('zh-pk-go');
+  const msg = document.getElementById('zh-pk-msg');
+  const list = document.getElementById('zh-pk-list');
+  const log = document.getElementById('zh-pk-log');
+  if (!sel || !go) return;
+  const pad = (n) => String(n).padStart(2, '0');
+  const fmt = (ms) => { const d = new Date(ms); return (d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()); };
+
+  async function loadPacks() {
+    try {
+      const d = await (await fetch(BRIDGE + '/packs')).json();
+      if (!d.packs || !d.packs.length) { list.innerHTML = '<tr><td colspan="3" class="sub">还没有包。上面打一个试试。</td></tr>'; return; }
+      list.innerHTML = d.packs.map((p) => '<tr><td class="nm">' + p.name + '</td><td>' + fmt(p.mtime) + '</td><td class="sub">' + String(p.head || '').slice(0, 120) + '</td></tr>').join('');
+    } catch (e) {
+      list.innerHTML = '<tr><td colspan="3" class="sub">桥未连接：先运行 patch\\start-bridge.ps1</td></tr>';
+    }
+  }
+  function pushLog(title, meta) {
+    const div = document.createElement('div');
+    div.className = 'ev';
+    div.innerHTML = '<div class="t">' + title + '</div><div class="m">' + meta + '</div>';
+    if (log.firstChild && log.firstChild.querySelector('.t') && log.firstChild.textContent.indexOf('还没有动作') >= 0) log.innerHTML = '';
+    log.prepend(div);
+  }
+  go.addEventListener('click', async () => {
+    const skill = sel.value;
+    if (!skill) return;
+    go.disabled = true; msg.textContent = '打包中…';
+    try {
+      const d = await (await fetch(BRIDGE + '/pack?skill=' + encodeURIComponent(skill))).json();
+      if (d.error) { msg.textContent = d.error; pushLog(skill + ' 打包失败', d.error); return; }
+      const ok = !!(d.pack && d.pack.ok);
+      msg.textContent = ok ? ('完成 · ' + d.durationMs + ' ms') : ('已产出，但审计有未过项 · ' + d.durationMs + ' ms');
+      pushLog(skill + ' 打包' + (ok ? '完成' : '（有未过项）') + ' · ' + (d.pack && d.pack.data ? d.pack.data.bytes : '?') + ' B',
+        new Date().toLocaleTimeString() + ' · pack ' + (ok ? 'pass' : 'fail') + (d.history ? ' · 旧包已移入 .history' : ''));
+      await loadPacks();
+      document.dispatchEvent(new CustomEvent('cauldron:packed', { detail: { skill: skill, ok: ok } }));
+    } catch (e) {
+      msg.textContent = '桥未连接';
+    } finally { go.disabled = false; }
+  });
+  document.getElementById('nav').addEventListener('click', (e) => {
+    const a = e.target.closest('a[data-v]');
+    if (a && a.dataset.v === 'packs') loadPacks();
+  });
+  loadPacks();
+  fetch(BRIDGE + '/audit').then((r) => r.json()).then((d) => {
+    if (!d.skills) return;
+    sel.innerHTML = d.skills.map((s) => '<option value="' + s.name + '">' + s.name + (s.ok ? '' : ' · 有失败项') + '</option>').join('');
+    const canvas = d.skills.find((s) => s.name === 'canvas');
+    if (canvas) sel.value = 'canvas';
+  }).catch(() => {
+    ['ai-film-router', 'film-cinedance', 'canvas', 'workflow'].forEach((n) => {
+      const o = document.createElement('option'); o.value = n; o.textContent = n; sel.appendChild(o);
+    });
+  });
+})();
+</script><script>
+/* ---------- 包管理：安装 + 部署 ---------- */
+(function () {
+  const BRIDGE = 'http://127.0.0.1:8791';
+  const sel = document.getElementById('zh-pk-skill');
+  const btnInstall = document.getElementById('zh-pk-install');
+  const btnDeploy = document.getElementById('zh-pk-deploy');
+  const msg = document.getElementById('zh-pk-msg2');
+  const dpList = document.getElementById('zh-dp-list');
+  if (!btnInstall || !btnDeploy) return;
+  let currentSkill = '';
+
+  const pad = (n) => String(n).padStart(2, '0');
+  const fmt = (ms) => { const d = new Date(ms); return (d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()); };
+
+  const pk = () => document.getElementById('zh-pk-msg');
+
+  async function loadDeployed() {
+    try {
+      const d = await (await fetch(BRIDGE + '/deployed')).json();
+      const rows = (d.skills || []).filter((s) => s.version);
+      if (!rows.length) { dpList.innerHTML = '<tr><td colspan="4" class="sub">还没有从包装进来的技能。</td></tr>'; return; }
+      dpList.innerHTML = rows.map((s) => '<tr><td class="nm">' + s.name + '</td><td>' + s.version + '</td><td>' + fmt(s.mtime) + '</td><td><code class="hash">' + String(s.skillSha || '').slice(0, 10) + '…</code></td></tr>').join('');
+    } catch (e) {
+      dpList.innerHTML = '<tr><td colspan="4" class="sub">桥未连接：先运行 patch\\start-bridge.ps1</td></tr>';
+    }
+  }
+
+  // 打包完成后由上一个脚本 unlock：监听 select 与打包结果
+  const unlock = () => { currentSkill = sel.value; btnInstall.disabled = false; btnDeploy.disabled = true; msg.textContent = ''; };
+  sel.addEventListener('change', unlock);
+  ["click", "change"].forEach((ev) => pk() && pk().addEventListener(ev, () => { /* noop */ }));
+  document.addEventListener('cauldron:packed', (e) => { if (e.detail && e.detail.skill) { currentSkill = e.detail.skill; btnInstall.disabled = false; btnDeploy.disabled = true; } });
+
+  btnInstall.addEventListener('click', async () => {
+    const skill = currentSkill || sel.value;
+    if (!skill) return;
+    btnInstall.disabled = true; msg.textContent = '安装中…';
+    try {
+      const d = await (await fetch(BRIDGE + '/install?skill=' + encodeURIComponent(skill))).json();
+      if (d.error) { msg.textContent = d.error; return; }
+      msg.textContent = (d.action || 'pack-install') + ' · ' + (d.installed ? d.installed.version : '?') + (d.previous ? '（上一版 ' + d.previous + ' → .history）' : '') + ' · ' + d.durationMs + ' ms';
+      btnDeploy.disabled = false;
+    } catch (e) { msg.textContent = '桥未连接'; }
+    finally { btnInstall.disabled = false; }
+  });
+
+  let pending = null;
+  btnDeploy.addEventListener('click', async () => {
+    const skill = currentSkill || sel.value;
+    if (!skill) return;
+    if (!pending) {
+      const d = await (await fetch(BRIDGE + '/deploy?skill=' + encodeURIComponent(skill))).json();
+      if (d.needsConfirm) { pending = skill; msg.textContent = d.message + ' 再点一次确认。'; btnDeploy.textContent = '③ 确认写入'; return; }
+      if (d.error) { msg.textContent = d.error; return; }
+    }
+    msg.textContent = '写入中…';
+    try {
+      const d = await (await fetch(BRIDGE + '/deploy?skill=' + encodeURIComponent(skill) + '&confirm=yes')).json();
+      if (d.error) { msg.textContent = d.error; return; }
+      msg.textContent = d.ok ? ('已写入 v' + d.version + ' · 校验一致 · ' + (d.backup ? '旧目录已备份' : '无旧目录')) : '写入后校验不一致，请回滚';
+      pending = null; btnDeploy.textContent = '③ 部署进乾坤鼎';
+      loadDeployed();
+    } catch (e) { msg.textContent = '桥未连接'; }
+  });
+
+  loadDeployed();
+  document.getElementById('nav').addEventListener('click', (e) => {
+    const a = e.target.closest('a[data-v]');
+    if (a && a.dataset.v === 'packs') loadDeployed();
+  });
+})();
+</script><script>
+/* P4：评估对比 + 融合台，接本地桥（真跑要模型 key；dry-run 不要） */
+(function () {
+  var API = 'http://127.0.0.1:8791';
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+  function api(path) {
+    return fetch(API + path).then(function (r) { return r.json(); });
+  }
+  function card(title, sub) {
+    var c = el('div', 'card');
+    var h = el('h3', null, title); c.appendChild(h);
+    if (sub) c.appendChild(el('div', 'sub', sub));
+    return c;
+  }
+
+  /* ---------- 评估对比 ---------- */
+  var evalView = document.getElementById('v-eval');
+  if (evalView) {
+    var box = card('跑一次两臂评估', '同一套任务、同一个模型，差别只在技能正文。dry-run 不花钱，真跑按 token 计费。');
+    box.id = 'zh-eval-card';
+    var row = el('div'); row.style.cssText = 'display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:14px 0 6px';
+    var sel = el('select'); sel.id = 'zh-eval-cfg';
+    sel.style.cssText = 'background:#0f141a;border:1px solid #2b3440;color:#dfe6ee;border-radius:9px;padding:9px 12px;font-size:13px;min-width:260px';
+    var dryBtn = el('button', 'btn', 'dry-run 校验'); dryBtn.id = 'zh-eval-dry';
+    var runBtn = el('button', 'btn gold', '真跑两臂'); runBtn.id = 'zh-eval-run';
+    var keyTag = el('span', 'sub', '正在检查 key…'); keyTag.id = 'zh-eval-key';
+    row.appendChild(sel); row.appendChild(dryBtn); row.appendChild(runBtn); row.appendChild(keyTag);
+    box.appendChild(row);
+
+    var out = el('div'); out.id = 'zh-eval-out';
+    out.style.cssText = 'margin-top:12px';
+    box.appendChild(out);
+    evalView.insertBefore(box, evalView.firstChild);
+
+    api('/creds').then(function (c) {
+      keyTag.textContent = c.hasKey ? 'key 已就绪（只在跑的时候注入子进程）' : '没有 key：把 key 放进 patch\\secrets\\deepseek.key';
+      keyTag.style.color = c.hasKey ? 'var(--gold)' : '#e08a7a';
+    }).catch(function () { keyTag.textContent = '桥没连上：双击 patch\\start-app.ps1（或跑 start-bridge.ps1）'; });
+
+    api('/eval-configs').then(function (d) {
+      sel.innerHTML = '';
+      (d.configs || []).forEach(function (c) {
+        var o = el('option', null, c.name + '  (' + Math.round(c.size / 1024) + ' KB)');
+        o.value = c.name; sel.appendChild(o);
+      });
+      if (!(d.configs || []).length) {
+        var o = el('option', null, '（还没有评估配置）'); o.value = ''; sel.appendChild(o);
+      }
+    }).catch(function () {});
+
+    function showDry(r) {
+      out.innerHTML = '';
+      var pre = el('pre', null, (r.text || '').trim());
+      pre.style.cssText = 'white-space:pre-wrap;font-size:12.5px;line-height:1.7;color:#c8d2dc;background:#0c1116;border:1px solid #222b35;border-radius:10px;padding:12px;margin:0';
+      out.appendChild(pre);
+    }
+    function showRun(r) {
+      out.innerHTML = '';
+      if (r.error) { out.appendChild(el('div', 'sub', '出错：' + r.error)); return; }
+      var head = el('div', 'sub');
+      head.innerHTML = '模型 <b>' + (r.model || '?') + '</b> · max_tokens ' + (r.maxTokens || '?')
+        + ' · 用量 in ' + (r.tokens && r.tokens.input) + ' / out ' + (r.tokens && r.tokens.output)
+        + ' · 用时 ' + Math.round((r.durationMs || 0) / 1000) + 's';
+      out.appendChild(head);
+
+      var tb = el('table');
+      tb.style.cssText = 'width:100%;margin-top:10px';
+      tb.innerHTML = '<thead><tr><th>任务</th><th>臂</th><th>命中</th><th>截断</th><th>字数</th><th>漏掉的断言</th></tr></thead>';
+      var body = el('tbody');
+      (r.rows || []).forEach(function (x) {
+        var tr = el('tr');
+        tr.innerHTML = '<td>' + x.task + '</td><td>' + x.arm + '</td><td>' + (x.hit != null ? x.hit + '/8' : '—')
+          + '</td><td>' + (x.truncated ? '是' : '') + '</td><td>' + x.chars + '</td><td class="sub">' + (x.missed || []).join('、') + '</td>';
+        body.appendChild(tr);
+      });
+      tb.appendChild(body);
+      out.appendChild(tb);
+
+      var sum = el('div'); sum.style.cssText = 'margin-top:10px;display:flex;gap:10px;flex-wrap:wrap';
+      (r.summary || []).forEach(function (s) {
+        var chip = el('span', 'tag', s.arm + '  ' + s.hit + '/' + s.total);
+        chip.style.cssText = 'border:1px solid #2b3440;border-radius:999px;padding:6px 12px;font-size:12.5px;color:' + (s.arm === 'after' ? 'var(--gold)' : '#9fb0c0');
+        sum.appendChild(chip);
+      });
+      out.appendChild(sum);
+      out.appendChild(el('div', 'sub', '证据文件：' + r.evidenceFile));
+      try { localStorage.setItem('zh-eval-last', JSON.stringify({ at: Date.now(), data: r })); } catch (e) {}
+    }
+
+    try {
+      var last = JSON.parse(localStorage.getItem('zh-eval-last') || 'null');
+      if (last && last.data) {
+        showRun(last.data);
+        var stamp = document.createElement('div');
+        stamp.className = 'sub';
+        stamp.textContent = '（上面是上次跑的结果：' + new Date(last.at).toLocaleString() + '，不是这次实时跑的）';
+        out.insertBefore(stamp, out.firstChild);
+      }
+    } catch (e) {}
+
+    dryBtn.onclick = function () {
+      if (!sel.value) return;
+      dryBtn.disabled = true; out.textContent = '校验中…';
+      api('/eval?dry=1&config=' + encodeURIComponent(sel.value))
+        .then(showDry)
+        .catch(function (e) { out.textContent = '请求失败：' + e.message; })
+        .finally(function () { dryBtn.disabled = false; });
+    };
+    runBtn.onclick = function () {
+      if (!sel.value) return;
+      if (!confirm('真跑会调用模型并计费（本配置 4 次调用），继续？')) return;
+      runBtn.disabled = true; out.textContent = '真跑中…（大约 15–60 秒）';
+      api('/eval?config=' + encodeURIComponent(sel.value))
+        .then(showRun)
+        .catch(function (e) { out.textContent = '请求失败：' + e.message; })
+        .finally(function () { runBtn.disabled = false; });
+    };
+  }
+
+  /* ---------- 融合台 ---------- */
+  var fuseView = document.getElementById('v-fuse');
+  if (fuseView) {
+    var fbox = card('开始融合', '合并 create＝确定性合并（不调模型、秒级、可复现）；语义融合 fuse-skill＝交给模型重写（约 1 分钟、计费）。产物落 patch\\staging\\fused\\，不覆盖任何现有技能。');
+    fbox.id = 'zh-fuse-card';
+    var frow = el('div'); frow.style.cssText = 'display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:14px 0 6px';
+
+    var srcA = el('select'), srcB = el('select');
+    [srcA, srcB].forEach(function (s) {
+      s.style.cssText = 'background:#0f141a;border:1px solid #2b3440;color:#dfe6ee;border-radius:9px;padding:9px 12px;font-size:13px;min-width:200px';
+    });
+    var mode = el('select');
+    mode.style.cssText = srcA.style.cssText;
+    ['merge', 'absorb', 'compose'].forEach(function (m) { var o = el('option', null, m); o.value = m; mode.appendChild(o); });
+    var nm = el('input');
+    nm.placeholder = '新技能名（kebab-case）';
+    nm.style.cssText = 'background:#0f141a;border:1px solid #2b3440;color:#dfe6ee;border-radius:9px;padding:9px 12px;font-size:13px;min-width:180px';
+    var goBtn = el('button', 'btn', '合并 create（不调模型）');
+    var fuseBtn = el('button', 'btn gold', '语义融合 fuse-skill（调模型）');
+    frow.appendChild(srcA); frow.appendChild(srcB); frow.appendChild(mode); frow.appendChild(nm); frow.appendChild(goBtn); frow.appendChild(fuseBtn);
+    fbox.appendChild(frow);
+    var fout = el('div'); fout.style.cssText = 'margin-top:12px'; fbox.appendChild(fout);
+    fuseView.insertBefore(fbox, fuseView.firstChild);
+    // 下面几张是设计稿示意（来料/宿主/配方/预览），不是本机实测，标出来
+    Array.prototype.forEach.call(fuseView.querySelectorAll('.card'), function (c) {
+      if (c === fbox) return;
+      var h3 = c.querySelector('h3');
+      if (!h3) return;
+      var b = document.createElement('span');
+      b.className = 'tag';
+      b.textContent = '示例';
+      b.style.cssText = 'margin-left:8px;font-size:11px;border:1px solid #4a4030;color:#c9a86a;border-radius:999px;padding:1px 7px;vertical-align:middle';
+      h3.appendChild(b);
+      c.style.opacity = '0.5';
+    });
+
+    // 来料清单：直接问桥要技能目录（借 /audit 的名字表）
+    api('/audit').then(function (r) {
+      var names = (r.skills || []).map(function (s) { return s.name; });
+      [srcA, srcB].forEach(function (s, i) {
+        s.innerHTML = '';
+        names.forEach(function (n) {
+          var o = el('option', null, n); o.value = n;
+          if (i === 1 && n === 'film-shotlist') o.selected = true;
+          s.appendChild(o);
+        });
+        if (i === 0) { s.value = 'film-cinedance'; }
+      });
+    }).catch(function () {});
+
+    goBtn.onclick = function () {
+      var name = (nm.value || '').trim();
+      if (!name) { fout.textContent = '先给新技能起个名字（kebab-case）'; return; }
+      var q = '/create?sources=' + encodeURIComponent(srcA.value + ',' + srcB.value)
+        + '&name=' + encodeURIComponent(name) + '&mode=' + encodeURIComponent(mode.value);
+      goBtn.disabled = true; fout.textContent = '先问一次：看它打算做什么…';
+      api(q).then(function (r) {
+        if (r.error) { fout.textContent = '出错：' + r.error; return null; }
+        if (r.needsConfirm) {
+          fout.innerHTML = '<div class="sub">将要执行：<code>' + (r.would.argv || []).join(' ') + '</code><br>' + r.note + '</div>';
+          if (!confirm('确认融合？会调用模型并计费。')) return null;
+          fout.textContent = '融合中…（可能 1–3 分钟）';
+          return api(q + '&confirm=yes');
+        }
+        return r;
+      }).then(function (r) {
+        if (!r) return;
+        if (r.error) { fout.textContent = '出错：' + r.error; return; }
+        fout.innerHTML = '<div class="sub">完成：<b>' + r.name + '</b> → ' + r.out
+          + '<br>退出码 ' + r.exitCode + ' · 用时 ' + Math.round((r.durationMs || 0) / 1000) + 's</div>'
+          + (r.recorded && r.recorded.ok
+            ? '<div class="sub" style="color:#7fcf9f">已记进账本：epoch ' + r.recorded.epoch + ' · ' + r.recorded.files + ' 个文件 · ' + r.recorded.bytes + ' B（会出现在蒸馏地图的版本时间线里）</div>'
+              + '<div class="row" style="margin-top:8px"><button class="btn" id="adopt-btn">收编进鼎（写入 patch\\skills\\' + r.name + '）</button></div>'
+            : '')
++ (r.bans ? '<div class="sub" style="color:' + (r.bans.missingCount ? '#e08c8c' : '#7fcf9f') + '">禁令核对：保留 ' + r.bans.kept + '/' + r.bans.total + ' 条（覆盖 ' + r.bans.coverage + '%）' + (r.bans.missingCount ? ' · <b>丢 ' + r.bans.missingCount + ' 条</b>' : '') + '</div>' : '')
+          + (r.text ? '<pre style="white-space:pre-wrap;font-size:12px;color:#c8d2dc">' + r.text + '</pre>' : '');
+        var ab = document.getElementById('adopt-btn');
+        if (ab) ab.onclick = function () {
+          if (!confirm('确认把沙盒产物收编进 patch\\skills\\' + r.name + '？会先备份目标目录，再逐文件打来源戳并记账。')) return;
+          ab.disabled = true; ab.textContent = '收编中…';
+          api('/adopt?name=' + encodeURIComponent(r.name) + '&skill=' + encodeURIComponent(r.name) + '&confirm=yes')
+            .then(function (x) {
+              if (x.blocked) {
+                ab.textContent = '被拦：禁令核对没过';
+                var miss = (x.bans && x.bans.missing ? x.bans.missing : []).slice(0, 6)
+                  .map(function (m) { return '<li>' + m.skill + ' · ' + m.text.slice(0, 60) + '</li>'; }).join('');
+                fout.insertAdjacentHTML('beforeend', '<div class="sub" style="color:#e08c8c">' + (x.reason || '被禁令门拦住') + '<br>' + (x.hint || '') + '</div>'
+                  + (miss ? '<ul style="margin:6px 0 0 18px;font-size:12px;color:#c8d2dc;line-height:1.8">' + miss + '</ul>' : ''));
+                return;
+              }
+              if (x.error) { ab.textContent = '收编失败：' + x.error; return; }
+              ab.textContent = '已收编 · epoch ' + (x.epoch || '?');
+              fout.insertAdjacentHTML('beforeend', '<div class="sub" style="color:#7fcf9f">收编完成：' + (x.files || 0) + ' 个文件 → ' + (x.targetDir || '') + ' · 自动接线 ' + (x.wired || 0) + ' 条</div>');
+            })
+            .catch(function (e) { ab.textContent = '收编失败：' + e.message; });
+        };
+      }).catch(function (e) { fout.textContent = '请求失败：' + e.message; })
+        .finally(function () { goBtn.disabled = false; });
+    };
+
+    fuseBtn.onclick = function () {
+      var q = '/fuse?base=' + encodeURIComponent(srcA.value) + '&other=' + encodeURIComponent(srcB.value);
+      fuseBtn.disabled = true; fout.textContent = '先问一次：看它打算做什么…';
+      api(q).then(function (r) {
+        if (r.error) { fout.textContent = '出错：' + r.error; return null; }
+        fout.innerHTML = '<div class="sub">' + r.note + '<br>将执行：<code>' + (r.would.argv || []).join(' ') + '</code></div>';
+        if (!confirm('确认语义融合？会调用模型（约 1 分钟）并计费。')) return null;
+        fout.textContent = '语义融合中…（约 40–60 秒）';
+        return api(q + '&confirm=yes');
+      }).then(function (r) {
+        if (!r) return;
+        if (r.error) { fout.textContent = '出错：' + r.error; return; }
+        fout.innerHTML = '<div class="sub">退出码 <b>' + r.exitCode + '</b>（3＝审计未过，属正常：融合产物是草稿，要人收口）· 用时 '
+          + Math.round((r.durationMs || 0) / 1000) + 's<br>产物：' + r.out + '</div>'
++ (r.bans ? '<div class="sub" style="color:' + (r.bans.missingCount ? '#e08c8c' : '#7fcf9f') + '">禁令核对：保留 ' + r.bans.kept + '/' + r.bans.total + ' 条（覆盖 ' + r.bans.coverage + '%）' + (r.bans.missingCount ? ' · <b>丢 ' + r.bans.missingCount + ' 条</b>' : '') + '</div>' : '')
+          + '<pre style="white-space:pre-wrap;font-size:12px;line-height:1.7;color:#c8d2dc;background:#0c1116;border:1px solid #222b35;border-radius:10px;padding:12px">'
+          + (r.text || '') + '</pre>';
+      }).catch(function (e) { fout.textContent = '请求失败：' + e.message; })
+        .finally(function () { fuseBtn.disabled = false; });
+    };
+  }
+})();
+</script>
+  
+  <script src="eval-ui.js"></script>
+  <script src="packs-ui.js"></script>
+  <script src="distill.js?v=20261115e"></script>
+      <script src="gap.js?v=2"></script>
+  <script src="ingest-ui.js?v=2"></script>
+            <script src="fuse-obs.js?v=7"></script>
+
+<script>
+(function(){
+  var box = document.getElementById('fl-obs-box');
+  var hint = document.getElementById('fl-obs-hint');
+  var off = document.getElementById('fl-obs-off');
+  if (!box) return;
+  var frame = null;
+  function load(){
+    if (frame) return;
+    frame = document.createElement('iframe');
+    frame.src = '/zhaohua/obs-forge.html?theme=forge';
+    frame.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;border:0;display:block';
+    box.appendChild(frame);
+    if (hint) hint.style.display = 'none';
+  }
+  function unload(){
+    if (frame) { frame.remove(); frame = null; }
+    if (hint) { hint.textContent = '已卸载（点这里重新载入）'; hint.style.display = 'flex'; hint.style.cursor = 'pointer'; }
+  }
+  var sizeBar = document.getElementById('fl-obs-size');
+  var KEY = 'zh.obs.height';
+  function applyH(v){
+    v = String(v || '660');
+    box.style.height = v + 'px';
+    try { localStorage.setItem(KEY, v); } catch(e){}
+    if (sizeBar) Array.prototype.forEach.call(sizeBar.querySelectorAll('button'), function(b){
+      var on = b.dataset.h === v;
+      b.style.color = on ? '#1a1408' : '#8b94a3';
+      b.style.background = on ? '#d8b26a' : 'none';
+      b.style.borderColor = on ? '#d8b26a' : '#242b34';
+    });
+  }
+  if (sizeBar) Array.prototype.forEach.call(sizeBar.querySelectorAll('button'), function(b){
+    b.addEventListener('click', function(e){ e.stopPropagation(); applyH(b.dataset.h); });
+  });
+  try { applyH(localStorage.getItem(KEY) || '660'); } catch(e){}
+  if (off) off.addEventListener('click', function(e){ e.stopPropagation(); unload(); });
+  if (hint) hint.addEventListener('click', load);
+  setTimeout(load, 700);
+  window.addEventListener('beforeunload', unload);
+})();
+</script>
+<script>
+(function(){
+  var pct = document.getElementById('fl-hud-pct');
+  var tick = document.getElementById('fl-hud-tick');
+  var live = document.getElementById('fl-hud-live');
+  function setPct(){ fetch('http://127.0.0.1:8791/distill').then(function(r){return r.json();}).then(function(d){
+    var t=0,i=0;(d.skills||[]).forEach(function(s){ t++; if((s.total||0)>0 && (s.in||0)>0) i++; });
+    if(t){ pct.textContent = i + '/' + t; } }).catch(function(){});
+  }
+  function ticker(){
+    try {
+      var es = new EventSource('http://127.0.0.1:8791/events');
+      es.onmessage = function(ev){
+        try { var d = JSON.parse(ev.data); if(d && d.kind){
+          live.style.color = '#8fe3b9';
+          tick.textContent = '· ' + new Date().toLocaleTimeString() + '  ' + d.kind + (d.skill ? ' · ' + d.skill : '') + (d.summary ? ' · ' + d.summary : '');
+        } } catch(e){}
+      };
+      es.onerror = function(){ live.style.color = '#c2553f'; live.textContent = '● 桥未连接'; };
+    } catch(e){}
+  }
+  setPct(); setInterval(setPct, 10000); ticker();
+})();
+</script>
+</body>
+</html>
