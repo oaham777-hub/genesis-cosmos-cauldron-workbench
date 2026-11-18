@@ -312,7 +312,7 @@
     .fz-gaptable th:nth-child(1),.fz-gaptable td:nth-child(1){width:26px}
     
     /* ===== 融合台 v3：中间观象台，四周原有卡片（功能不变，只重排）===== */
-    .fl-grid{display:grid;grid-template-columns:300px minmax(0,1fr) 330px;grid-template-rows:auto auto auto auto;gap:14px;align-items:start}
+    .fl-grid{display:grid;grid-template-columns:268px minmax(0,1fr) 304px;grid-template-rows:auto auto auto auto;gap:14px;align-items:start}
     .fl-grid > *{min-width:0}
     .fl-top{grid-column:1 / -1;grid-row:1}
     .fl-left{grid-column:1;grid-row:2 / span 2;display:flex;flex-direction:column;gap:14px;min-width:0}
@@ -515,10 +515,15 @@
         <div style="display:flex;align-items:baseline;gap:10px;padding:0 2px 8px">
           <span style="font-size:13px;color:#e6d3a6;letter-spacing:.06em">观象台</span>
           <span style="font-size:11px;color:#6c7684">视界熔炉（forge）· 投喂项目主题改造</span>
+          <span id="fl-obs-size" style="display:inline-flex;gap:6px;margin-left:8px">
+            <button type="button" data-h="560" style="font-size:11px;color:#8b94a3;background:none;border:1px solid #242b34;border-radius:999px;padding:1px 8px;cursor:pointer">紧凑</button>
+            <button type="button" data-h="660" style="font-size:11px;color:#8b94a3;background:none;border:1px solid #242b34;border-radius:999px;padding:1px 8px;cursor:pointer">标准</button>
+            <button type="button" data-h="780" style="font-size:11px;color:#8b94a3;background:none;border:1px solid #242b34;border-radius:999px;padding:1px 8px;cursor:pointer">加高</button>
+          </span>
           <button id="fl-obs-off" type="button" style="margin-left:auto;font-size:11px;color:#8b94a3;background:none;border:0;cursor:pointer">卸载</button>
           <a href="/zhaohua/obs-forge.html?theme=forge" target="_blank" style="font-size:11px;color:#8b94a3;text-decoration:none">全屏 ↗</a>
         </div>
-        <div id="fl-obs-box" style="position:relative;height:620px;border:1px solid #1d2229;border-radius:12px;overflow:hidden;background:#07090c">
+        <div id="fl-obs-box" style="position:relative;height:660px;transition:height .18s ease;border:1px solid #1d2229;border-radius:12px;overflow:hidden;background:#07090c">
           <div id="fl-obs-hint" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#6c7684;font-size:12px">观象台载入中…</div>
         </div>
       </div>
@@ -1397,6 +1402,23 @@
     if (frame) { frame.remove(); frame = null; }
     if (hint) { hint.textContent = '已卸载（点这里重新载入）'; hint.style.display = 'flex'; hint.style.cursor = 'pointer'; }
   }
+  var sizeBar = document.getElementById('fl-obs-size');
+  var KEY = 'zh.obs.height';
+  function applyH(v){
+    v = String(v || '660');
+    box.style.height = v + 'px';
+    try { localStorage.setItem(KEY, v); } catch(e){}
+    if (sizeBar) Array.prototype.forEach.call(sizeBar.querySelectorAll('button'), function(b){
+      var on = b.dataset.h === v;
+      b.style.color = on ? '#1a1408' : '#8b94a3';
+      b.style.background = on ? '#d8b26a' : 'none';
+      b.style.borderColor = on ? '#d8b26a' : '#242b34';
+    });
+  }
+  if (sizeBar) Array.prototype.forEach.call(sizeBar.querySelectorAll('button'), function(b){
+    b.addEventListener('click', function(e){ e.stopPropagation(); applyH(b.dataset.h); });
+  });
+  try { applyH(localStorage.getItem(KEY) || '660'); } catch(e){}
   if (off) off.addEventListener('click', function(e){ e.stopPropagation(); unload(); });
   if (hint) hint.addEventListener('click', load);
   setTimeout(load, 700);
