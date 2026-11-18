@@ -9,13 +9,9 @@
 <script>
 (function(){
   try{
-    var q=new URLSearchParams(location.search), th=q.get('theme');
-    if(th) localStorage.setItem('agent-series-theme', th);
-    Object.defineProperty(window,'devicePixelRatio',{get:function(){return 1;},configurable:true});
-    var raf=window.requestAnimationFrame.bind(window), last=0, MIN=50;
-    window.requestAnimationFrame=function(cb){return raf(function(ts){ if(ts-last<MIN){return window.requestAnimationFrame(cb);} last=ts; cb(ts); });};
-    var si=window.setInterval.bind(window);
-    window.setInterval=function(fn,ms){return si(fn, Math.max(1500, ms||0));};
+    var q=new URLSearchParams(location.search);
+    if(q.get('theme')) localStorage.setItem('agent-series-theme', q.get('theme'));
+    Object.defineProperty(window,'devicePixelRatio',{get:function(){return 0.85;},configurable:true});
   }catch(e){}
 })();
 </script><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>

@@ -1393,8 +1393,10 @@
   function load(){
     if (frame) return;
     frame = document.createElement('iframe');
-    frame.src = '/zhaohua/obs-forge.html?theme=forge';
-    frame.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;border:0;display:block';
+    frame.src = 'obs-forge.html?theme=forge';
+    frame.style.cssText = 'position:absolute;left:50%;top:50%;width:580px;height:640px;border:0;display:block;transform-origin:center center';
+    function fit(){ var w=box.clientWidth||580,h=box.clientHeight||640; var s=Math.max(w/580,h/640); frame.style.transform='translate(-50%,-50%) scale('+s.toFixed(3)+')'; }
+    setTimeout(fit,60); if(window.ResizeObserver) new ResizeObserver(fit).observe(box);
     box.appendChild(frame);
     if (hint) hint.style.display = 'none';
   }
@@ -1422,6 +1424,7 @@
   if (off) off.addEventListener('click', function(e){ e.stopPropagation(); unload(); });
   if (hint) hint.addEventListener('click', load);
   setTimeout(load, 700);
+  document.addEventListener('visibilitychange', function(){ if (document.hidden) unload(); });
   window.addEventListener('beforeunload', unload);
 })();
 </script>

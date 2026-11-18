@@ -521,9 +521,9 @@
             <button type="button" data-h="780" style="font-size:11px;color:#8b94a3;background:none;border:1px solid #242b34;border-radius:999px;padding:1px 8px;cursor:pointer">加高</button>
           </span>
           <button id="fl-obs-off" type="button" style="margin-left:auto;font-size:11px;color:#8b94a3;background:none;border:0;cursor:pointer">卸载</button>
-          <a href="/zhaohua/obs-forge.html?theme=forge" target="_blank" style="font-size:11px;color:#8b94a3;text-decoration:none">全屏 ↗</a>
+          <a href="obs-forge.html?theme=forge" target="_blank" style="font-size:11px;color:#8b94a3;text-decoration:none">全屏 ↗</a>
         </div>
-        <div id="fl-obs-box" style="position:relative;height:660px;transition:height .18s ease;border:1px solid #1d2229;border-radius:12px;overflow:hidden;background:#07090c">
+        <div id="fl-obs-box" style="position:relative;height:660px;transition:height .18s ease;border:1px solid #1d2229;border-radius:12px;overflow:hidden;background:#07090c;display:flex;align-items:center;justify-content:center">
           
       <div id="fl-obs-hud" style="position:absolute;inset:0;pointer-events:none;z-index:5">
         <div style="position:absolute;left:0;right:0;top:0;height:64px;background:linear-gradient(#07090c 78%,rgba(7,9,12,0))"></div>
@@ -1410,8 +1410,16 @@
   function load(){
     if (frame) return;
     frame = document.createElement('iframe');
-    frame.src = '/zhaohua/obs-forge.html?theme=forge';
-    frame.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;border:0;display:block';
+    frame.src = 'obs-forge.html?theme=forge';
+    frame.setAttribute('scrolling','no');
+    frame.style.cssText = 'position:absolute;left:50%;top:50%;width:580px;height:640px;border:0;display:block;transform-origin:center center;';
+    function fit(){
+      var w = box.clientWidth || 760, h = box.clientHeight || 640;
+      var s = Math.max(w / 580, h / 640);            // 覆盖式缩放，填满不裁边
+      frame.style.transform = 'translate(-50%,-50%) scale(' + s.toFixed(3) + ')';
+    }
+    setTimeout(fit, 60);
+    if (window.ResizeObserver) new ResizeObserver(fit).observe(box);
     box.appendChild(frame);
     if (hint) hint.style.display = 'none';
   }
@@ -1439,6 +1447,7 @@
   if (off) off.addEventListener('click', function(e){ e.stopPropagation(); unload(); });
   if (hint) hint.addEventListener('click', load);
   setTimeout(load, 700);
+  document.addEventListener('visibilitychange', function(){ if (document.hidden) unload(); });
   window.addEventListener('beforeunload', unload);
 })();
 </script>
@@ -1447,10 +1456,10 @@
   var pct = document.getElementById('fl-hud-pct');
   var tick = document.getElementById('fl-hud-tick');
   var live = document.getElementById('fl-hud-live');
-  function setPct(){ fetch('http://127.0.0.1:8791/distill').then(function(r){return r.json();}).then(function(d){
-    var t=0,i=0;(d.skills||[]).forEach(function(s){ t++; if((s.total||0)>0 && (s.in||0)>0) i++; });
-    if(t){ pct.textContent = i + '/' + t; } }).catch(function(){});
-  }
+  function setPct(){ fetch('http://127.0.0.1:8791/audit').then(function(r){return r.json();}).then(function(d){
+    var t=d.total||0, f=d.failed||0;
+    if(t){ pct.textContent = (t - f) + '/' + t; }
+  }).catch(function(){}); }
   function ticker(){
     try {
       var es = new EventSource('http://127.0.0.1:8791/events');
