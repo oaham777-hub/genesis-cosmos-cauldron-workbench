@@ -3432,10 +3432,11 @@ function mountOps(host, SR){
 
 /* ================= 1. 数据配置（换成你自己的内容即可） ================= */
 const CONFIG = {
-  agents: [['01','检索'],['02','拆解'],['03','文案'],['04','设计'],['05','代码'],['06','测试'],
-           ['07','审校'],['08','数据'],['09','剪辑'],['10','投放'],['11','客服'],['12','归档']],
-  taskNames: ['竞品资料检索','需求拆解','短视频脚本','封面图六版','落地页改版','接口联调','合同条款审校','周报数据汇总',
-              '投标文件生成','私域话术更新','素材归档','发版检查','用户反馈聚类','广告素材测试','知识库更新','直播切片'],
+  agents: [['01','路由'],['02','剧本'],['03','梗概'],['04','角色'],['05','世界观'],['06','定稿'],
+           ['07','审片'],['08','资产'],['09','镜表'],['10','表演'],['11','成片'],['12','归档']],
+  taskNames: ['audit 体检','inspect 能力契约','create 确定性合并','fuse 语义融合','pack 打包','pack-install 装包',
+              'deploy 部署','distill 投放','gap 补缺','adopt 收编','eval 两臂评估','verify 产品校验',
+              'smoke 冒烟','restore 恢复','uninstall 卸载','overlap 查重'],
   workflows: ['资料检索','需求拆解','脚本生成','视觉设计','代码实现','测试验证','合规审校','数据汇总','视频剪辑','投放优化','知识归档'],
   // 执行代码面板：多套示例，随机轮换，一轮内不重复。agent = 对应 agents 的序号（0 起）
   codeSets: [
@@ -21154,4 +21155,66 @@ requestAnimationFrame(frame);
 })();
 </script>
 
+
+<!-- ADAPTER:start -->
+<style>
+  html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#0b0e12}
+  #app,#root,body>div:first-child{min-height:100%}
+</style>
+<script>
+(function(){
+  // 1) dpr 限 1：34 个 canvas，dpr=2 时显存/内存直接翻四倍
+  try { Object.defineProperty(window,'devicePixelRatio',{get:function(){return 1;},configurable:true}); } catch(e){}
+  // 2) 限帧：最多 ~10fps（原本 60fps × 34 canvas 是爆内存主因）
+  var raf = window.requestAnimationFrame.bind(window), last = 0, MIN = 100;
+  window.requestAnimationFrame = function(cb){
+    return raf(function(ts){ if(ts - last < MIN) { return window.requestAnimationFrame(cb); } last = ts; cb(ts); });
+  };
+  // 3) 短间隔定时器统一拉长到 >=1s（它的模拟器每 120–500ms 改一次 DOM）
+  var si = window.setInterval.bind(window);
+  window.setInterval = function(fn, ms){ return si(fn, Math.max(1000, ms || 0)); };
+  // 4) 后台/被卸载时彻底停：document.hidden 时不再排帧
+  document.addEventListener('visibilitychange', function(){
+    if(document.hidden){ document.title = document.title; }
+  });
+  // 5) 数据适配（DOM 层）：它把自己的模拟数据在解析期就渲染了，改 CONFIG 来不及；
+  //    改为渲染后把"12 个工区名"逐个换成我们的 12 个技能名（只换文字，不动布局与动画）
+  var ZHP = ["路由","剧本","梗概","角色","世界观","定稿","审片","资产","镜表","表演","成片","归档"];
+  var MOCK = ["检索","拆解","文案","设计","代码","测试","审校","数据","剪辑","投放","客服","归档"];
+  function swapText(root){
+    var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null), n, hits = 0;
+    while ((n = w.nextNode())) {
+      var v = n.nodeValue; if (!v) continue;
+      if (v.length > 40) continue;
+      for (var i = 0; i < MOCK.length; i++) {
+        if (v === MOCK[i] || v === MOCK[i] + " " || v.indexOf(MOCK[i]) === 0 && v.length <= MOCK[i].length + 1) {
+          n.nodeValue = v.replace(MOCK[i], ZHP[i]); hits++; break;
+        }
+      }
+    }
+    return hits;
+  }
+  /* 名称已在 CONFIG 里改好，无需 DOM 替换 */
+  function adapt(){
+    try {
+      if (typeof CONFIG === 'undefined' || !CONFIG || CONFIG.__zh) return false;
+      CONFIG.__zh = true;
+      CONFIG.agents = [
+        ['01','路由'],['02','剧本'],['03','梗概'],['04','角色'],['05','世界观'],['06','定稿'],
+        ['07','审片'],['08','资产'],['09','镜表'],['10','表演'],['11','成片'],['12','归档']
+      ];
+      CONFIG.taskNames = ['audit 体检','inspect 能力契约','create 确定性合并','fuse 语义融合','pack 打包',
+        'pack-install 装包','deploy 部署','distill 投放','gap 补缺','adopt 收编','eval 两臂评估','verify 产品校验',
+        'smoke 端到端冒烟','restore 从备份恢复','uninstall 卸载','overlap 查重'];
+      CONFIG.workflows = ['判层','投放','体检','打包','部署','评估'];
+      return true;
+    } catch(e){ return false; }
+  }
+  var n = 0, t = si(function(){ n++; if(adapt() || n > 40) clearInterval(t); }, 100);
+  adapt();
+  // 6) 主题固定成 hq（内容最满的一套）
+  try { localStorage.setItem('agent-series-theme','hq'); } catch(e){}
+})();
+</script>
+<!-- ADAPTER:end -->
 </body></html>

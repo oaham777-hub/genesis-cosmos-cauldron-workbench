@@ -311,7 +311,7 @@
     .fz-gaptable th:nth-child(5),.fz-gaptable td:nth-child(5){white-space:nowrap;width:46px}
     .fz-gaptable th:nth-child(1),.fz-gaptable td:nth-child(1){width:26px}
     
-    /* ===== 融合台 v3：中间星核观象台，四周原有卡片（功能不变，只重排）===== */
+    /* ===== 融合台 v3：中间观象台，四周原有卡片（功能不变，只重排）===== */
     .fl-grid{display:grid;grid-template-columns:300px minmax(0,1fr) 330px;grid-template-rows:auto auto auto auto;gap:14px;align-items:start}
     .fl-grid > *{min-width:0}
     .fl-top{grid-column:1 / -1;grid-row:1}
@@ -537,17 +537,20 @@
 
       <div id="fl-obs" style="min-width:0;grid-column:2;grid-row:2 / span 2">
         <div style="display:flex;align-items:baseline;gap:10px;padding:0 2px 8px">
-          <span style="font-size:13px;color:#e6d3a6;letter-spacing:.06em">观象台</span>
-          <span style="font-size:11px;color:#6c7684" id="fl-obs-note">投喂项目复刻 · 战术大屏</span>
-          <span style="margin-left:auto;display:flex;gap:6px">
-            <button type="button" data-obs="display" class="fl-chip on">战术大屏 <span style="opacity:.55;font-size:10px">示例数据</span></button>
-            <button type="button" data-obs="core" class="fl-chip">星核 <span style="opacity:.55;font-size:10px">真实数据</span></button>
-            <a href="/zhaohua/obs-display.html" target="_blank" style="font-size:11px;color:#8b94a3;text-decoration:none;padding:4px 6px">全屏打开 ↗</a>
+          <span style="font-size:13px;color:#e6d3a6;letter-spacing:.06em">观象台 · 战术大屏</span>
+          <span style="font-size:11px;color:#6c7684" id="fl-obs-note">投喂项目复刻 · 技能/任务已换成真实内容</span>
+          <span style="margin-left:auto;display:flex;gap:6px;align-items:center">
+            <button type="button" id="fl-obs-load" class="fl-chip on">载入大屏</button>
+            <a href="/zhaohua/obs-display.html" target="_blank" style="font-size:11px;color:#8b94a3;text-decoration:none;padding:4px 6px">全屏 ↗</a>
           </span>
         </div>
-        <div id="fl-obs-box" style="position:relative;overflow:hidden;border:1px solid #1d2229;border-radius:12px;background:#07090c;height:560px">
-          <iframe id="fl-obs-frame" src="/zhaohua/obs-display.html" loading="lazy"
-            style="position:absolute;left:0;top:0;width:100%;height:100%;border:0;transform:none;transform-origin:0 0"></iframe>
+        <div id="fl-obs-box" style="position:relative;overflow:hidden;border:1px solid #1d2229;border-radius:12px;background:#0b0e12;height:210px;transition:height .18s ease">
+          <div id="fl-obs-idle" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center">
+            <div style="font-size:13px;color:#cbd3df">战术大屏（34 个 canvas、自带模拟器）</div>
+            <div style="font-size:12px;color:#6c7684;max-width:380px;line-height:1.7">它很吃资源——上次一进融合台就自动载入，直接把内存打满。<br>现在改成点一下才启动；不看时不会占 CPU / 内存。</div>
+            <button type="button" id="fl-obs-start" class="fl-chip on" style="padding:8px 16px;font-size:12px">载入战术大屏</button>
+          </div>
+          <iframe id="fl-obs-frame" loading="lazy" style="position:absolute;left:0;top:0;width:100%;height:100%;border:0;display:none"></iframe>
         </div>
       </div>
         <div style="grid-column:1;grid-row:2 / span 2;display:flex;flex-direction:column;gap:14px;min-width:0">
@@ -1404,22 +1407,36 @@
   <script src="distill.js?v=20261115e"></script>
       <script src="gap.js?v=2"></script>
   <script src="ingest-ui.js?v=2"></script>
-    <script id="fl-obs-switch">
+      <script id="fl-obs-switch">
   (function(){
-    var box=document.getElementById('fl-obs-box'), f=document.getElementById('fl-obs-frame'), note=document.getElementById('fl-obs-note');
-    var btns=document.querySelectorAll('#fl-obs [data-obs]');
-    function use(kind){
-      btns.forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-obs')===kind); });
-      if(kind==='core'){
-        f.style.transform='none'; f.style.width='100%'; f.style.height='100%';
-        f.src='/zhaohua/obs-neural.html'; note.textContent='自绘 · 星核（v41 渲染器）';
-      } else {
-        f.style.transform='scale(.562)'; f.style.transformOrigin='0 0';
-        f.style.width='178%'; f.style.height='178%';
-        f.src='/zhaohua/obs-display.html'; note.textContent='投喂项目复刻 · 战术大屏（其数据由项目自带模拟器生成，未接真实数据）';
-      }
+    var box=document.getElementById('fl-obs-box'), f=document.getElementById('fl-obs-frame'),
+        idle=document.getElementById('fl-obs-idle'), note=document.getElementById('fl-obs-note'),
+        start=document.getElementById('fl-obs-start'), load=document.getElementById('fl-obs-load');
+    var on=false;
+    function boot(){
+      if(on) return; on=true;
+      f.src='/zhaohua/obs-display.html';
+      f.style.display='block';
+      box.style.height='560px';
+      if(idle) idle.style.display='none';
+      if(load) load.textContent='卸载大屏';
+      if(note) note.textContent='运行中 · 不看时请卸载（它占内存）';
     }
-    btns.forEach(function(b){ b.addEventListener('click', function(){ use(b.getAttribute('data-obs')); }); });
+    function kill(){
+      if(!on) return; on=false;
+      f.style.display='none'; f.removeAttribute('src');
+      box.style.height='210px';
+      if(idle) idle.style.display='flex';
+      if(load) load.textContent='载入大屏';
+      if(note) note.textContent='已卸载 · 不再占 CPU / 内存';
+    }
+    if(start) start.addEventListener('click', boot);
+    if(load) load.addEventListener('click', function(){ on ? kill() : boot(); });
+    // 切到别的页（观象台不可见）时自动卸载，避免在后台空转
+    document.getElementById('nav').addEventListener('click', function(e){
+      var a=e.target.closest && e.target.closest('a[data-v]');
+      if(a && a.dataset.v!=='fuse') kill();
+    });
   })();
   </script>
 </body>
